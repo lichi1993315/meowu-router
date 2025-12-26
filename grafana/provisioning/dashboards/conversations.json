@@ -128,9 +128,9 @@
                         "type": "frser-sqlite-datasource",
                         "uid": "${DS_SQLITE}"
                     },
-                    "queryText": "SELECT c.timestamp as '时间', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "queryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
                     "queryType": "table",
-                    "rawQueryText": "SELECT c.timestamp as '时间', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
                     "refId": "A"
                 }
             ],
@@ -734,9 +734,9 @@
             },
             "targets": [
                 {
-                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', first_seen as '首次登录', last_seen as '最后活跃', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', first_seen as '首次登录', last_seen as '最后活跃', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
                     "refId": "A"
                 }
             ],
@@ -926,6 +926,85 @@
                 "x": 0,
                 "y": 48
             },
+            "id": 110,
+            "panels": [],
+            "title": "📊 用户深度分析 User Engagement",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 49
+            },
+            "id": 111,
+            "targets": [
+                {
+                    "queryType": "table",
+                    "rawQueryText": "SELECT strftime('%H', datetime(timestamp, '+8 hours')) as 'Hour (BJ)', COUNT(*) as 'Requests' FROM conversations GROUP BY 1 ORDER BY 1",
+                    "refId": "A"
+                }
+            ],
+            "title": "⏰ 活跃时段分布 (北京时间)",
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 49
+            },
+            "id": 112,
+            "targets": [
+                {
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COALESCE(nickname, player_name, substr(user_id, 1, 8)) as 'User', ROUND(CAST(total_requests AS FLOAT) / MAX(session_count, 1), 1) as 'Avg Requests/Session', total_requests, session_count FROM user_sessions WHERE total_requests >= 5 ORDER BY 2 DESC LIMIT 10",
+                    "refId": "A"
+                }
+            ],
+            "title": "🏆 互动深度排行 Top 10",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 49
+            },
+            "id": 113,
+            "targets": [
+                {
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, substr(c.user_id, 1, 8)) as 'User', ROUND(CAST(SUM(c.completion_tokens) AS FLOAT) / MAX(SUM(c.prompt_tokens), 1), 2) as 'Output/Input Ratio', SUM(c.completion_tokens) as 'Out', SUM(c.prompt_tokens) as 'In' FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id GROUP BY c.user_id HAVING SUM(c.prompt_tokens) > 500 ORDER BY 2 DESC LIMIT 10",
+                    "refId": "A"
+                }
+            ],
+            "title": "📝 内容生成比排行 Top 10",
+            "type": "table"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 48
+            },
             "id": 103,
             "panels": [],
             "title": "👥 全部用户会话统计",
@@ -1009,9 +1088,9 @@
             },
             "targets": [
                 {
-                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', first_seen as '首次登录', last_seen as '最后活跃', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
+                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', first_seen as '首次登录', last_seen as '最后活跃', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
+                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
                     "refId": "A"
                 }
             ],
@@ -1069,9 +1148,9 @@
             },
             "targets": [
                 {
-                    "queryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.timestamp as '时间', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
+                    "queryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', datetime(c.timestamp, '+8 hours') as '时间(北京)', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.timestamp as '时间', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
+                    "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', datetime(c.timestamp, '+8 hours') as '时间(北京)', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
                     "refId": "A"
                 }
             ],

@@ -125,6 +125,8 @@ def get_html_template():
                     <th>昵称</th>
                     <th>类型</th>
                     <th>国家</th>
+                    <th>首次游玩(北京)</th>
+                    <th>最后游玩(北京)</th>
                     <th>请求</th>
                     <th>时长(分)</th>
                     <th>操作</th>
@@ -167,7 +169,9 @@ def get_users():
     c.execute('''
         SELECT user_id, COALESCE(is_developer, 0), country, total_requests, 
                CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER),
-               nickname, player_name
+               nickname, player_name,
+               datetime(first_seen, '+8 hours') as first_seen_bj,
+               datetime(last_seen, '+8 hours') as last_seen_bj
         FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC
     ''')
     users = c.fetchall()
@@ -221,7 +225,7 @@ class Handler(BaseHTTPRequestHandler):
         
         rows = ""
         for user in users:
-            user_id, is_dev, country, requests, mins, nickname, player_name = user
+            user_id, is_dev, country, requests, mins, nickname, player_name, first_seen_bj, last_seen_bj = user
             nickname = nickname or ""
             player_name = player_name or ""
             # 显示名称：优先nickname，其次player_name
@@ -250,11 +254,17 @@ class Handler(BaseHTTPRequestHandler):
             </form>
             '''
             
+            # 格式化时间显示 (只显示月日 时分)
+            first_time = first_seen_bj[5:16].replace('T', ' ') if first_seen_bj else '-'
+            last_time = last_seen_bj[5:16].replace('T', ' ') if last_seen_bj else '-'
+            
             rows += f'''<tr>
                 <td class="user-id">{user_id}</td>
                 <td>{nickname_display}<br>{nickname_form}</td>
                 <td>{badge}</td>
                 <td>{country or "?"}</td>
+                <td style="font-size:12px">{first_time}</td>
+                <td style="font-size:12px">{last_time}</td>
                 <td>{requests}</td>
                 <td>{mins}</td>
                 <td>{dev_btn}</td>

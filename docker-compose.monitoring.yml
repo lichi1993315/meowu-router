@@ -15,9 +15,9 @@ services:
     environment:
       - SCAN_INTERVAL=30
       - CCU_WINDOW=300
-      - PRICE_PROMPT=0.075
-      - PRICE_COMPLETION=0.30
-      - PRICE_CACHED=0.01875
+      - PRICE_PROMPT=0.50
+      - PRICE_COMPLETION=3.00
+      - PRICE_CACHED=0.05
     restart: unless-stopped
 
   # Prometheus - 时序数据库

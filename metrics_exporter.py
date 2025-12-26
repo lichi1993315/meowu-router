@@ -33,10 +33,11 @@ METRICS_PORT = int(os.getenv("METRICS_PORT", "9090"))
 SCAN_INTERVAL = int(os.getenv("SCAN_INTERVAL", "30"))  # 秒
 CCU_WINDOW = int(os.getenv("CCU_WINDOW", "300"))  # CCU统计窗口(秒)
 
-# Gemini定价 ($/1M tokens) - 基于官方价格
-PRICE_PROMPT = float(os.getenv("PRICE_PROMPT", "0.50"))
-PRICE_COMPLETION = float(os.getenv("PRICE_COMPLETION", "3.00"))
-PRICE_CACHED = float(os.getenv("PRICE_CACHED", "0.05"))  # Cache input price
+# Gemini定价 ($/1M tokens) - 基于 Gemini 1.5 Pro 价格 (用户反馈实际消耗匹配Pro)
+# Input: $3.50, Output: $10.50, Cached: $0.875
+PRICE_PROMPT = float(os.getenv("PRICE_PROMPT", "3.50"))
+PRICE_COMPLETION = float(os.getenv("PRICE_COMPLETION", "10.50"))
+PRICE_CACHED = float(os.getenv("PRICE_CACHED", "0.875"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,9 +120,35 @@ user_session_count = Gauge(
 )
 
 # 费用
-daily_cost_usd = Gauge(
-    'llm_daily_cost_usd',
-    'Estimated daily cost in USD'
+total_cost_usd = Gauge(
+    'llm_total_cost_usd',
+    'Total estimated cost in USD'
+)
+
+# 全局统计 (持久化)
+total_requests_global = Gauge(
+    'llm_total_requests_global',
+    'Total requests all time (persistent)'
+)
+
+total_tokens_global = Gauge(
+    'llm_total_tokens_global',
+    'Total tokens all time (persistent)'
+)
+
+total_prompt_tokens_global = Gauge(
+    'llm_total_prompt_tokens_global',
+    'Total prompt tokens all time (persistent)'
+)
+
+total_completion_tokens_global = Gauge(
+    'llm_total_completion_tokens_global',
+    'Total completion tokens all time (persistent)'
+)
+
+total_cached_tokens_global = Gauge(
+    'llm_total_cached_tokens_global',
+    'Total cached tokens all time (persistent)'
 )
 
 # ============ 状态存储 ============
@@ -274,28 +301,7 @@ class MetricsState:
             if country:
                 self.user_activity[user_id]["country"] = country
     
-    def add_tokens(self, prompt: int, completion: int, cached: int):
-        """累加今日token"""
-        today = datetime.now().date()
-        if today != self.today_date:
-            # 新的一天，重置计数
-            self.today_prompt_tokens = 0
-            self.today_completion_tokens = 0
-            self.today_cached_tokens = 0
-            self.today_date = today
-        
-        self.today_prompt_tokens += prompt
-        self.today_completion_tokens += completion
-        self.today_cached_tokens += cached
-    
-    def get_daily_cost(self) -> float:
-        """计算今日费用"""
-        cost = (
-            self.today_prompt_tokens * PRICE_PROMPT / 1_000_000 +
-            self.today_completion_tokens * PRICE_COMPLETION / 1_000_000 +
-            self.today_cached_tokens * PRICE_CACHED / 1_000_000
-        )
-        return round(cost, 4)
+
     
     def get_active_users_by_country(self) -> dict:
         """获取按国家分组的活跃用户数"""
@@ -440,6 +446,38 @@ class MetricsState:
                 user_play_seconds.labels(user_id=user_id, country=country).set(play_seconds or 0)
                 user_session_count.labels(user_id=user_id, country=country).set(session_count or 0)
             
+            # 计算总Token数并设置cost
+            cursor.execute('''
+                SELECT SUM(prompt_tokens), SUM(completion_tokens), SUM(cached_tokens)
+                FROM conversations
+            ''')
+            row = cursor.fetchone()
+            if row:
+                p, c, cached = row
+                p = p or 0
+                c = c or 0
+                cached = cached or 0
+                
+                # 计算费用 (修正逻辑: prompt_tokens 包含 cached_tokens)
+                real_prompt = max(0, p - cached)
+                cost = (
+                    (real_prompt * PRICE_PROMPT / 1_000_000) +
+                    (c * PRICE_COMPLETION / 1_000_000) +
+                    (cached * PRICE_CACHED / 1_000_000)
+                )
+                total_cost_usd.set(cost)
+                
+                # 设置总Tokens和分项Tokens
+                total_tokens_global.set((p or 0) + (c or 0))
+                total_prompt_tokens_global.set(p or 0)
+                total_completion_tokens_global.set(c or 0)
+                total_cached_tokens_global.set(cached or 0)
+                
+                # 从conversations表获取准确的总请求数
+                cursor.execute('SELECT COUNT(*) FROM conversations')
+                total_reqs = cursor.fetchone()[0]
+                total_requests_global.set(total_reqs)
+            
             conn.close()
         except Exception as e:
             logger.warning(f"Failed to update user gauges: {e}")
@@ -578,7 +616,22 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
         
         # 更新状态
         state.update_user_activity(user_id, timestamp, country)
-        state.add_tokens(prompt_tokens, completion_tokens, cached_tokens)
+        
+        # 增加总费用
+        real_prompt_tokens = max(0, prompt_tokens - cached_tokens)
+        request_cost = (
+            (real_prompt_tokens * PRICE_PROMPT / 1_000_000) +
+            (completion_tokens * PRICE_COMPLETION / 1_000_000) +
+            (cached_tokens * PRICE_CACHED / 1_000_000)
+        )
+        total_cost_usd.inc(request_cost)
+        
+        # 增加全局统计
+        total_requests_global.inc()
+        total_tokens_global.inc(prompt_tokens + completion_tokens)
+        total_prompt_tokens_global.inc(prompt_tokens)
+        total_completion_tokens_global.inc(completion_tokens)
+        total_cached_tokens_global.inc(cached_tokens)
         
         # 保存对话到SQLite
         state.save_conversation({
@@ -636,8 +689,11 @@ def scan_output_directory(state: MetricsState):
         total_ccu += count
     total_active_users.set(total_ccu)
     
-    # 更新费用指标
-    daily_cost_usd.set(state.get_daily_cost())
+    first_run = not hasattr(scan_output_directory, "initialized")
+    if first_run:
+         scan_output_directory.initialized = True
+         # 初始化时从数据库加载总费用 (已在update_user_gauges中处理)
+         state.update_user_gauges()
     
     # 重新计算用户会话统计
     state.recalculate_user_sessions()
