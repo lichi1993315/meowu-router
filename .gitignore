@@ -1,0 +1,46 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak
+venv.bak
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Runtime data
+data/
+output/
+
+# Downloaded scripts
+get-docker.sh

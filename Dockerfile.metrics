@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安装依赖
+RUN pip install --no-cache-dir \
+    prometheus-client \
+    aiofiles
+
+# 复制代码
+COPY metrics_exporter.py .
+COPY developer_admin.py .
+
+# 创建数据目录
+RUN mkdir -p /app/data /app/output
+
+# 暴露端口
+EXPOSE 9090
+
+# 环境变量
+ENV OUTPUT_DIR=/app/output
+ENV DATA_DIR=/app/data
+ENV METRICS_PORT=9090
+ENV SCAN_INTERVAL=30
+
+CMD ["python", "metrics_exporter.py"]

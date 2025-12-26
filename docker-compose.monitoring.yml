@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Metrics Exporter - 扫描日志并暴露Prometheus指标
+  metrics-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.metrics
+    container_name: llm-metrics-exporter
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./output:/app/output:ro
+      - ./data:/app/data
+    environment:
+      - SCAN_INTERVAL=30
+      - CCU_WINDOW=300
+      - PRICE_PROMPT=0.075
+      - PRICE_COMPLETION=0.30
+      - PRICE_CACHED=0.01875
+    restart: unless-stopped
+
+  # Prometheus - 时序数据库
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: llm-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana - 可视化面板
+  grafana:
+    image: grafana/grafana:latest
+    container_name: llm-grafana
+    ports:
+      - "9001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=frser-sqlite-datasource
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./data:/var/lib/grafana/sqlite:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Developer Admin - 开发者管理界面
+  developer-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.metrics
+    container_name: llm-developer-admin
+    ports:
+      - "9095:9095"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ADMIN_PORT=9095
+      - DB_PATH=/app/data/conversations.db
+    command: [ "python", "developer_admin.py" ]
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

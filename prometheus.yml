@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'llm-router-metrics'
+    static_configs:
+      - targets: ['metrics-exporter:9090']
+    scrape_interval: 15s
+    scrape_timeout: 10s

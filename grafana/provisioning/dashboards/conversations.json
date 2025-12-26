@@ -1,0 +1,1167 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "panels": [],
+            "title": "🔍 对话查询 Conversation Search",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false,
+                        "filterable": true
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "duration_ms"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "ms"
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "mode": "gradient",
+                                    "type": "gauge"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "user_query"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 300
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ai_response"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 300
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 15,
+                "w": 24,
+                "x": 0,
+                "y": 1
+            },
+            "id": 1,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": true,
+                    "fields": "",
+                    "reducer": [
+                        "count"
+                    ],
+                    "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "timestamp"
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "frser-sqlite-datasource",
+                        "uid": "${DS_SQLITE}"
+                    },
+                    "queryText": "SELECT c.timestamp as '时间', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT c.timestamp as '时间', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "refId": "A"
+                }
+            ],
+            "title": "📝 对话历史",
+            "type": "table"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 16
+            },
+            "id": 101,
+            "panels": [],
+            "title": "📊 AI 行为分析",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        }
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 17
+            },
+            "id": 10,
+            "options": {
+                "displayLabels": [
+                    "name",
+                    "value"
+                ],
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true,
+                    "values": [
+                        "value",
+                        "percent"
+                    ]
+                },
+                "pieType": "pie",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ai_action as action, COUNT(*) as count FROM conversations WHERE ai_action != '' GROUP BY ai_action ORDER BY count DESC LIMIT 20",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ai_action as action, COUNT(*) as count FROM conversations WHERE ai_action != '' GROUP BY ai_action ORDER BY count DESC LIMIT 20",
+                    "refId": "A"
+                }
+            ],
+            "title": "🎯 AI 动作分布",
+            "transformations": [
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "count"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 17
+            },
+            "id": 11,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "次数"
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+                    "refId": "A"
+                }
+            ],
+            "title": "🔥 热门玩家消息 Top 30",
+            "type": "table"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 25
+            },
+            "id": 102,
+            "panels": [],
+            "title": "📊 有效用户统计 (请求数>=2)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 26
+            },
+            "id": 40,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "👥 有效用户数",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 26
+            },
+            "id": 41,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as avg_minutes FROM user_sessions WHERE total_requests >= 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as avg_minutes FROM user_sessions WHERE total_requests >= 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "⏱️ 全体平均时长",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "cyan",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 26
+            },
+            "id": 47,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2) / 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2) / 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "📊 中位数时长",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 12,
+                "y": 26
+            },
+            "id": 48,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "refId": "A"
+                }
+            ],
+            "title": "✨ 真实平均时长",
+            "description": "排除开发者后的平均时长",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "purple",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 26
+            },
+            "id": 42,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(SUM((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as total_minutes FROM user_sessions WHERE total_requests >= 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(SUM((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as total_minutes FROM user_sessions WHERE total_requests >= 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "📊 总游玩时长",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "orange",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 26
+            },
+            "id": 43,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "📨 人均请求数",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "请求数"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "mode": "gradient",
+                                    "type": "gauge"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "时长(分)"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "mode": "gradient",
+                                    "type": "gauge"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 30
+            },
+            "id": 44,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": true,
+                    "fields": "",
+                    "reducer": [
+                        "count"
+                    ],
+                    "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "请求数"
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', first_seen as '首次登录', last_seen as '最后活跃', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', first_seen as '首次登录', last_seen as '最后活跃', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "refId": "A"
+                }
+            ],
+            "title": "📋 有效用户明细 (请求数>=2)",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "用户数",
+                        "axisPlacement": "auto",
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineWidth": 1,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 40
+            },
+            "id": 45,
+            "options": {
+                "barRadius": 0.1,
+                "barWidth": 0.6,
+                "groupWidth": 0.7,
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "horizontal",
+                "showValue": "always",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 5 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 30 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 60 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 120 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 300 ORDER BY sort_order",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 5 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 30 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 60 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 120 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 300 ORDER BY sort_order",
+                    "refId": "A"
+                }
+            ],
+            "title": "⏱️ 游玩时长分布",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "sort_order": true
+                        },
+                        "renameByName": {
+                            "range_label": "时长区间",
+                            "count": "用户数"
+                        }
+                    }
+                }
+            ],
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        }
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 40
+            },
+            "id": 46,
+            "options": {
+                "displayLabels": [
+                    "name",
+                    "percent"
+                ],
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true,
+                    "values": [
+                        "value",
+                        "percent"
+                    ]
+                },
+                "pieType": "donut",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 GROUP BY country ORDER BY count DESC",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 GROUP BY country ORDER BY count DESC",
+                    "refId": "A"
+                }
+            ],
+            "title": "🌏 有效用户地区分布",
+            "transformations": [
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "count"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "type": "piechart"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 48
+            },
+            "id": 103,
+            "panels": [],
+            "title": "👥 全部用户会话统计",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "total_requests"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "总请求"
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "mode": "gradient",
+                                    "type": "gauge"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 26
+            },
+            "id": 20,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": true,
+                    "fields": "",
+                    "reducer": [
+                        "count"
+                    ],
+                    "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "总请求"
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', first_seen as '首次登录', last_seen as '最后活跃', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', first_seen as '首次登录', last_seen as '最后活跃', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
+                    "refId": "A"
+                }
+            ],
+            "title": "📋 用户会话列表",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 36
+            },
+            "id": 21,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": true,
+                    "fields": "",
+                    "reducer": [
+                        "count"
+                    ],
+                    "show": true
+                },
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "queryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.timestamp as '时间', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.timestamp as '时间', c.user_query as '最后消息', c.ai_response as 'AI回复' FROM conversations c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE s.total_requests = 1 ORDER BY c.timestamp DESC LIMIT 100",
+                    "refId": "A"
+                }
+            ],
+            "title": "⚠️ 流失用户分析 (仅1次请求)",
+            "type": "table"
+        }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": [
+        "llm",
+        "conversations",
+        "analytics"
+    ],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "SQLite",
+                    "value": "SQLite"
+                },
+                "hide": 0,
+                "includeAll": false,
+                "label": "SQLite Datasource",
+                "multi": false,
+                "name": "DS_SQLITE",
+                "options": [],
+                "query": "frser-sqlite-datasource",
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "type": "datasource"
+            },
+            {
+                "current": {
+                    "selected": false,
+                    "text": "",
+                    "value": ""
+                },
+                "hide": 0,
+                "label": "用户ID筛选",
+                "name": "user_filter",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "",
+                        "value": ""
+                    }
+                ],
+                "query": "",
+                "skipUrlSync": false,
+                "type": "textbox"
+            },
+            {
+                "current": {
+                    "selected": false,
+                    "text": "false",
+                    "value": "false"
+                },
+                "hide": 0,
+                "label": "显示所有记录",
+                "name": "show_all",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "false",
+                        "value": "false"
+                    },
+                    {
+                        "selected": false,
+                        "text": "true",
+                        "value": "true"
+                    }
+                ],
+                "query": "false,true",
+                "skipUrlSync": false,
+                "type": "custom"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "🗣️ 对话历史与用户分析",
+    "uid": "llm-conversations",
+    "version": 1,
+    "weekStart": ""
+}
