@@ -242,6 +242,50 @@ async def login(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/logoff")
+@app.post("/v1/logoff")
+async def logoff(request: Request):
+    """记录退出事件（不转发上游）"""
+    try:
+        raw_body = await request.body()
+        user_id = request.headers.get("x-user-id")
+
+        user_folder = user_id if user_id else "anonymous"
+        user_dir = OUTPUT_DIR / user_folder
+        user_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        timestamp_iso = datetime.now().isoformat()
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"{timestamp}-{unique_id}.jsonl"
+        filepath = user_dir / filename
+
+        asyncio.create_task(save_request_to_file(
+            request_body=raw_body,
+            path=str(request.url.path),
+            method=request.method,
+            headers=dict(request.headers),
+            user_id=user_id,
+            filepath=filepath,
+            timestamp_iso=timestamp_iso,
+        ))
+
+        start_time = datetime.now()
+        response_json = {"status": "ok"}
+        duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+        asyncio.create_task(save_response_to_file(
+            response_json=response_json,
+            response_status=200,
+            duration_ms=duration_ms,
+            user_id=user_id,
+            filepath=filepath,
+            timestamp_iso=timestamp_iso,
+        ))
+
+        return JSONResponse(content=response_json, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/v1/chat/completions")
 @app.post("/chat/completions")
 async def chat_completions(request: Request):

@@ -287,10 +287,35 @@ class MetricsState:
         except:
             pass
         
+        # 添加message_type列到conversations (如果不存在) - 区分 login/chat/logoff
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN message_type TEXT DEFAULT "chat"')
+        except:
+            pass  # 列已存在
+        
+        # 添加session_id列 - 精确的 session 追踪
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN session_id TEXT')
+        except:
+            pass
+        
+        # 添加client_version列 - 客户端版本
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN client_version TEXT')
+        except:
+            pass
+        
+        # 添加session_duration_sec列 - logoff 时的精确 session 时长
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN session_duration_sec REAL')
+        except:
+            pass
+        
         # 创建索引
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_time ON conversations(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_country ON conversations(country)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_session ON conversations(session_id)')
         
         conn.commit()
         conn.close()
@@ -390,8 +415,9 @@ class MetricsState:
             cursor.execute('''
                 INSERT OR IGNORE INTO conversations 
                 (timestamp, user_id, country, user_query, ai_response, ai_action, 
-                 duration_ms, prompt_tokens, completion_tokens, cached_tokens, file_path)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 duration_ms, prompt_tokens, completion_tokens, cached_tokens, file_path, 
+                 message_type, session_id, client_version, session_duration_sec)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 record.get("timestamp"),
                 record.get("user_id"),
@@ -403,7 +429,11 @@ class MetricsState:
                 record.get("prompt_tokens", 0),
                 record.get("completion_tokens", 0),
                 record.get("cached_tokens", 0),
-                record.get("file_path")
+                record.get("file_path"),
+                record.get("message_type", "chat"),
+                record.get("session_id"),
+                record.get("client_version"),
+                record.get("session_duration_sec")
             ))
             
             # 检查是否为预设对话并更新
@@ -446,20 +476,117 @@ class MetricsState:
             logger.warning(f"Failed to save conversation: {e}")
     
     def recalculate_user_sessions(self):
-        """基于5分钟间隔规则重新计算所有用户的游玩时长和会话数"""
+        """
+        计算用户的游玩时长和会话数（3级优先级）:
+        1. 优先使用 logoff 的 session_duration_sec (最精确)
+        2. 其次使用 session_id 分组计算
+        3. 对历史数据使用 5 分钟间隔规则 (fallback)
+        """
         try:
             conn = sqlite3.connect(self._db_file())
             cursor = conn.cursor()
             
-            # 使用窗口函数计算每个用户的会话数和实际游玩时长
+            # 方法1: 使用 logoff 的 session_duration_sec (最精确)
+            # 按 session_id 聚合 logoff 的时长
             cursor.execute('''
-                WITH ordered_requests AS (
+                SELECT 
+                    user_id,
+                    COUNT(DISTINCT session_id) as session_count,
+                    CAST(SUM(session_duration_sec) AS INTEGER) as total_play_seconds
+                FROM conversations
+                WHERE message_type = 'logoff' 
+                  AND session_duration_sec IS NOT NULL 
+                  AND session_id IS NOT NULL
+                  AND user_id IS NOT NULL AND user_id != ''
+                GROUP BY user_id
+            ''')
+            
+            logoff_users = {}
+            for user_id, session_count, play_seconds in cursor.fetchall():
+                logoff_users[user_id] = (session_count, play_seconds or 0)
+            
+            # 方法2: 使用 session_id 分组 (只计算有 session_id 但无 logoff 的用户)
+            cursor.execute('''
+                WITH users_with_logoff AS (
+                    SELECT DISTINCT user_id FROM conversations 
+                    WHERE message_type = 'logoff' AND session_duration_sec IS NOT NULL
+                ),
+                session_stats AS (
+                    SELECT 
+                        user_id,
+                        session_id,
+                        MIN(timestamp) as session_start,
+                        MAX(timestamp) as session_end
+                    FROM conversations
+                    WHERE session_id IS NOT NULL 
+                      AND user_id IS NOT NULL AND user_id != ''
+                      AND user_id NOT IN (SELECT user_id FROM users_with_logoff)
+                    GROUP BY user_id, session_id
+                )
+                SELECT 
+                    user_id,
+                    COUNT(DISTINCT session_id) as total_sessions,
+                    CAST(SUM((julianday(session_end) - julianday(session_start)) * 86400) AS INTEGER) as total_play_seconds
+                FROM session_stats
+                GROUP BY user_id
+            ''')
+            
+            session_id_users = {}
+            for user_id, session_count, play_seconds in cursor.fetchall():
+                session_id_users[user_id] = (session_count, play_seconds or 0)
+            
+            # 方法3: 使用 login 事件作为 session 边界 (无 session_id 的用户)
+            cursor.execute('''
+                WITH users_with_session_id AS (
+                    SELECT DISTINCT user_id FROM conversations WHERE session_id IS NOT NULL
+                ),
+                session_boundaries AS (
                     SELECT 
                         user_id,
                         timestamp,
-                        LAG(timestamp) OVER (PARTITION BY user_id ORDER BY timestamp) as prev_timestamp
+                        message_type,
+                        SUM(CASE WHEN message_type = 'login' THEN 1 ELSE 0 END) 
+                            OVER (PARTITION BY user_id ORDER BY timestamp) as inferred_session_id
                     FROM conversations
                     WHERE user_id IS NOT NULL AND user_id != ''
+                      AND user_id NOT IN (SELECT user_id FROM users_with_session_id)
+                ),
+                session_stats AS (
+                    SELECT 
+                        user_id,
+                        inferred_session_id,
+                        MIN(timestamp) as session_start,
+                        MAX(timestamp) as session_end
+                    FROM session_boundaries
+                    WHERE inferred_session_id > 0
+                    GROUP BY user_id, inferred_session_id
+                )
+                SELECT 
+                    user_id,
+                    COUNT(DISTINCT inferred_session_id) as total_sessions,
+                    CAST(SUM((julianday(session_end) - julianday(session_start)) * 86400) AS INTEGER) as total_play_seconds
+                FROM session_stats
+                GROUP BY user_id
+            ''')
+            
+            login_users = {}
+            for user_id, session_count, play_seconds in cursor.fetchall():
+                login_users[user_id] = (session_count, play_seconds or 0)
+            
+            # 方法4: 5分钟间隔规则 (历史数据 fallback)
+            cursor.execute('''
+                WITH users_with_session AS (
+                    SELECT DISTINCT user_id FROM conversations 
+                    WHERE session_id IS NOT NULL OR message_type = 'login'
+                ),
+                ordered_requests AS (
+                    SELECT 
+                        c.user_id,
+                        c.timestamp,
+                        LAG(c.timestamp) OVER (PARTITION BY c.user_id ORDER BY c.timestamp) as prev_timestamp
+                    FROM conversations c
+                    WHERE c.user_id IS NOT NULL AND c.user_id != ''
+                      AND c.user_id NOT IN (SELECT user_id FROM users_with_session)
                 ),
                 time_diffs AS (
                     SELECT 
@@ -483,10 +610,14 @@ class MetricsState:
                 GROUP BY user_id
             ''')
             
-            results = cursor.fetchall()
+            fallback_users = {}
+            for user_id, session_count, play_seconds in cursor.fetchall():
+                fallback_users[user_id] = (session_count, play_seconds or 0)
             
-            # 批量更新 user_sessions 表
-            for user_id, session_count, play_seconds in results:
+            # 合并结果 (优先级: logoff > session_id > login > fallback)
+            all_results = {**fallback_users, **login_users, **session_id_users, **logoff_users}
+            
+            for user_id, (session_count, play_seconds) in all_results.items():
                 cursor.execute('''
                     UPDATE user_sessions 
                     SET session_count = ?, total_play_seconds = ?
@@ -495,7 +626,7 @@ class MetricsState:
             
             conn.commit()
             conn.close()
-            logger.debug(f"Recalculated sessions for {len(results)} users")
+            logger.debug(f"Recalculated sessions: {len(logoff_users)} logoff, {len(session_id_users)} session_id, {len(login_users)} login, {len(fallback_users)} fallback")
         except Exception as e:
             logger.warning(f"Failed to recalculate user sessions: {e}")
     
@@ -738,51 +869,90 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
         if request_data.get("type") != "request" or response_data.get("type") != "response":
             return
         
-        # 提取信息
+        # 提取基本信息
         user_id = request_data.get("user_id", "anonymous")
         timestamp = request_data.get("timestamp", "")
         headers = request_data.get("headers", {})
-        body = request_data.get("body", {})
+        path = request_data.get("path", "")
         
         country = headers.get("cf-ipcountry", "unknown")
+        
+        # 提取 session_id 和 client_version (从 header 或 body)
+        session_id = headers.get("x-session-id") or headers.get("X-Session-ID")
+        client_version = headers.get("x-client-version") or headers.get("X-Client-Version")
         
         body = request_data.get("body") or {}
         if not isinstance(body, dict):
             body = {}
-            
-        model = body.get("model", "unknown")
-        content_length_in = int(headers.get("content-length", 0))
+        
+        # 从 body 补充 session_id 和 client_version（如果 header 没有）
+        if not session_id:
+            session_id = body.get("session_id")
+        if not client_version:
+            client_version = body.get("client_version")
+        
+        # 检测消息类型: login / logoff / chat
+        if path == "/login" or path == "/v1/login":
+            message_type = "login"
+        elif path == "/logoff" or path == "/v1/logoff":
+            message_type = "logoff"
+        else:
+            message_type = "chat"
         
         duration_ms = response_data.get("duration_ms", 0)
         status_code = response_data.get("status_code", 0)
         usage = response_data.get("usage") or {}
         response_body = response_data.get("body") or {}
         
-        prompt_tokens = usage.get("prompt_tokens", 0)
-        completion_tokens = usage.get("completion_tokens", 0)
-        cached_tokens = usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
+        # 系统消息 (login/logoff) 特殊处理
+        session_duration_sec = None
+        if message_type in ("login", "logoff"):
+            username = body.get("username") or "anonymous"
+            user_query = f"[{message_type.upper()}] {username}"
+            ai_response = ""
+            ai_action = message_type
+            player_name = username if username != "anonymous" else ""
+            prompt_tokens = 0
+            completion_tokens = 0
+            cached_tokens = 0
+            model = "system"
+            content_length_in = int(headers.get("content-length", 0))
+            content_length_out = len(json.dumps(response_body))
+            
+            # logoff 特有: session_duration_sec
+            if message_type == "logoff":
+                session_duration_sec = body.get("session_duration_sec")
+        else:
+            # 正常对话处理
+            model = body.get("model", "unknown")
+            content_length_in = int(headers.get("content-length", 0))
+            
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+            cached_tokens = usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
+            
+            # 估算响应大小
+            content_length_out = len(json.dumps(response_body))
+            
+            # 提取对话内容
+            user_query = extract_user_query(body)
+            ai_response, ai_action = extract_ai_response(response_body)
+            player_name = extract_player_name(body)
         
-        # 估算响应大小
-        content_length_out = len(json.dumps(response_body))
-        
-        # 提取对话内容
-        user_query = extract_user_query(body)
-        ai_response, ai_action = extract_ai_response(response_body)
-        player_name = extract_player_name(body)
-        
-        # 更新Prometheus指标
+        # 更新Prometheus指标 (只对 chat 消息统计 tokens)
         status_str = str(status_code)
         requests_total.labels(
             user_id=user_id, country=country, model=model, status=status_str
         ).inc()
         
-        request_duration.labels(
-            user_id=user_id, country=country, model=model
-        ).observe(duration_ms / 1000)  # 转换为秒
-        
-        prompt_tokens_total.labels(user_id=user_id, model=model).inc(prompt_tokens)
-        completion_tokens_total.labels(user_id=user_id, model=model).inc(completion_tokens)
-        cached_tokens_total.labels(user_id=user_id, model=model).inc(cached_tokens)
+        if message_type == "chat":
+            request_duration.labels(
+                user_id=user_id, country=country, model=model
+            ).observe(duration_ms / 1000)  # 转换为秒
+            
+            prompt_tokens_total.labels(user_id=user_id, model=model).inc(prompt_tokens)
+            completion_tokens_total.labels(user_id=user_id, model=model).inc(completion_tokens)
+            cached_tokens_total.labels(user_id=user_id, model=model).inc(cached_tokens)
         
         bandwidth_bytes.labels(user_id=user_id, direction="in").inc(content_length_in)
         bandwidth_bytes.labels(user_id=user_id, direction="out").inc(content_length_out)
@@ -790,21 +960,22 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
         # 更新状态
         state.update_user_activity(user_id, timestamp, country)
         
-        # 增加总费用
-        real_prompt_tokens = max(0, prompt_tokens - cached_tokens)
-        request_cost = (
-            (real_prompt_tokens * PRICE_PROMPT / 1_000_000) +
-            (completion_tokens * PRICE_COMPLETION / 1_000_000) +
-            (cached_tokens * PRICE_CACHED / 1_000_000)
-        )
-        total_cost_usd.inc(request_cost)
-        
-        # 增加全局统计
-        total_requests_global.inc()
-        total_tokens_global.inc(prompt_tokens + completion_tokens)
-        total_prompt_tokens_global.inc(prompt_tokens)
-        total_completion_tokens_global.inc(completion_tokens)
-        total_cached_tokens_global.inc(cached_tokens)
+        # 增加总费用 (只对 chat 消息)
+        if message_type == "chat":
+            real_prompt_tokens = max(0, prompt_tokens - cached_tokens)
+            request_cost = (
+                (real_prompt_tokens * PRICE_PROMPT / 1_000_000) +
+                (completion_tokens * PRICE_COMPLETION / 1_000_000) +
+                (cached_tokens * PRICE_CACHED / 1_000_000)
+            )
+            total_cost_usd.inc(request_cost)
+            
+            # 增加全局统计
+            total_requests_global.inc()
+            total_tokens_global.inc(prompt_tokens + completion_tokens)
+            total_prompt_tokens_global.inc(prompt_tokens)
+            total_completion_tokens_global.inc(completion_tokens)
+            total_cached_tokens_global.inc(cached_tokens)
         
         # 保存对话到SQLite
         state.save_conversation({
@@ -819,10 +990,14 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             "completion_tokens": completion_tokens,
             "cached_tokens": cached_tokens,
             "file_path": str(filepath),
-            "player_name": player_name
+            "player_name": player_name,
+            "message_type": message_type,
+            "session_id": session_id,
+            "client_version": client_version,
+            "session_duration_sec": session_duration_sec
         })
         
-        logger.debug(f"Processed: {filepath.name} | user={user_id} | country={country}")
+        logger.debug(f"Processed: {filepath.name} | user={user_id} | type={message_type} | session={session_id}")
         
     except Exception as e:
         logger.warning(f"Failed to parse {filepath}: {e}")
