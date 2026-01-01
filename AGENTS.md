@@ -123,3 +123,35 @@ sudo docker compose -f docker-compose.monitoring.yml logs -f service-name
 # 查看服务状态
 sudo docker compose -f docker-compose.monitoring.yml ps
 ```
+
+## Analytics 开发规范
+
+### ✅ 所有分析功能在 Grafana 开发
+
+**Grafana 是数据分析的首选平台**。以下功能应在 Grafana Dashboard 中实现：
+
+- **DAU / 留存率** - 使用 SQLite 数据源直接查询
+- **用户分布 / 深度分析** - 饼图、柱状图
+- **热门词汇 / Word Cloud** - 表格或柱状图展示 Top N
+- **用户行为统计** - 时段分布、活跃度等
+
+### ❌ Developer Admin 不做数据分析
+
+`developer_admin.py` 只做 **Grafana 无法实现的功能**：
+
+- **用户管理操作** - 设置开发者、拉黑用户、设置昵称
+- **预设对话管理** - 添加/删除预设短语（需要写操作）
+- **其他写操作** - 任何需要修改数据库的管理功能
+
+### 开发流程
+
+1. **新增分析需求** → 在 `grafana/provisioning/dashboards/*.json` 添加 Panel
+2. **新增管理功能** → 在 `developer_admin.py` 添加 action handler
+3. **重启服务**:
+   ```bash
+   # Grafana Dashboard 更新
+   sudo docker compose -f docker-compose.monitoring.yml restart grafana
+   
+   # Admin 功能更新
+   sudo docker compose -f docker-compose.monitoring.yml up -d --build developer-admin
+   ```

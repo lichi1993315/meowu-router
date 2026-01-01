@@ -5,7 +5,8 @@ WORKDIR /app
 # 安装依赖
 RUN pip install --no-cache-dir \
     prometheus-client \
-    aiofiles
+    aiofiles \
+    jieba
 
 # 复制代码
 COPY metrics_exporter.py .

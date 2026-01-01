@@ -1,0 +1,14 @@
+feat: Update metrics exporter with global stats and corrected pricing logic
+
+主要变更：
+- metrics_exporter.py
+  - 引入全局持久化指标 (total_tokens_global 等)，替代每日重置逻辑
+  - 修正费用计算逻辑：扣除 Cached Token 避免重复计费
+  - 更新默认定价常数为 Gemini 1.5 Pro 标准
+- docker-compose.monitoring.yml
+  - 更新定价环境变量
+- Grafana Dashboards
+  - 更新图表以使用新的全局指标
+  - llm-router.json: 添加 "Cached Token" 统计面板
+- developer_admin.py
+  - 用户列表添加 "首次/最后一次" 活跃时间显示

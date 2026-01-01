@@ -11,6 +11,7 @@ import uuid
 import httpx
 import asyncio
 import aiofiles
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -140,6 +141,41 @@ PORT = int(os.getenv("PORT", "8000"))
 # 全局 HTTP 客户端
 http_client: httpx.AsyncClient = None
 
+# 黑名单管理
+DB_PATH = os.getenv("DB_PATH", "/app/data/conversations.db")
+blacklist_users: set = set()
+
+def fetch_blacklist_from_db() -> set:
+    """从数据库读取黑名单用户ID"""
+    try:
+        if not os.path.exists(DB_PATH):
+            return set()
+            
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT user_id FROM user_sessions WHERE is_blacklisted = 1")
+        users = {row[0] for row in c.fetchall() if row[0]}
+        conn.close()
+        return users
+    except Exception as e:
+        print(f"[WARNING] Failed to fetch blacklist: {e}")
+        return set()
+
+async def sync_blacklist_loop():
+    """后台任务：定期同步黑名单"""
+    global blacklist_users
+    print("🛡️ 黑名单同步服务启动")
+    while True:
+        try:
+            new_blacklist = await asyncio.to_thread(fetch_blacklist_from_db)
+            if new_blacklist != blacklist_users:
+                print(f"🛡️ 黑名单更新: {len(new_blacklist)} users")
+                blacklist_users = new_blacklist
+        except Exception as e:
+            print(f"[ERROR] Blacklist sync error: {e}")
+        
+        await asyncio.sleep(60)  # 每60秒同步一次
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -149,7 +185,13 @@ async def lifespan(app: FastAPI):
         timeout=httpx.Timeout(120.0, connect=10.0),
         limits=httpx.Limits(max_connections=200, max_keepalive_connections=100),
     )
+    
+    # 启动黑名单同步
+    sync_task = asyncio.create_task(sync_blacklist_loop())
+    
     yield
+    
+    sync_task.cancel()
     await http_client.aclose()
 
 
@@ -212,8 +254,13 @@ async def chat_completions(request: Request):
         # 读取请求体
         raw_body = await request.body()
         
-        # 提取用户ID（来自X-User-ID header）
-        user_id = request.headers.get("x-user-id")
+        # 提取用户ID（来自X-User-ID header），没有则使用匿名
+        user_id = request.headers.get("x-user-id") or "anonymous_user"
+        
+        # 🛡️ 检查黑名单
+        if user_id and user_id in blacklist_users:
+            print(f"🚫 Blocked blacklisted user: {user_id}")
+            raise HTTPException(status_code=403, detail="Access denied")
         
         # 检查是否为加密请求
         is_encrypted = request.headers.get("x-encrypted", "").lower() == "true"

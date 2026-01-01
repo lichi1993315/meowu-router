@@ -13,5 +13,6 @@ fi
 
 # Start router.py
 echo "Starting router.py..."
+export DB_PATH="$(pwd)/data/conversations.db"
 nohup python -u router.py > output.log 2>&1 &
 echo "router.py started with PID $!"

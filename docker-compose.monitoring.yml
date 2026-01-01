@@ -68,7 +68,7 @@ services:
     environment:
       - ADMIN_PORT=9095
       - DB_PATH=/app/data/conversations.db
-    command: [ "python", "developer_admin.py" ]
+    command: [ "python", "-u", "developer_admin.py" ]
     restart: unless-stopped
 
 volumes:

@@ -17,6 +17,7 @@ import json
 import time
 import sqlite3
 import logging
+import jieba
 from pathlib import Path
 from datetime import datetime, timedelta
 from threading import Thread, Lock
@@ -163,6 +164,7 @@ class MetricsState:
         self.processed_files: set = set()
         self.user_activity: dict = {}  # user_id -> {"first_seen", "last_seen", "country", "requests"}
         self.recent_activity: dict = {}  # user_id -> last_activity_timestamp
+        self.preset_phrases: set = set() # loaded from db
         self.lock = Lock()
         
         # 今日token统计
@@ -173,6 +175,7 @@ class MetricsState:
         
         self._load_state()
         self._init_db()
+        self._load_presets()
     
     def _state_file(self) -> Path:
         return self.data_dir / "exporter_state.json"
@@ -263,6 +266,26 @@ class MetricsState:
             cursor.execute('ALTER TABLE user_sessions ADD COLUMN nickname TEXT')
         except:
             pass  # 列已存在
+
+        # 添加is_blacklisted列（如果不存在）
+        try:
+            cursor.execute('ALTER TABLE user_sessions ADD COLUMN is_blacklisted INTEGER DEFAULT 0')
+        except:
+            pass  # 列已存在
+            
+        # 预设对话表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS preset_phrases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phrase TEXT UNIQUE
+            )
+        ''')
+        
+        # 添加is_preset列到conversations (如果不存在)
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN is_preset INTEGER DEFAULT 0')
+        except:
+            pass
         
         # 创建索引
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)')
@@ -300,6 +323,48 @@ class MetricsState:
             self.user_activity[user_id]["requests"] += 1
             if country:
                 self.user_activity[user_id]["country"] = country
+
+    def _load_presets(self):
+        """加载预设对话到内存"""
+        try:
+            conn = sqlite3.connect(self._db_file())
+            c = conn.cursor()
+            c.execute("SELECT phrase FROM preset_phrases")
+            self.preset_phrases = {row[0] for row in c.fetchall()}
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Failed to load presets: {e}")
+
+    def add_preset(self, phrase: str):
+        """添加预设对话"""
+        if not phrase: return
+        try:
+            conn = sqlite3.connect(self._db_file())
+            c = conn.cursor()
+            c.execute("INSERT OR IGNORE INTO preset_phrases (phrase) VALUES (?)", (phrase,))
+            conn.commit()
+            conn.close()
+            with self.lock:
+                self.preset_phrases.add(phrase)
+        except Exception as e:
+            logger.error(f"Failed to add preset: {e}")
+
+    def remove_preset(self, phrase: str):
+        """移除预设对话"""
+        try:
+            conn = sqlite3.connect(self._db_file())
+            c = conn.cursor()
+            c.execute("DELETE FROM preset_phrases WHERE phrase = ?", (phrase,))
+            conn.commit()
+            conn.close()
+            with self.lock:
+                if phrase in self.preset_phrases:
+                    self.preset_phrases.remove(phrase)
+        except Exception as e:
+            logger.error(f"Failed to remove preset: {e}")
+    
+    def get_presets(self) -> list:
+        return list(self.preset_phrases)
     
 
     
@@ -340,6 +405,15 @@ class MetricsState:
                 record.get("cached_tokens", 0),
                 record.get("file_path")
             ))
+            
+            # 检查是否为预设对话并更新
+            user_query = record.get("user_query", "")
+            is_preset = 1 if user_query in self.preset_phrases else 0
+            if is_preset:
+                cursor.execute(
+                    "UPDATE conversations SET is_preset = 1 WHERE file_path = ?", 
+                    (record.get("file_path"),)
+                )
             
             # 更新用户会话 - 只在新时间戳更新时才更新last_seen
             cursor.execute('''
@@ -482,6 +556,100 @@ class MetricsState:
         except Exception as e:
             logger.warning(f"Failed to update user gauges: {e}")
 
+    def get_deep_analytics(self) -> dict:
+        """获取深度分析数据 (User Distribution, Median, Whales)"""
+        try:
+            conn = sqlite3.connect(self._db_file())
+            c = conn.cursor()
+            
+            # 1. 真实对话统计 (排除 is_preset=1) - 这里我们统计每个用户的真实请求数
+            # 注意：我们在 conversations 表里标记了 is_preset，但在 user_sessions 里只有 total_requests (包含所有)。
+            # 所以我们需要从 conversations 表聚合。
+            
+            c.execute('''
+                SELECT user_id, COUNT(*) as real_reqs
+                FROM conversations
+                WHERE is_preset = 0 AND user_id != 'anonymous'
+                GROUP BY user_id
+                HAVING real_reqs > 0
+            ''')
+            rows = c.fetchall()
+            
+            req_counts = [r[1] for r in rows]
+            total_users = len(req_counts)
+            
+            if total_users == 0:
+                stats = {
+                    "avg": 0, "median": 0, 
+                    "distribution": {"1": 0, "2-5": 0, "6-20": 0, "21-100": 0, "100+": 0},
+                    "whales": {"top_10_percent_vol": 0, "total_vol": 0}
+                }
+            else:
+                req_counts.sort()
+                total_vol = sum(req_counts)
+                avg_reqs = round(total_vol / total_users, 1)
+                median_reqs = req_counts[total_users // 2]
+                
+                # Distribution
+                dist = {"1": 0, "2-5": 0, "6-20": 0, "21-100": 0, "100+": 0}
+                for count in req_counts:
+                    if count == 1: dist["1"] += 1
+                    elif 2 <= count <= 5: dist["2-5"] += 1
+                    elif 6 <= count <= 20: dist["6-20"] += 1
+                    elif 21 <= count <= 100: dist["21-100"] += 1
+                    else: dist["100+"] += 1
+                
+                # Whales (Top 10%)
+                top_10_count = max(1, int(total_users * 0.1))
+                top_10_vol = sum(req_counts[-top_10_count:])
+                top_10_percent = round((top_10_vol / total_vol) * 100, 1) if total_vol > 0 else 0
+                
+                stats = {
+                    "avg": avg_reqs, 
+                    "median": median_reqs, 
+                    "distribution": dist,
+                    "whales": {
+                        "top_10_percent_vol": top_10_percent, 
+                        "total_vol": total_vol
+                    }
+                }
+            
+            conn.close()
+            return stats
+        except Exception as e:
+            logger.error(f"Analytics error: {e}")
+            return {}
+
+    def get_wordcloud_data(self) -> list:
+        """生成词云数据"""
+        try:
+            conn = sqlite3.connect(self._db_file())
+            c = conn.cursor()
+            
+            # 获取所有非预设的真实用户查询
+            c.execute("SELECT user_query FROM conversations WHERE is_preset = 0 AND user_query != ''")
+            queries = [row[0] for row in c.fetchall()]
+            conn.close()
+            
+            text = "\n".join(queries)
+            # 停用词
+            stop_words = {'的', '了', '我', '是', '你', '在', '吗', '这', '那', '有', '个', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '去', '与', '会', '对', '但', '能', '而', '之', '用', '于', '着', '等', '及', '下', '以', '帮', '我', '把', '它', '什么', '可以', '如何', '怎么'}
+            
+            words = jieba.cut(text)
+            counts = defaultdict(int)
+            
+            for word in words:
+                if len(word) > 1 and word not in stop_words:
+                    counts[word] += 1
+            
+            # Top 100
+            sorted_words = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:100]
+            return [{"word": w, "count": c} for w, c in sorted_words]
+            
+        except Exception as e:
+            logger.error(f"Wordcloud error: {e}")
+            return []
+
 
 # ============ 日志解析 ============
 
@@ -577,13 +745,18 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
         body = request_data.get("body", {})
         
         country = headers.get("cf-ipcountry", "unknown")
+        
+        body = request_data.get("body") or {}
+        if not isinstance(body, dict):
+            body = {}
+            
         model = body.get("model", "unknown")
         content_length_in = int(headers.get("content-length", 0))
         
         duration_ms = response_data.get("duration_ms", 0)
         status_code = response_data.get("status_code", 0)
-        usage = response_data.get("usage", {})
-        response_body = response_data.get("body", {})
+        usage = response_data.get("usage") or {}
+        response_body = response_data.get("body") or {}
         
         prompt_tokens = usage.get("prompt_tokens", 0)
         completion_tokens = usage.get("completion_tokens", 0)
