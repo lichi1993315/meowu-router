@@ -28,6 +28,7 @@ from encrypted_saver import decrypt_string_only
 
 # 请求记录输出目录
 OUTPUT_DIR = Path(__file__).parent / "output"
+ERROR_LOG_DIR = OUTPUT_DIR / "error_logs"
 
 
 # 敏感请求头（不保存到文件）
@@ -125,6 +126,39 @@ async def save_response_to_file(
             await f.write(json.dumps(response_record, ensure_ascii=False) + "\n")
     except Exception as e:
         print(f"[WARNING] Failed to save response log: {e}")
+
+
+async def save_error_log_to_file(
+    request_body: bytes,
+    headers: dict,
+    user_id: str | None,
+    filepath: Path,
+    timestamp_iso: str,
+):
+    """异步保存错误日志到JSONL文件"""
+    try:
+        try:
+            request_json = json.loads(request_body) if request_body else None
+        except json.JSONDecodeError:
+            request_json = request_body.decode("utf-8", errors="replace")
+
+        safe_headers = {
+            k: v for k, v in headers.items()
+            if k.lower() not in SENSITIVE_HEADERS
+        }
+
+        error_record = {
+            "type": "error_log",
+            "timestamp": timestamp_iso,
+            "user_id": user_id,
+            "headers": safe_headers,
+            "body": request_json,
+        }
+
+        async with aiofiles.open(filepath, "a", encoding="utf-8") as f:
+            await f.write(json.dumps(error_record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[WARNING] Failed to save error log: {e}")
 
 # 加载 .env 文件
 load_dotenv()
@@ -282,6 +316,34 @@ async def logoff(request: Request):
         ))
 
         return JSONResponse(content=response_json, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/error_log")
+@app.post("/v1/error_log")
+async def upload_error_log(request: Request):
+    """接收客户端错误日志（不转发上游）"""
+    try:
+        raw_body = await request.body()
+        user_id = request.headers.get("x-user-id")
+
+        ERROR_LOG_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        timestamp_iso = datetime.now().isoformat()
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"{timestamp}-{unique_id}.jsonl"
+        filepath = ERROR_LOG_DIR / filename
+
+        asyncio.create_task(save_error_log_to_file(
+            request_body=raw_body,
+            headers=dict(request.headers),
+            user_id=user_id,
+            filepath=filepath,
+            timestamp_iso=timestamp_iso,
+        ))
+
+        return JSONResponse(content={"status": "ok"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
