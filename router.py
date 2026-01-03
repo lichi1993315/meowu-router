@@ -381,6 +381,74 @@ async def health():
     return {"status": "ok"}
 
 
+def get_leaderboard_data(user_id: str | None = None) -> dict:
+    """获取排行榜数据
+    
+    Args:
+        user_id: 当前用户ID，用于计算其排名
+    
+    Returns:
+        包含 entries 列表和 rank 的字典
+    """
+    try:
+        if not os.path.exists(DB_PATH):
+            return {"entries": [], "rank": None}
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # 获取前10名玩家（排除开发者和黑名单）
+        c.execute('''
+            SELECT 
+                COALESCE(nickname, player_name, 'anonymous') as name,
+                money
+            FROM user_sessions 
+            WHERE (is_developer = 0 OR is_developer IS NULL)
+              AND (is_blacklisted = 0 OR is_blacklisted IS NULL)
+              AND user_id != 'anonymous_user'
+              AND user_id != ''
+            ORDER BY money DESC
+            LIMIT 10
+        ''')
+        
+        top_10 = [{"name": row[0], "money": row[1] or 0} for row in c.fetchall()]
+        
+        # 计算当前用户的排名
+        user_rank = None
+        if user_id and user_id not in ('anonymous_user', ''):
+            c.execute('''
+                WITH ranked AS (
+                    SELECT 
+                        user_id,
+                        ROW_NUMBER() OVER (ORDER BY money DESC) as rank
+                    FROM user_sessions
+                    WHERE (is_developer = 0 OR is_developer IS NULL)
+                      AND (is_blacklisted = 0 OR is_blacklisted IS NULL)
+                      AND user_id != 'anonymous_user'
+                      AND user_id != ''
+                )
+                SELECT rank FROM ranked WHERE user_id = ?
+            ''', (user_id,))
+            result = c.fetchone()
+            if result:
+                user_rank = result[0]
+        
+        conn.close()
+        return {"entries": top_10, "rank": user_rank}
+    except Exception as e:
+        print(f"[WARNING] Failed to get leaderboard: {e}")
+        return {"entries": [], "rank": None}
+
+
+@app.get("/leaderboard")
+@app.get("/v1/leaderboard")
+async def leaderboard(request: Request):
+    """获取排行榜数据"""
+    user_id = request.headers.get("x-user-id")
+    data = await asyncio.to_thread(get_leaderboard_data, user_id)
+    return JSONResponse(content=data)
+
+
 if __name__ == "__main__":
     import uvicorn
     asyncio.run(uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=PORT)).serve())

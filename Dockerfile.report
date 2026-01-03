@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends cron tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir httpx
+
+COPY send_report.py /app/send_report.py
+COPY report_entrypoint.sh /app/report_entrypoint.sh
+
+RUN mkdir -p /app/output \
+    && chmod +x /app/report_entrypoint.sh
+
+ENV REPORT_TIMEZONE=Asia/Shanghai
+
+CMD ["/app/report_entrypoint.sh"]

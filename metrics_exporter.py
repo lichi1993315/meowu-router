@@ -272,6 +272,28 @@ class MetricsState:
             cursor.execute('ALTER TABLE user_sessions ADD COLUMN is_blacklisted INTEGER DEFAULT 0')
         except:
             pass  # 列已存在
+        
+        # 添加money列（如果不存在）- 玩家金币数
+        try:
+            cursor.execute('ALTER TABLE user_sessions ADD COLUMN money INTEGER DEFAULT 0')
+        except:
+            pass  # 列已存在
+        
+        # 添加游戏进度相关列
+        game_progress_columns = [
+            ('island_level', 'INTEGER DEFAULT 1'),
+            ('tasks_completed', 'INTEGER DEFAULT 0'),
+            ('tasks_total', 'INTEGER DEFAULT 0'),
+            ('current_task_title', 'TEXT'),
+            ('current_task_status', 'TEXT'),
+            ('achievements_unlocked', 'INTEGER DEFAULT 0'),
+            ('achievements_total', 'INTEGER DEFAULT 0'),
+        ]
+        for col_name, col_type in game_progress_columns:
+            try:
+                cursor.execute(f'ALTER TABLE user_sessions ADD COLUMN {col_name} {col_type}')
+            except:
+                pass  # 列已存在
             
         # 预设对话表
         cursor.execute('''
@@ -469,6 +491,32 @@ class MetricsState:
                     SET player_name = ?
                     WHERE user_id = ? AND (last_seen = ? OR player_name IS NULL)
                 ''', (player_name, record.get("user_id"), record.get("timestamp")))
+            
+            # 更新money（如果是logoff且有total_money）
+            total_money = record.get("total_money")
+            if total_money is not None:
+                cursor.execute('''
+                    UPDATE user_sessions 
+                    SET money = ?,
+                        island_level = COALESCE(?, island_level),
+                        tasks_completed = COALESCE(?, tasks_completed),
+                        tasks_total = COALESCE(?, tasks_total),
+                        current_task_title = COALESCE(?, current_task_title),
+                        current_task_status = COALESCE(?, current_task_status),
+                        achievements_unlocked = COALESCE(?, achievements_unlocked),
+                        achievements_total = COALESCE(?, achievements_total)
+                    WHERE user_id = ?
+                ''', (
+                    total_money,
+                    record.get("island_level"),
+                    record.get("tasks_completed"),
+                    record.get("tasks_total"),
+                    record.get("current_task_title"),
+                    record.get("current_task_status"),
+                    record.get("achievements_unlocked"),
+                    record.get("achievements_total"),
+                    record.get("user_id")
+                ))
             
             conn.commit()
             conn.close()
@@ -862,11 +910,20 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
         if len(lines) < 2:
             return
         
-        # 解析request和response
-        request_data = json.loads(lines[0])
-        response_data = json.loads(lines[1])
+        # 解析两行数据
+        line1_data = json.loads(lines[0])
+        line2_data = json.loads(lines[1])
         
-        if request_data.get("type") != "request" or response_data.get("type") != "response":
+        # 根据 type 字段正确识别 request 和 response（不依赖行顺序）
+        if line1_data.get("type") == "request" and line2_data.get("type") == "response":
+            request_data = line1_data
+            response_data = line2_data
+        elif line1_data.get("type") == "response" and line2_data.get("type") == "request":
+            # 顺序颠倒的情况
+            request_data = line2_data
+            response_data = line1_data
+        else:
+            # 无法识别的格式
             return
         
         # 提取基本信息
@@ -919,9 +976,26 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             content_length_in = int(headers.get("content-length", 0))
             content_length_out = len(json.dumps(response_body))
             
-            # logoff 特有: session_duration_sec
+            # logoff 特有: session_duration_sec, total_money, 游戏进度
+            total_money = None
+            island_level = None
+            tasks_completed = None
+            tasks_total = None
+            current_task_title = None
+            current_task_status = None
+            achievements_unlocked = None
+            achievements_total = None
+            
             if message_type == "logoff":
                 session_duration_sec = body.get("session_duration_sec")
+                total_money = body.get("total_money")
+                island_level = body.get("island_level")
+                tasks_completed = body.get("tasks_completed")
+                tasks_total = body.get("tasks_total")
+                current_task_title = body.get("current_task_title")
+                current_task_status = body.get("current_task_status")
+                achievements_unlocked = body.get("achievements_unlocked")
+                achievements_total = body.get("achievements_total")
         else:
             # 正常对话处理
             model = body.get("model", "unknown")
@@ -994,7 +1068,15 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             "message_type": message_type,
             "session_id": session_id,
             "client_version": client_version,
-            "session_duration_sec": session_duration_sec
+            "session_duration_sec": session_duration_sec,
+            "total_money": total_money if message_type == "logoff" else None,
+            "island_level": island_level if message_type == "logoff" else None,
+            "tasks_completed": tasks_completed if message_type == "logoff" else None,
+            "tasks_total": tasks_total if message_type == "logoff" else None,
+            "current_task_title": current_task_title if message_type == "logoff" else None,
+            "current_task_status": current_task_status if message_type == "logoff" else None,
+            "achievements_unlocked": achievements_unlocked if message_type == "logoff" else None,
+            "achievements_total": achievements_total if message_type == "logoff" else None
         })
         
         logger.debug(f"Processed: {filepath.name} | user={user_id} | type={message_type} | session={session_id}")

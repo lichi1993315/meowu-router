@@ -19,7 +19,7 @@
             },
             "id": 100,
             "panels": [],
-            "title": "📊 概览 Overview",
+            "title": "\ud83d\udcca \u6982\u89c8 Overview",
             "type": "row"
         },
         {
@@ -86,7 +86,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "🟢 当前在线 CCU",
+            "title": "\ud83d\udfe2 \u5f53\u524d\u5728\u7ebf CCU",
             "type": "stat"
         },
         {
@@ -140,7 +140,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "👥 总用户数",
+            "title": "\ud83d\udc65 \u603b\u7528\u6237\u6570",
             "type": "stat"
         },
         {
@@ -194,7 +194,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "📨 总请求数 Total Requests",
+            "title": "\ud83d\udce8 \u603b\u8bf7\u6c42\u6570 Total Requests",
             "type": "stat"
         },
         {
@@ -256,7 +256,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "💰 总费用 Total Cost",
+            "title": "\ud83d\udcb0 \u603b\u8d39\u7528 Total Cost",
             "type": "stat"
         },
         {
@@ -318,7 +318,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "⏱️ 平均延迟",
+            "title": "\u23f1\ufe0f \u5e73\u5747\u5ef6\u8fdf",
             "type": "stat"
         },
         {
@@ -382,7 +382,366 @@
                     "refId": "A"
                 }
             ],
-            "title": "✅ 成功率",
+            "title": "\u2705 \u6210\u529f\u7387",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 0,
+                "y": 5
+            },
+            "id": 115,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "refId": "A"
+                }
+            ],
+            "title": "\ud83d\udc65 \u6709\u6548\u7528\u6237\u6570",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "cyan",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 5
+            },
+            "id": 116,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "\ud83d\udcca \u4e2d\u4f4d\u6570\u65f6\u957f",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "description": "\u6392\u9664\u5f00\u53d1\u8005\u540e\u7684\u5e73\u5747\u65f6\u957f",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 5
+            },
+            "id": 117,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "refId": "A"
+                }
+            ],
+            "title": "\u2728 \u771f\u5b9e\u5e73\u5747\u65f6\u957f",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "orange",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 12,
+                "y": 5
+            },
+            "id": 118,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "refId": "A"
+                }
+            ],
+            "title": "\ud83d\udce8 \u4eba\u5747\u8bf7\u6c42\u6570",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 16,
+                "y": 5
+            },
+            "id": 119,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryType": "table",
+                    "rawQueryText": "SELECT ROUND(AVG(real_conv), 1) as avg FROM (SELECT COUNT(*) as real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2)",
+                    "refId": "A"
+                }
+            ],
+            "title": "\ud83d\udcca \u771f\u5b9e\u5e73\u5747\u5bf9\u8bdd",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "cyan",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 20,
+                "y": 5
+            },
+            "id": 120,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryType": "table",
+                    "rawQueryText": "SELECT real_conv as median FROM (SELECT COUNT(*) as real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2 ORDER BY real_conv) LIMIT 1 OFFSET (SELECT COUNT(*) FROM (SELECT c.user_id FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING COUNT(*) >= 2)) / 2",
+                    "refId": "A"
+                }
+            ],
+            "title": "\ud83d\udcca \u771f\u5b9e\u5bf9\u8bdd\u4e2d\u4f4d\u6570",
             "type": "stat"
         },
         {
@@ -391,11 +750,11 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 5
+                "y": 9
             },
             "id": 101,
             "panels": [],
-            "title": "📈 实时趋势 Trends",
+            "title": "\ud83d\udcc8 \u5b9e\u65f6\u8d8b\u52bf Trends",
             "type": "row"
         },
         {
@@ -456,7 +815,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 6
+                "y": 10
             },
             "id": 10,
             "options": {
@@ -477,11 +836,11 @@
             "targets": [
                 {
                     "expr": "sum(rate(llm_requests_total[1m])) * 60",
-                    "legendFormat": "请求/分钟",
+                    "legendFormat": "\u8bf7\u6c42/\u5206\u949f",
                     "refId": "A"
                 }
             ],
-            "title": "📊 请求量趋势",
+            "title": "\ud83d\udcca \u8bf7\u6c42\u91cf\u8d8b\u52bf",
             "type": "timeseries"
         },
         {
@@ -542,7 +901,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 6
+                "y": 10
             },
             "id": 11,
             "options": {
@@ -577,7 +936,7 @@
                     "refId": "C"
                 }
             ],
-            "title": "⏱️ 延迟分布 (P50/P90/P99)",
+            "title": "\u23f1\ufe0f \u5ef6\u8fdf\u5206\u5e03 (P50/P90/P99)",
             "type": "timeseries"
         },
         {
@@ -684,7 +1043,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 14
+                "y": 18
             },
             "id": 12,
             "options": {
@@ -718,7 +1077,7 @@
                     "refId": "C"
                 }
             ],
-            "title": "🔢 Token 使用趋势",
+            "title": "\ud83d\udd22 Token \u4f7f\u7528\u8d8b\u52bf",
             "type": "timeseries"
         },
         {
@@ -779,7 +1138,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 14
+                "y": 18
             },
             "id": 13,
             "options": {
@@ -800,16 +1159,16 @@
             "targets": [
                 {
                     "expr": "sum(rate(llm_bandwidth_bytes_total{direction=\"in\"}[5m]))",
-                    "legendFormat": "入站 (In)",
+                    "legendFormat": "\u5165\u7ad9 (In)",
                     "refId": "A"
                 },
                 {
                     "expr": "sum(rate(llm_bandwidth_bytes_total{direction=\"out\"}[5m]))",
-                    "legendFormat": "出站 (Out)",
+                    "legendFormat": "\u51fa\u7ad9 (Out)",
                     "refId": "B"
                 }
             ],
-            "title": "📡 带宽吞吐量",
+            "title": "\ud83d\udce1 \u5e26\u5bbd\u541e\u5410\u91cf",
             "type": "timeseries"
         },
         {
@@ -818,11 +1177,11 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 23
+                "y": 27
             },
             "id": 110,
             "panels": [],
-            "title": "🔢 令牌消费分析 Token Analysis",
+            "title": "\ud83d\udd22 \u4ee4\u724c\u6d88\u8d39\u5206\u6790 Token Analysis",
             "type": "row"
         },
         {
@@ -834,7 +1193,7 @@
                 "h": 4,
                 "w": 6,
                 "x": 0,
-                "y": 24
+                "y": 28
             },
             "fieldConfig": {
                 "defaults": {
@@ -849,7 +1208,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "🔢 总 Token",
+            "title": "\ud83d\udd22 \u603b Token",
             "type": "stat"
         },
         {
@@ -861,7 +1220,7 @@
                 "h": 4,
                 "w": 6,
                 "x": 6,
-                "y": 24
+                "y": 28
             },
             "fieldConfig": {
                 "defaults": {
@@ -876,7 +1235,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "📥 输入 Token (Prompt)",
+            "title": "\ud83d\udce5 \u8f93\u5165 Token (Prompt)",
             "type": "stat"
         },
         {
@@ -888,7 +1247,7 @@
                 "h": 4,
                 "w": 6,
                 "x": 12,
-                "y": 24
+                "y": 28
             },
             "fieldConfig": {
                 "defaults": {
@@ -903,7 +1262,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "📤 输出 Token (Completion)",
+            "title": "\ud83d\udce4 \u8f93\u51fa Token (Completion)",
             "type": "stat"
         },
         {
@@ -915,7 +1274,7 @@
                 "h": 4,
                 "w": 6,
                 "x": 18,
-                "y": 24
+                "y": 28
             },
             "fieldConfig": {
                 "defaults": {
@@ -930,7 +1289,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "💾 缓存 Token (Cached)",
+            "title": "\ud83d\udcbe \u7f13\u5b58 Token (Cached)",
             "type": "stat"
         }
     ],
@@ -970,7 +1329,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "🐱 LLM Router 监控面板",
+    "title": "\ud83d\udc31 LLM Router \u76d1\u63a7\u9762\u677f",
     "uid": "llm-router-dashboard",
     "version": 1,
     "weekStart": ""
