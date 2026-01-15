@@ -72,9 +72,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
@@ -132,9 +132,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "queryText": "SELECT ROUND(total_play_seconds / 60.0, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) / 2",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "rawQueryText": "SELECT ROUND(total_play_seconds / 60.0, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) / 2",
                     "refId": "A"
                 }
             ],
@@ -193,9 +193,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
@@ -253,9 +253,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
@@ -539,9 +539,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "WITH daily_dau AS (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND date(c.timestamp) >= date('now', '-14 days') AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY day), daily_new AS (SELECT date(first_seen) as day, COUNT(*) as new_users FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-14 days') AND (is_developer = 0 OR is_developer IS NULL) GROUP BY day), cohort_users AS (SELECT date(first_seen) as cohort_day, user_id FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-21 days') AND (is_developer = 0 OR is_developer IS NULL)), daily_activity AS (SELECT DISTINCT date(c.timestamp) as active_day, c.user_id FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND date(c.timestamp) >= date('now', '-21 days') AND (s.is_developer = 0 OR s.is_developer IS NULL)), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day as '日期', COALESCE(d.dau, 0) as 'DAU', COALESCE(n.new_users, 0) as '新增', COALESCE(r.ret_1, 0) as '次留', COALESCE(r.ret_3, 0) as '3日留', COALESCE(r.ret_7, 0) as '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
+                    "queryText": "WITH daily_dau AS (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND date(c.timestamp) >= date('now', '-14 days') AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY day), daily_new AS (SELECT date(first_seen) as day, COUNT(*) as new_users FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-14 days') AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day), cohort_users AS (SELECT date(first_seen) as cohort_day, user_id FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-21 days') AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')), daily_activity AS (SELECT DISTINCT date(c.timestamp) as active_day, c.user_id FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND date(c.timestamp) >= date('now', '-21 days') AND (s.is_developer = 0 OR s.is_developer IS NULL)), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day as '日期', COALESCE(d.dau, 0) as 'DAU', COALESCE(n.new_users, 0) as '新增', COALESCE(r.ret_1, 0) as '次留', COALESCE(r.ret_3, 0) as '3日留', COALESCE(r.ret_7, 0) as '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
                     "queryType": "table",
-                    "rawQueryText": "WITH daily_dau AS (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND date(c.timestamp) >= date('now', '-14 days') AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY day), daily_new AS (SELECT date(first_seen) as day, COUNT(*) as new_users FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-14 days') AND (is_developer = 0 OR is_developer IS NULL) GROUP BY day), cohort_users AS (SELECT date(first_seen) as cohort_day, user_id FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-21 days') AND (is_developer = 0 OR is_developer IS NULL)), daily_activity AS (SELECT DISTINCT date(c.timestamp) as active_day, c.user_id FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND date(c.timestamp) >= date('now', '-21 days') AND (s.is_developer = 0 OR s.is_developer IS NULL)), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day as '日期', COALESCE(d.dau, 0) as 'DAU', COALESCE(n.new_users, 0) as '新增', COALESCE(r.ret_1, 0) as '次留', COALESCE(r.ret_3, 0) as '3日留', COALESCE(r.ret_7, 0) as '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
+                    "rawQueryText": "WITH daily_dau AS (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND date(c.timestamp) >= date('now', '-14 days') AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY day), daily_new AS (SELECT date(first_seen) as day, COUNT(*) as new_users FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-14 days') AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day), cohort_users AS (SELECT date(first_seen) as cohort_day, user_id FROM user_sessions WHERE user_id != '' AND date(first_seen) >= date('now', '-21 days') AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')), daily_activity AS (SELECT DISTINCT date(c.timestamp) as active_day, c.user_id FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND date(c.timestamp) >= date('now', '-21 days') AND (s.is_developer = 0 OR s.is_developer IS NULL)), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) as ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day as '日期', COALESCE(d.dau, 0) as 'DAU', COALESCE(n.new_users, 0) as '新增', COALESCE(r.ret_1, 0) as '次留', COALESCE(r.ret_3, 0) as '3日留', COALESCE(r.ret_7, 0) as '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
                     "refId": "A"
                 }
             ],
@@ -665,9 +665,9 @@
                         "type": "frser-sqlite-datasource",
                         "uid": "${DS_SQLITE}"
                     },
-                    "queryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "queryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC",
                     "queryType": "table",
-                    "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC LIMIT 500",
+                    "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)', c.prompt_tokens as 'Prompt', c.completion_tokens as 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC",
                     "refId": "A"
                 }
             ],
@@ -734,8 +734,8 @@
                     "calcs": [
                         "sum"
                     ],
-                    "fields": "",
-                    "values": false
+                    "fields": "/^count$/",
+                    "values": true
                 },
                 "sort": "desc",
                 "tooltip": {
@@ -822,111 +822,13 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+                    "queryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' AND message_type = 'chat' AND is_preset = 0 GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
                     "queryType": "table",
-                    "rawQueryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+                    "rawQueryText": "SELECT user_query as '玩家消息', COUNT(*) as '次数' FROM conversations WHERE user_query != '' AND message_type = 'chat' AND is_preset = 0 GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
                     "refId": "A"
                 }
             ],
             "title": "🔥 热门玩家消息 Top 30",
-            "type": "table"
-        },
-        {
-            "collapsed": false,
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 39
-            },
-            "id": 102,
-            "panels": [],
-            "title": "📊 有效用户统计 (请求数>=2)",
-            "type": "row"
-        },
-        {
-            "datasource": {
-                "type": "frser-sqlite-datasource",
-                "uid": "${DS_SQLITE}"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "custom": {
-                        "align": "auto",
-                        "cellOptions": {
-                            "type": "auto"
-                        },
-                        "filterable": true,
-                        "footer": {
-                            "reducers": [
-                                "countAll"
-                            ]
-                        },
-                        "inspect": false
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": 0
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "total_requests"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "总请求"
-                            },
-                            {
-                                "id": "custom.cellOptions",
-                                "value": {
-                                    "mode": "gradient",
-                                    "type": "gauge"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 10,
-                "w": 24,
-                "x": 0,
-                "y": 40
-            },
-            "id": 20,
-            "options": {
-                "cellHeight": "sm",
-                "showHeader": true,
-                "sortBy": [
-                    {
-                        "desc": true,
-                        "displayName": "总请求"
-                    }
-                ]
-            },
-            "pluginVersion": "12.3.1",
-            "targets": [
-                {
-                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
-                    "queryType": "table",
-                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', country as '国家', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', total_requests as '总请求', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '游玩时长(分钟)' FROM user_sessions ORDER BY total_requests DESC",
-                    "refId": "A"
-                }
-            ],
-            "title": "📋 用户会话列表",
             "type": "table"
         },
         {
@@ -1016,9 +918,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "queryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', s.user_id as '用户ID', CASE WHEN s.is_developer = 1 THEN '🔧' ELSE '' END as 'DEV', s.country as '国', s.total_requests as '请求', COALESCE(chat_stats.chat_count, 0) as '对话', COALESCE(chat_stats.days_played, 0) as '天数', s.session_count as '会话', ROUND(s.total_play_seconds / 60.0, 1) as '时长(分)', ROUND(s.total_play_seconds / 60.0 / MAX(COALESCE(chat_stats.days_played, 1), 1), 1) as '日均(分)', ROUND(s.total_play_seconds / 60.0 / MAX(s.session_count, 1), 1) as '会话均(分)', s.island_level as '岛Lv', s.money as '金币', CAST(julianday('now') - julianday(s.last_seen) AS INTEGER) as '距今天' FROM user_sessions s LEFT JOIN (SELECT user_id, COUNT(*) as chat_count, COUNT(DISTINCT date(timestamp)) as days_played FROM conversations WHERE message_type = 'chat' GROUP BY user_id) chat_stats ON s.user_id = chat_stats.user_id WHERE s.total_requests >= 2 ORDER BY s.total_requests DESC",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COALESCE(nickname, player_name, '') as '昵称', user_id as '用户ID', CASE WHEN is_developer = 1 THEN '🔧 开发者' ELSE '👤 玩家' END as '类型', country as '国家', total_requests as '请求数', datetime(first_seen, '+8 hours') as '首次登录(北京)', datetime(last_seen, '+8 hours') as '最后活跃(北京)', CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as '时长(分)' FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC",
+                    "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, '') as '昵称', s.user_id as '用户ID', CASE WHEN s.is_developer = 1 THEN '🔧' ELSE '' END as 'DEV', s.country as '国', s.total_requests as '请求', COALESCE(chat_stats.chat_count, 0) as '对话', COALESCE(chat_stats.days_played, 0) as '天数', s.session_count as '会话', ROUND(s.total_play_seconds / 60.0, 1) as '时长(分)', ROUND(s.total_play_seconds / 60.0 / MAX(COALESCE(chat_stats.days_played, 1), 1), 1) as '日均(分)', ROUND(s.total_play_seconds / 60.0 / MAX(s.session_count, 1), 1) as '会话均(分)', s.island_level as '岛Lv', s.money as '金币', CAST(julianday('now') - julianday(s.last_seen) AS INTEGER) as '距今天' FROM user_sessions s LEFT JOIN (SELECT user_id, COUNT(*) as chat_count, COUNT(DISTINCT date(timestamp)) as days_played FROM conversations WHERE message_type = 'chat' GROUP BY user_id) chat_stats ON s.user_id = chat_stats.user_id WHERE s.total_requests >= 2 ORDER BY s.total_requests DESC",
                     "refId": "A"
                 }
             ],
@@ -1160,9 +1062,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 5 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 30 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 60 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 120 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 300 ORDER BY sort_order",
+                    "queryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 5 AND total_play_seconds / 60.0 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 30 AND total_play_seconds / 60.0 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 60 AND total_play_seconds / 60.0 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 120 AND total_play_seconds / 60.0 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 300 ORDER BY sort_order",
                     "queryType": "table",
-                    "rawQueryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 5 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 30 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 60 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 120 AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND (julianday(last_seen) - julianday(first_seen)) * 24 * 60 >= 300 ORDER BY sort_order",
+                    "rawQueryText": "SELECT '0-5分钟' as range_label, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 < 5 UNION ALL SELECT '5-30分钟' as range_label, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 5 AND total_play_seconds / 60.0 < 30 UNION ALL SELECT '30-60分钟' as range_label, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 30 AND total_play_seconds / 60.0 < 60 UNION ALL SELECT '1-2小时' as range_label, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 60 AND total_play_seconds / 60.0 < 120 UNION ALL SELECT '2-5小时' as range_label, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 120 AND total_play_seconds / 60.0 < 300 UNION ALL SELECT '5小时以上' as range_label, 6 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') AND total_play_seconds / 60.0 >= 300 ORDER BY sort_order",
                     "refId": "A"
                 }
             ],
@@ -1243,9 +1145,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) GROUP BY country ORDER BY count DESC",
+                    "queryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY country ORDER BY count DESC",
                     "queryType": "table",
-                    "rawQueryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) GROUP BY country ORDER BY count DESC",
+                    "rawQueryText": "SELECT country as '国家', COUNT(*) as count FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY country ORDER BY count DESC",
                     "refId": "A"
                 }
             ],
@@ -1577,7 +1479,7 @@
             "targets": [
                 {
                     "queryType": "table",
-                    "rawQueryText": "WITH first_day_users AS (SELECT user_id, date(first_seen) as first_day FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL) AND user_id != 'anonymous_user' AND user_id != ''), retained_users AS (SELECT DISTINCT f.user_id, f.first_day, date(c.timestamp) as return_day FROM first_day_users f JOIN conversations c ON f.user_id = c.user_id WHERE date(c.timestamp) = date(f.first_day, '+1 day')) SELECT COALESCE(s.nickname, s.player_name, substr(r.user_id, 1, 8)) as '用户', r.first_day as '首日', r.return_day as '次日', s.country as '国家', s.total_requests as '总请求', ROUND(s.total_play_seconds / 60.0, 1) as '游玩分钟', s.session_count as '会话数' FROM retained_users r JOIN user_sessions s ON r.user_id = s.user_id ORDER BY s.total_requests DESC",
+                    "rawQueryText": "WITH first_day_users AS (SELECT user_id, date(first_seen) as first_day FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL) AND user_id != 'anonymous_user' AND user_id != '' AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')), retained_users AS (SELECT DISTINCT f.user_id, f.first_day, date(c.timestamp) as return_day FROM first_day_users f JOIN conversations c ON f.user_id = c.user_id WHERE c.message_type = 'chat' AND date(c.timestamp) = date(f.first_day, '+1 day')) SELECT COALESCE(s.nickname, s.player_name, substr(r.user_id, 1, 8)) as '用户', r.first_day as '首日', r.return_day as '次日', s.country as '国家', s.total_requests as '总请求', ROUND(s.total_play_seconds / 60.0, 1) as '游玩分钟', s.session_count as '会话数' FROM retained_users r JOIN user_sessions s ON r.user_id = s.user_id ORDER BY s.total_requests DESC",
                     "refId": "A"
                 }
             ],
@@ -1675,7 +1577,7 @@
             "targets": [
                 {
                     "queryType": "table",
-                    "rawQueryText": "SELECT '1次' as bucket, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests = 1 AND (is_developer = 0 OR is_developer IS NULL) UNION ALL SELECT '2-5次' as bucket, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 2 AND 5 AND (is_developer = 0 OR is_developer IS NULL) UNION ALL SELECT '6-20次' as bucket, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 6 AND 20 AND (is_developer = 0 OR is_developer IS NULL) UNION ALL SELECT '21-100次' as bucket, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 21 AND 100 AND (is_developer = 0 OR is_developer IS NULL) UNION ALL SELECT '100+次' as bucket, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests > 100 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY sort_order",
+                    "rawQueryText": "SELECT '1次' as bucket, 1 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests = 1 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') UNION ALL SELECT '2-5次' as bucket, 2 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 2 AND 5 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') UNION ALL SELECT '6-20次' as bucket, 3 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 6 AND 20 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') UNION ALL SELECT '21-100次' as bucket, 4 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests BETWEEN 21 AND 100 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') UNION ALL SELECT '100+次' as bucket, 5 as sort_order, COUNT(*) as count FROM user_sessions WHERE total_requests > 100 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY sort_order",
                     "refId": "A"
                 }
             ],
@@ -1758,7 +1660,7 @@
             "targets": [
                 {
                     "queryType": "table",
-                    "rawQueryText": "WITH ranked AS (SELECT user_id, total_requests, ROW_NUMBER() OVER (ORDER BY total_requests DESC) as rn, COUNT(*) OVER () as total FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL)), top10 AS (SELECT SUM(total_requests) as top_vol FROM ranked WHERE rn <= total * 0.1), all_vol AS (SELECT SUM(total_requests) as total_vol FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL)) SELECT ROUND(100.0 * top10.top_vol / all_vol.total_vol, 1) as pct FROM top10, all_vol",
+                    "rawQueryText": "WITH ranked AS (SELECT user_id, total_requests, ROW_NUMBER() OVER (ORDER BY total_requests DESC) as rn, COUNT(*) OVER () as total FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')), top10 AS (SELECT SUM(total_requests) as top_vol FROM ranked WHERE rn <= total * 0.1), all_vol AS (SELECT SUM(total_requests) as total_vol FROM user_sessions WHERE (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) SELECT ROUND(100.0 * top10.top_vol / all_vol.total_vol, 1) as pct FROM top10, all_vol",
                     "refId": "A"
                 }
             ],

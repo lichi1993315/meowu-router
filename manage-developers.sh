@@ -39,38 +39,38 @@ case "${1:-help}" in
     
     list)
         echo -e "${YELLOW}=== 开发者列表 ===${NC}"
-        sqlite3 -header -column "$DB_PATH" "SELECT user_id, country, total_requests, CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as play_minutes FROM user_sessions WHERE is_developer = 1"
+        sqlite3 -header -column "$DB_PATH" "SELECT user_id, country, total_requests, ROUND(total_play_seconds / 60.0, 1) as play_minutes FROM user_sessions WHERE is_developer = 1"
         ;;
     
     all)
         echo -e "${YELLOW}=== 所有用户 (请求数>=2) ===${NC}"
-        sqlite3 -header -column "$DB_PATH" "SELECT user_id, CASE WHEN is_developer = 1 THEN 'DEV' ELSE '' END as dev, country, total_requests as req, CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER) as mins FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC"
+        sqlite3 -header -column "$DB_PATH" "SELECT user_id, CASE WHEN is_developer = 1 THEN 'DEV' ELSE '' END as dev, country, total_requests as req, ROUND(total_play_seconds / 60.0, 1) as mins FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC"
         ;;
     
     stats)
         echo -e "${YELLOW}=== 统计信息 ===${NC}"
         echo ""
         
-        # 总用户数
-        total=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2")
+        # 总用户数 (排除只有LOGIN/LOGOFF的用户)
+        total=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')")
         devs=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND is_developer = 1")
-        players=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)")
+        players=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')")
         
         echo "有效用户总数: $total"
         echo "  - 开发者: $devs"
         echo "  - 真实玩家: $players"
         echo ""
         
-        # 平均时长
-        avg_all=$(sqlite3 "$DB_PATH" "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) FROM user_sessions WHERE total_requests >= 2")
-        avg_real=$(sqlite3 "$DB_PATH" "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)")
+        # 平均时长 (使用 total_play_seconds - 精确计算)
+        avg_all=$(sqlite3 "$DB_PATH" "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) FROM user_sessions WHERE total_requests >= 2 AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')")
+        avg_real=$(sqlite3 "$DB_PATH" "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')")
         
         echo "全体平均时长: ${avg_all} 分钟"
         echo "真实平均时长: ${avg_real} 分钟"
         echo ""
         
-        # 中位数
-        median=$(sqlite3 "$DB_PATH" "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) FROM user_sessions WHERE total_requests >= 2 ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2) / 2")
+        # 中位数 (使用 total_play_seconds - 精确计算)
+        median=$(sqlite3 "$DB_PATH" "SELECT ROUND(total_play_seconds / 60.0, 1) FROM user_sessions WHERE total_requests >= 2 AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) / 2")
         echo "中位数时长: ${median} 分钟"
         ;;
     

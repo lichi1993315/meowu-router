@@ -525,147 +525,94 @@ class MetricsState:
     
     def recalculate_user_sessions(self):
         """
-        计算用户的游玩时长和会话数（3级优先级）:
-        1. 优先使用 logoff 的 session_duration_sec (最精确)
-        2. 其次使用 session_id 分组计算
-        3. 对历史数据使用 5 分钟间隔规则 (fallback)
+        计算用户的游玩时长和会话数（混合策略）:
+        
+        对于每个用户，累加所有 session 的时长：
+        1. 有 logoff + session_duration_sec 的 session：使用精确的 session_duration_sec
+        2. 有 session_id 但无 logoff 的 session：使用该 session 的首尾时间差
+        3. 无 session_id 的历史数据：使用 5 分钟间隔规则
         """
         try:
             conn = sqlite3.connect(self._db_file())
             cursor = conn.cursor()
             
-            # 方法1: 使用 logoff 的 session_duration_sec (最精确)
-            # 按 session_id 聚合 logoff 的时长
-            cursor.execute('''
-                SELECT 
-                    user_id,
-                    COUNT(DISTINCT session_id) as session_count,
-                    CAST(SUM(session_duration_sec) AS INTEGER) as total_play_seconds
-                FROM conversations
-                WHERE message_type = 'logoff' 
-                  AND session_duration_sec IS NOT NULL 
-                  AND session_id IS NOT NULL
-                  AND user_id IS NOT NULL AND user_id != ''
-                GROUP BY user_id
-            ''')
+            # 获取所有用户
+            cursor.execute('SELECT DISTINCT user_id FROM conversations WHERE user_id IS NOT NULL AND user_id != ""')
+            all_users = [row[0] for row in cursor.fetchall()]
             
-            logoff_users = {}
-            for user_id, session_count, play_seconds in cursor.fetchall():
-                logoff_users[user_id] = (session_count, play_seconds or 0)
+            user_stats = {}
             
-            # 方法2: 使用 session_id 分组 (只计算有 session_id 但无 logoff 的用户)
-            cursor.execute('''
-                WITH users_with_logoff AS (
-                    SELECT DISTINCT user_id FROM conversations 
-                    WHERE message_type = 'logoff' AND session_duration_sec IS NOT NULL
-                ),
-                session_stats AS (
-                    SELECT 
-                        user_id,
-                        session_id,
-                        MIN(timestamp) as session_start,
-                        MAX(timestamp) as session_end
+            for user_id in all_users:
+                total_play_seconds = 0
+                total_sessions = 0
+                
+                # 1. 有 logoff + session_duration_sec 的 session
+                cursor.execute('''
+                    SELECT session_id, session_duration_sec
                     FROM conversations
-                    WHERE session_id IS NOT NULL 
-                      AND user_id IS NOT NULL AND user_id != ''
-                      AND user_id NOT IN (SELECT user_id FROM users_with_logoff)
-                    GROUP BY user_id, session_id
-                )
-                SELECT 
-                    user_id,
-                    COUNT(DISTINCT session_id) as total_sessions,
-                    CAST(SUM((julianday(session_end) - julianday(session_start)) * 86400) AS INTEGER) as total_play_seconds
-                FROM session_stats
-                GROUP BY user_id
-            ''')
-            
-            session_id_users = {}
-            for user_id, session_count, play_seconds in cursor.fetchall():
-                session_id_users[user_id] = (session_count, play_seconds or 0)
-            
-            # 方法3: 使用 login 事件作为 session 边界 (无 session_id 的用户)
-            cursor.execute('''
-                WITH users_with_session_id AS (
-                    SELECT DISTINCT user_id FROM conversations WHERE session_id IS NOT NULL
-                ),
-                session_boundaries AS (
-                    SELECT 
-                        user_id,
-                        timestamp,
-                        message_type,
-                        SUM(CASE WHEN message_type = 'login' THEN 1 ELSE 0 END) 
-                            OVER (PARTITION BY user_id ORDER BY timestamp) as inferred_session_id
+                    WHERE user_id = ? AND message_type = 'logoff' 
+                      AND session_duration_sec IS NOT NULL AND session_id IS NOT NULL
+                ''', (user_id,))
+                logoff_sessions = {}
+                for session_id, duration in cursor.fetchall():
+                    logoff_sessions[session_id] = duration
+                    total_play_seconds += int(duration or 0)
+                    total_sessions += 1
+                
+                # 2. 有 session_id 但无 logoff 的 session（排除上面已统计的）
+                cursor.execute('''
+                    SELECT session_id, MIN(timestamp), MAX(timestamp)
                     FROM conversations
-                    WHERE user_id IS NOT NULL AND user_id != ''
-                      AND user_id NOT IN (SELECT user_id FROM users_with_session_id)
-                ),
-                session_stats AS (
-                    SELECT 
-                        user_id,
-                        inferred_session_id,
-                        MIN(timestamp) as session_start,
-                        MAX(timestamp) as session_end
-                    FROM session_boundaries
-                    WHERE inferred_session_id > 0
-                    GROUP BY user_id, inferred_session_id
-                )
-                SELECT 
-                    user_id,
-                    COUNT(DISTINCT inferred_session_id) as total_sessions,
-                    CAST(SUM((julianday(session_end) - julianday(session_start)) * 86400) AS INTEGER) as total_play_seconds
-                FROM session_stats
-                GROUP BY user_id
-            ''')
+                    WHERE user_id = ? AND session_id IS NOT NULL
+                    GROUP BY session_id
+                ''', (user_id,))
+                for session_id, start_ts, end_ts in cursor.fetchall():
+                    if session_id not in logoff_sessions:
+                        # 计算该 session 的时长
+                        if start_ts and end_ts:
+                            cursor.execute(
+                                'SELECT (julianday(?) - julianday(?)) * 86400',
+                                (end_ts, start_ts)
+                            )
+                            diff = cursor.fetchone()[0] or 0
+                            total_play_seconds += int(diff)
+                            total_sessions += 1
+                
+                # 3. 无 session_id 的记录（历史数据）使用 5 分钟规则
+                cursor.execute('''
+                    SELECT timestamp FROM conversations
+                    WHERE user_id = ? AND session_id IS NULL
+                    ORDER BY timestamp
+                ''', (user_id,))
+                no_session_records = [row[0] for row in cursor.fetchall()]
+                
+                if no_session_records:
+                    prev_ts = None
+                    session_play = 0
+                    sessions_from_fallback = 0
+                    
+                    for ts in no_session_records:
+                        if prev_ts is None:
+                            sessions_from_fallback = 1
+                        else:
+                            cursor.execute(
+                                'SELECT (julianday(?) - julianday(?)) * 86400',
+                                (ts, prev_ts)
+                            )
+                            diff = cursor.fetchone()[0] or 0
+                            if diff <= 300:  # 5分钟内
+                                session_play += diff
+                            else:
+                                sessions_from_fallback += 1
+                        prev_ts = ts
+                    
+                    total_play_seconds += int(session_play)
+                    total_sessions += sessions_from_fallback
+                
+                user_stats[user_id] = (total_sessions, total_play_seconds)
             
-            login_users = {}
-            for user_id, session_count, play_seconds in cursor.fetchall():
-                login_users[user_id] = (session_count, play_seconds or 0)
-            
-            # 方法4: 5分钟间隔规则 (历史数据 fallback)
-            cursor.execute('''
-                WITH users_with_session AS (
-                    SELECT DISTINCT user_id FROM conversations 
-                    WHERE session_id IS NOT NULL OR message_type = 'login'
-                ),
-                ordered_requests AS (
-                    SELECT 
-                        c.user_id,
-                        c.timestamp,
-                        LAG(c.timestamp) OVER (PARTITION BY c.user_id ORDER BY c.timestamp) as prev_timestamp
-                    FROM conversations c
-                    WHERE c.user_id IS NOT NULL AND c.user_id != ''
-                      AND c.user_id NOT IN (SELECT user_id FROM users_with_session)
-                ),
-                time_diffs AS (
-                    SELECT 
-                        user_id,
-                        CASE 
-                            WHEN prev_timestamp IS NULL THEN 0
-                            ELSE (julianday(timestamp) - julianday(prev_timestamp)) * 86400
-                        END as diff_seconds,
-                        CASE 
-                            WHEN prev_timestamp IS NULL THEN 1
-                            WHEN (julianday(timestamp) - julianday(prev_timestamp)) * 86400 > 300 THEN 1
-                            ELSE 0
-                        END as is_new_session
-                    FROM ordered_requests
-                )
-                SELECT 
-                    user_id,
-                    SUM(is_new_session) as session_count,
-                    CAST(SUM(CASE WHEN diff_seconds <= 300 THEN diff_seconds ELSE 0 END) AS INTEGER) as actual_play_seconds
-                FROM time_diffs
-                GROUP BY user_id
-            ''')
-            
-            fallback_users = {}
-            for user_id, session_count, play_seconds in cursor.fetchall():
-                fallback_users[user_id] = (session_count, play_seconds or 0)
-            
-            # 合并结果 (优先级: logoff > session_id > login > fallback)
-            all_results = {**fallback_users, **login_users, **session_id_users, **logoff_users}
-            
-            for user_id, (session_count, play_seconds) in all_results.items():
+            # 更新数据库
+            for user_id, (session_count, play_seconds) in user_stats.items():
                 cursor.execute('''
                     UPDATE user_sessions 
                     SET session_count = ?, total_play_seconds = ?
@@ -674,10 +621,11 @@ class MetricsState:
             
             conn.commit()
             conn.close()
-            logger.debug(f"Recalculated sessions: {len(logoff_users)} logoff, {len(session_id_users)} session_id, {len(login_users)} login, {len(fallback_users)} fallback")
+            logger.debug(f"Recalculated sessions for {len(user_stats)} users")
         except Exception as e:
             logger.warning(f"Failed to recalculate user sessions: {e}")
     
+
     def update_user_gauges(self):
         """更新用户统计Gauge"""
         try:

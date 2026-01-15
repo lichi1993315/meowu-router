@@ -436,9 +436,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
@@ -496,9 +496,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "queryText": "SELECT ROUND(total_play_seconds / 60.0, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) / 2",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND((julianday(last_seen) - julianday(first_seen)) * 24 * 60, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) ORDER BY (julianday(last_seen) - julianday(first_seen)) LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)) / 2",
+                    "rawQueryText": "SELECT ROUND(total_play_seconds / 60.0, 1) as median_minutes FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') ORDER BY total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) / 2",
                     "refId": "A"
                 }
             ],
@@ -557,9 +557,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND(AVG((julianday(last_seen) - julianday(first_seen)) * 24 * 60), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT ROUND(AVG(total_play_seconds / 60.0), 1) as real_avg FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
@@ -617,9 +617,9 @@
             "pluginVersion": "12.3.1",
             "targets": [
                 {
-                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "queryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "queryType": "table",
-                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL)",
+                    "rawQueryText": "SELECT ROUND(AVG(total_requests), 1) as avg_requests FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')",
                     "refId": "A"
                 }
             ],
