@@ -1,13 +1,25 @@
 {
     "annotations": {
-        "list": []
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
     },
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 1,
-    "id": null,
+    "id": 2,
     "links": [],
-    "liveNow": false,
     "panels": [
         {
             "collapsed": false,
@@ -19,7 +31,7 @@
             },
             "id": 100,
             "panels": [],
-            "title": "\ud83d\udcca \u6982\u89c8 Overview",
+            "title": "📊 概览 Overview",
             "type": "row"
         },
         {
@@ -38,7 +50,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             },
                             {
                                 "color": "yellow",
@@ -66,6 +78,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
@@ -73,9 +86,11 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
-            "pluginVersion": "10.0.0",
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "datasource": {
@@ -86,7 +101,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udfe2 \u5f53\u524d\u5728\u7ebf CCU",
+            "title": "🟢 当前在线 CCU",
             "type": "stat"
         },
         {
@@ -105,7 +120,7 @@
                         "steps": [
                             {
                                 "color": "blue",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -125,6 +140,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
@@ -132,15 +148,18 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "count(llm_user_total_requests > 0)",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udc65 \u603b\u7528\u6237\u6570",
+            "title": "👥 总用户数",
             "type": "stat"
         },
         {
@@ -159,7 +178,7 @@
                         "steps": [
                             {
                                 "color": "purple",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -179,6 +198,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
@@ -186,15 +206,18 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_requests_global",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udce8 \u603b\u8bf7\u6c42\u6570 Total Requests",
+            "title": "📨 总请求数 Total Requests",
             "type": "stat"
         },
         {
@@ -213,7 +236,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             },
                             {
                                 "color": "yellow",
@@ -241,6 +264,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
@@ -248,15 +272,18 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_cost_usd",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcb0 \u603b\u8d39\u7528 Total Cost",
+            "title": "💰 总费用 Total Cost",
             "type": "stat"
         },
         {
@@ -275,7 +302,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             },
                             {
                                 "color": "yellow",
@@ -303,6 +330,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "mean"
@@ -310,15 +338,18 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "sum(rate(llm_request_duration_seconds_sum[5m])) / sum(rate(llm_request_duration_seconds_count[5m]) > 0)",
                     "refId": "A"
                 }
             ],
-            "title": "\u23f1\ufe0f \u5e73\u5747\u5ef6\u8fdf",
+            "title": "⏱️ 平均延迟",
             "type": "stat"
         },
         {
@@ -339,7 +370,7 @@
                         "steps": [
                             {
                                 "color": "red",
-                                "value": null
+                                "value": 0
                             },
                             {
                                 "color": "yellow",
@@ -367,6 +398,7 @@
                 "graphMode": "area",
                 "justifyMode": "auto",
                 "orientation": "auto",
+                "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
@@ -374,15 +406,18 @@
                     "fields": "",
                     "values": false
                 },
-                "textMode": "auto"
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "sum(rate(llm_requests_total{status=\"200\"}[1h])) / sum(rate(llm_requests_total[1h])) * 100",
                     "refId": "A"
                 }
             ],
-            "title": "\u2705 \u6210\u529f\u7387",
+            "title": "✅ 成功率",
             "type": "stat"
         },
         {
@@ -442,7 +477,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udc65 \u6709\u6548\u7528\u6237\u6570",
+            "title": "👥 有效用户数",
             "type": "stat"
         },
         {
@@ -502,7 +537,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcca \u4e2d\u4f4d\u6570\u65f6\u957f",
+            "title": "📊 中位数时长",
             "type": "stat"
         },
         {
@@ -510,7 +545,7 @@
                 "type": "frser-sqlite-datasource",
                 "uid": "SQLite"
             },
-            "description": "\u6392\u9664\u5f00\u53d1\u8005\u540e\u7684\u5e73\u5747\u65f6\u957f",
+            "description": "排除开发者后的平均时长",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -563,7 +598,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\u2728 \u771f\u5b9e\u5e73\u5747\u65f6\u957f",
+            "title": "✨ 真实平均时长",
             "type": "stat"
         },
         {
@@ -623,7 +658,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udce8 \u4eba\u5747\u8bf7\u6c42\u6570",
+            "title": "📨 人均请求数",
             "type": "stat"
         },
         {
@@ -682,7 +717,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcca \u771f\u5b9e\u5e73\u5747\u5bf9\u8bdd",
+            "title": "📊 真实平均对话",
             "type": "stat"
         },
         {
@@ -741,7 +776,7 @@
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcca \u771f\u5b9e\u5bf9\u8bdd\u4e2d\u4f4d\u6570",
+            "title": "📊 真实对话中位数",
             "type": "stat"
         },
         {
@@ -754,7 +789,7 @@
             },
             "id": 130,
             "panels": [],
-            "title": "\ud83d\udcc8 \u6838\u5fc3\u6307\u6807\u8d8b\u52bf Daily Trends",
+            "title": "📈 核心指标趋势 Daily Trends",
             "type": "row"
         },
         {
@@ -768,11 +803,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 20,
                         "gradientMode": "opacity",
@@ -781,6 +818,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -788,6 +826,7 @@
                             "type": "linear"
                         },
                         "showPoints": "auto",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -803,7 +842,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -828,18 +867,25 @@
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "single",
                     "sort": "none"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
+                    "queryText": "SELECT strftime('%s', day) as time, SUM(cnt) OVER (ORDER BY day) as value FROM (SELECT date(first_seen) as day, COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
                     "queryType": "time series",
                     "rawQueryText": "SELECT strftime('%s', day) as time, SUM(cnt) OVER (ORDER BY day) as value FROM (SELECT date(first_seen) as day, COUNT(*) as cnt FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
-                    "refId": "A"
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
                 }
             ],
-            "title": "\ud83d\udc65 \u6709\u6548\u7528\u6237\u6570\u8d8b\u52bf",
+            "title": "👥 有效用户数趋势",
             "type": "timeseries"
         },
         {
@@ -853,11 +899,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 20,
                         "gradientMode": "opacity",
@@ -866,6 +914,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -873,346 +922,7 @@
                             "type": "linear"
                         },
                         "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "cyan",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "m"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 8,
-                "x": 8,
-                "y": 10
-            },
-            "id": 132,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "mean"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "queryType": "time series",
-                    "rawQueryText": "SELECT strftime('%s', day) as time, AVG(avg_time) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as value FROM (SELECT date(first_seen) as day, ROUND(AVG(total_play_seconds / 60.0), 1) as avg_time FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
-                    "refId": "A"
-                }
-            ],
-            "title": "\u23f1\ufe0f \u5e73\u5747\u6e38\u620f\u65f6\u957f\u8d8b\u52bf",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "frser-sqlite-datasource",
-                "uid": "SQLite"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "opacity",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "orange",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 8,
-                "x": 16,
-                "y": 10
-            },
-            "id": 133,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "mean"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "queryType": "time series",
-                    "rawQueryText": "SELECT strftime('%s', day) as time, AVG(avg_req) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as value FROM (SELECT date(first_seen) as day, ROUND(AVG(total_requests), 1) as avg_req FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
-                    "refId": "A"
-                }
-            ],
-            "title": "\ud83d\udce8 \u4eba\u5747\u8bf7\u6c42\u6570\u8d8b\u52bf",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "frser-sqlite-datasource",
-                "uid": "SQLite"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "opacity",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 8,
-                "x": 0,
-                "y": 18
-            },
-            "id": 134,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "mean"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "queryType": "time series",
-                    "rawQueryText": "SELECT strftime('%s', day) as time, AVG(avg_conv) OVER (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as value FROM (SELECT day, ROUND(AVG(daily_conv), 1) as avg_conv FROM (SELECT date(c.timestamp) as day, c.user_id, COUNT(*) as daily_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day, c.user_id HAVING daily_conv >= 2) GROUP BY day) ORDER BY day",
-                    "refId": "A"
-                }
-            ],
-            "title": "\ud83d\udcac \u771f\u5b9e\u5e73\u5747\u5bf9\u8bdd\u8d8b\u52bf",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "frser-sqlite-datasource",
-                "uid": "SQLite"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "opacity",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "purple",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 8,
-                "x": 8,
-                "y": 18
-            },
-            "id": 135,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "sum"
-                    ],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "queryType": "time series",
-                    "rawQueryText": "SELECT strftime('%s', day) as time, SUM(cnt) OVER (ORDER BY day) as value FROM (SELECT date(c.timestamp) as day, COUNT(*) as cnt FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day) ORDER BY day",
-                    "refId": "A"
-                }
-            ],
-            "title": "\ud83d\udcca \u6bcf\u65e5\u771f\u5b9e\u5bf9\u8bdd\u6570",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "frser-sqlite-datasource",
-                "uid": "SQLite"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 20,
-                        "gradientMode": "opacity",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -1228,7 +938,391 @@
                         "steps": [
                             {
                                 "color": "blue",
-                                "value": null
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 10
+            },
+            "id": 136,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT strftime('%s', day) as time, dau as value FROM (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND s.total_requests >= 2 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day) ORDER BY day",
+                    "queryType": "time series",
+                    "rawQueryText": "SELECT strftime('%s', day) as time, dau as value FROM (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as dau FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND s.total_requests >= 2 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day) ORDER BY day",
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
+                }
+            ],
+            "title": "👥 DAU 趋势",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "showValues": false,
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "purple",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 10
+            },
+            "id": 135,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(daily_conv) / COUNT(*), 1) as value FROM (SELECT date(c.timestamp) as day, c.user_id, COUNT(*) as daily_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day, c.user_id HAVING daily_conv >= 2) GROUP BY day ORDER BY day",
+                    "queryType": "time series",
+                    "rawQueryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(daily_conv) / COUNT(*), 1) as value FROM (SELECT date(c.timestamp) as day, c.user_id, COUNT(*) as daily_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day, c.user_id HAVING daily_conv >= 2) GROUP BY day ORDER BY day",
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
+                }
+            ],
+            "title": "📊 每日真实对话数",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "showValues": false,
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "cyan",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "m"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 18
+            },
+            "id": 132,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(daily_time) OVER (ORDER BY day) / SUM(daily_users) OVER (ORDER BY day), 1) as value FROM (SELECT date(first_seen) as day, SUM(total_play_seconds / 60.0) as daily_time, COUNT(*) as daily_users FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
+                    "queryType": "time series",
+                    "rawQueryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(daily_time) OVER (ORDER BY day) / SUM(daily_users) OVER (ORDER BY day), 1) as value FROM (SELECT date(first_seen) as day, SUM(total_play_seconds / 60.0) as daily_time, COUNT(*) as daily_users FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat') GROUP BY day) ORDER BY day",
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
+                }
+            ],
+            "title": "⏱️ 历史人均游戏时长趋势",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "showValues": false,
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "orange",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    "unit": "h"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 18
+            },
+            "id": 133,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "queryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(total_play_seconds / 3600.0) / COUNT(*), 2) as value FROM (SELECT date(first_seen) as day, user_id, total_play_seconds FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) GROUP BY day ORDER BY day",
+                    "queryType": "time series",
+                    "rawQueryText": "SELECT strftime('%s', day) as time, ROUND(1.0 * SUM(total_play_seconds / 3600.0) / COUNT(*), 2) as value FROM (SELECT date(first_seen) as day, user_id, total_play_seconds FROM user_sessions WHERE total_requests >= 2 AND (is_developer = 0 OR is_developer IS NULL) AND user_id IN (SELECT DISTINCT user_id FROM conversations WHERE message_type = 'chat')) GROUP BY day ORDER BY day",
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
+                }
+            ],
+            "title": "⏱️ 每日人均时长趋势",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "SQLite"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "showValues": false,
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
                             }
                         ]
                     },
@@ -1242,43 +1336,37 @@
                 "x": 16,
                 "y": 18
             },
-            "id": 136,
+            "id": 134,
             "options": {
                 "legend": {
                     "calcs": [
-                        "sum"
+                        "mean"
                     ],
                     "displayMode": "list",
                     "placement": "bottom",
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "single",
                     "sort": "none"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
+                    "queryText": "WITH user_conv AS (SELECT c.user_id, COUNT(*) as total_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING total_conv >= 2), daily_data AS (SELECT date(c.timestamp) as day, c.user_id FROM conversations c WHERE c.user_query != '' AND c.is_preset = 0 AND c.user_id IN (SELECT user_id FROM user_conv)), days AS (SELECT DISTINCT day FROM daily_data ORDER BY day), cum AS (SELECT d.day, (SELECT COUNT(*) FROM daily_data WHERE day <= d.day) as cum_conv, (SELECT COUNT(DISTINCT user_id) FROM daily_data WHERE day <= d.day) as cum_users FROM days d) SELECT strftime('%s', day) as time, ROUND(1.0 * cum_conv / cum_users, 1) as value FROM cum ORDER BY day",
                     "queryType": "time series",
-                    "rawQueryText": "SELECT strftime('%s', day) as time, SUM(cnt) OVER (ORDER BY day) as value FROM (SELECT date(c.timestamp) as day, COUNT(DISTINCT c.user_id) as cnt FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY day) ORDER BY day",
-                    "refId": "A"
+                    "rawQueryText": "WITH user_conv AS (SELECT c.user_id, COUNT(*) as total_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING total_conv >= 2), daily_data AS (SELECT date(c.timestamp) as day, c.user_id FROM conversations c WHERE c.user_query != '' AND c.is_preset = 0 AND c.user_id IN (SELECT user_id FROM user_conv)), days AS (SELECT DISTINCT day FROM daily_data ORDER BY day), cum AS (SELECT d.day, (SELECT COUNT(*) FROM daily_data WHERE day <= d.day) as cum_conv, (SELECT COUNT(DISTINCT user_id) FROM daily_data WHERE day <= d.day) as cum_users FROM days d) SELECT strftime('%s', day) as time, ROUND(1.0 * cum_conv / cum_users, 1) as value FROM cum ORDER BY day",
+                    "refId": "A",
+                    "timeColumns": [
+                        "time",
+                        "ts"
+                    ]
                 }
             ],
-            "title": "\ud83d\udc65 DAU \u8d8b\u52bf",
+            "title": "💬 真实对话数历史趋势",
             "type": "timeseries"
-        },
-        {
-            "collapsed": false,
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 26
-            },
-            "id": 101,
-            "panels": [],
-            "title": "\ud83d\udcc8 \u5b9e\u65f6\u8d8b\u52bf Trends",
-            "type": "row"
         },
         {
             "datasource": {
@@ -1291,11 +1379,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 20,
                         "gradientMode": "opacity",
@@ -1304,6 +1394,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -1311,6 +1402,7 @@
                             "type": "linear"
                         },
                         "showPoints": "never",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -1326,7 +1418,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -1338,7 +1430,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 10
+                "y": 26
             },
             "id": 10,
             "options": {
@@ -1352,18 +1444,20 @@
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "multi",
                     "sort": "desc"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "sum(rate(llm_requests_total[1m])) * 60",
-                    "legendFormat": "\u8bf7\u6c42/\u5206\u949f",
+                    "legendFormat": "请求/分钟",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcca \u8bf7\u6c42\u91cf\u8d8b\u52bf",
+            "title": "📊 请求量趋势",
             "type": "timeseries"
         },
         {
@@ -1377,11 +1471,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 10,
                         "gradientMode": "opacity",
@@ -1390,6 +1486,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -1397,6 +1494,7 @@
                             "type": "linear"
                         },
                         "showPoints": "never",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -1412,7 +1510,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -1424,7 +1522,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 10
+                "y": 26
             },
             "id": 11,
             "options": {
@@ -1438,10 +1536,12 @@
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "multi",
                     "sort": "desc"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "histogram_quantile(0.50, sum(rate(llm_request_duration_seconds_bucket[5m])) by (le))",
@@ -1459,7 +1559,7 @@
                     "refId": "C"
                 }
             ],
-            "title": "\u23f1\ufe0f \u5ef6\u8fdf\u5206\u5e03 (P50/P90/P99)",
+            "title": "⏱️ 延迟分布 (P50/P90/P99)",
             "type": "timeseries"
         },
         {
@@ -1473,11 +1573,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 20,
                         "gradientMode": "opacity",
@@ -1486,6 +1588,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -1493,6 +1596,7 @@
                             "type": "linear"
                         },
                         "showPoints": "never",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -1508,7 +1612,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -1566,7 +1670,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 18
+                "y": 34
             },
             "id": 12,
             "options": {
@@ -1579,10 +1683,12 @@
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "multi",
                     "sort": "desc"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "sum(rate(llm_prompt_tokens_total[5m])) * 300",
@@ -1600,7 +1706,7 @@
                     "refId": "C"
                 }
             ],
-            "title": "\ud83d\udd22 Token \u4f7f\u7528\u8d8b\u52bf",
+            "title": "🔢 Token 使用趋势",
             "type": "timeseries"
         },
         {
@@ -1614,11 +1720,13 @@
                         "mode": "palette-classic"
                     },
                     "custom": {
+                        "axisBorderShow": false,
                         "axisCenteredZero": false,
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
                         "barAlignment": 0,
+                        "barWidthFactor": 0.6,
                         "drawStyle": "line",
                         "fillOpacity": 20,
                         "gradientMode": "opacity",
@@ -1627,6 +1735,7 @@
                             "tooltip": false,
                             "viz": false
                         },
+                        "insertNulls": false,
                         "lineInterpolation": "smooth",
                         "lineWidth": 2,
                         "pointSize": 5,
@@ -1634,6 +1743,7 @@
                             "type": "linear"
                         },
                         "showPoints": "never",
+                        "showValues": false,
                         "spanNulls": false,
                         "stacking": {
                             "group": "A",
@@ -1649,7 +1759,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -1661,7 +1771,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 18
+                "y": 34
             },
             "id": 13,
             "options": {
@@ -1675,23 +1785,25 @@
                     "showLegend": true
                 },
                 "tooltip": {
+                    "hideZeros": false,
                     "mode": "multi",
                     "sort": "desc"
                 }
             },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "sum(rate(llm_bandwidth_bytes_total{direction=\"in\"}[5m]))",
-                    "legendFormat": "\u5165\u7ad9 (In)",
+                    "legendFormat": "入站 (In)",
                     "refId": "A"
                 },
                 {
                     "expr": "sum(rate(llm_bandwidth_bytes_total{direction=\"out\"}[5m]))",
-                    "legendFormat": "\u51fa\u7ad9 (Out)",
+                    "legendFormat": "出站 (Out)",
                     "refId": "B"
                 }
             ],
-            "title": "\ud83d\udce1 \u5e26\u5bbd\u541e\u5410\u91cf",
+            "title": "📡 带宽吞吐量",
             "type": "timeseries"
         },
         {
@@ -1700,11 +1812,24 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 27
+                "y": 42
+            },
+            "id": 101,
+            "panels": [],
+            "title": "📈 实时趋势 Trends",
+            "type": "row"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 43
             },
             "id": 110,
             "panels": [],
-            "title": "\ud83d\udd22 \u4ee4\u724c\u6d88\u8d39\u5206\u6790 Token Analysis",
+            "title": "🔢 令牌消费分析 Token Analysis",
             "type": "row"
         },
         {
@@ -1712,26 +1837,58 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
             },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 0,
-                "y": 28
-            },
             "fieldConfig": {
                 "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
                     "unit": "short"
                 },
                 "overrides": []
             },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 44
+            },
             "id": 111,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_tokens_global",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udd22 \u603b Token",
+            "title": "🔢 总 Token",
             "type": "stat"
         },
         {
@@ -1739,26 +1896,58 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
             },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 6,
-                "y": 28
-            },
             "fieldConfig": {
                 "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
                     "unit": "short"
                 },
                 "overrides": []
             },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 44
+            },
             "id": 112,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_prompt_tokens_global",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udce5 \u8f93\u5165 Token (Prompt)",
+            "title": "📥 输入 Token (Prompt)",
             "type": "stat"
         },
         {
@@ -1766,26 +1955,58 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
             },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 12,
-                "y": 28
-            },
             "fieldConfig": {
                 "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
                     "unit": "short"
                 },
                 "overrides": []
             },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 44
+            },
             "id": 113,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_completion_tokens_global",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udce4 \u8f93\u51fa Token (Completion)",
+            "title": "📤 输出 Token (Completion)",
             "type": "stat"
         },
         {
@@ -1793,32 +2014,64 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
             },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 18,
-                "y": 28
-            },
             "fieldConfig": {
                 "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
                     "unit": "short"
                 },
                 "overrides": []
             },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 44
+            },
             "id": 114,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.3.1",
             "targets": [
                 {
                     "expr": "llm_total_cached_tokens_global",
                     "refId": "A"
                 }
             ],
-            "title": "\ud83d\udcbe \u7f13\u5b58 Token (Cached)",
+            "title": "💾 缓存 Token (Cached)",
             "type": "stat"
         }
     ],
+    "preload": false,
     "refresh": "30s",
-    "schemaVersion": 38,
-    "style": "dark",
+    "schemaVersion": 42,
     "tags": [
         "llm",
         "router",
@@ -1828,20 +2081,16 @@
         "list": [
             {
                 "current": {
-                    "selected": false,
                     "text": "Prometheus",
                     "value": "Prometheus"
                 },
-                "hide": 0,
                 "includeAll": false,
                 "label": "Datasource",
-                "multi": false,
                 "name": "DS_PROMETHEUS",
                 "options": [],
                 "query": "prometheus",
                 "refresh": 1,
                 "regex": "",
-                "skipUrlSync": false,
                 "type": "datasource"
             }
         ]
@@ -1852,8 +2101,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "\ud83d\udc31 LLM Router \u76d1\u63a7\u9762\u677f",
+    "title": "🐱 LLM Router 监控面板",
     "uid": "llm-router-dashboard",
-    "version": 1,
-    "weekStart": ""
+    "version": 22
 }

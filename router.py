@@ -36,6 +36,12 @@ SENSITIVE_HEADERS = {"authorization", "x-api-key", "api-key", "cookie", "set-coo
 SESSION_FILE_INDEX: dict[str, Path] = {}
 
 
+def _log(msg: str) -> None:
+    """带时间戳的日志输出"""
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] {msg}")
+
+
 async def save_request_to_file(
     request_body: bytes, 
     path: str, 
@@ -84,7 +90,7 @@ async def save_request_to_file(
         async with aiofiles.open(filepath, "a", encoding="utf-8") as f:
             await f.write(json.dumps(request_record, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"[WARNING] Failed to save request log: {e}")
+        _log(f"[WARNING] Failed to save request log: {e}")
 
 
 async def save_response_to_file(
@@ -126,7 +132,7 @@ async def save_response_to_file(
         async with aiofiles.open(filepath, "a", encoding="utf-8") as f:
             await f.write(json.dumps(response_record, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"[WARNING] Failed to save response log: {e}")
+        _log(f"[WARNING] Failed to save response log: {e}")
 
 
 def _safe_headers(headers: dict) -> dict:
@@ -261,7 +267,7 @@ async def update_session_event_log(
         await _save_session_record(target_path, record)
         SESSION_FILE_INDEX[session_id] = target_path
     except Exception as exc:
-        print(f"[WARNING] Failed to update session log: {exc}")
+        _log(f"[WARNING] Failed to update session log: {exc}")
 
 
 async def save_error_log_to_file(
@@ -294,7 +300,7 @@ async def save_error_log_to_file(
         async with aiofiles.open(filepath, "a", encoding="utf-8") as f:
             await f.write(json.dumps(error_record, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"[WARNING] Failed to save error log: {e}")
+        _log(f"[WARNING] Failed to save error log: {e}")
 
 # 加载 .env 文件
 load_dotenv()
@@ -332,21 +338,21 @@ def fetch_blacklist_from_db() -> set:
         conn.close()
         return users
     except Exception as e:
-        print(f"[WARNING] Failed to fetch blacklist: {e}")
+        _log(f"[WARNING] Failed to fetch blacklist: {e}")
         return set()
 
 async def sync_blacklist_loop():
     """后台任务：定期同步黑名单"""
     global blacklist_users
-    print("🛡️ 黑名单同步服务启动")
+    _log("🛡️ 黑名单同步服务启动")
     while True:
         try:
             new_blacklist = await asyncio.to_thread(fetch_blacklist_from_db)
             if new_blacklist != blacklist_users:
-                print(f"🛡️ 黑名单更新: {len(new_blacklist)} users")
+                _log(f"🛡️ 黑名单更新: {len(new_blacklist)} users")
                 blacklist_users = new_blacklist
         except Exception as e:
-            print(f"[ERROR] Blacklist sync error: {e}")
+            _log(f"[ERROR] Blacklist sync error: {e}")
 
         await asyncio.sleep(60)  # 每60秒同步一次
 
@@ -458,7 +464,7 @@ async def chat_completions(request: Request):
 
         # 🛡️ 检查黑名单
         if user_id and user_id in blacklist_users:
-            print(f"🚫 Blocked blacklisted user: {user_id}")
+            _log(f"🚫 Blocked blacklisted user: {user_id}")
             raise HTTPException(status_code=403, detail="Access denied")
 
         # 检查是否为加密请求
@@ -548,7 +554,7 @@ async def embeddings(request: Request):
 
         # 🛡️ 检查黑名单
         if user_id and user_id in blacklist_users:
-            print(f"🚫 Blocked blacklisted user: {user_id}")
+            _log(f"🚫 Blocked blacklisted user: {user_id}")
             raise HTTPException(status_code=403, detail="Access denied")
 
         # 检查是否为加密请求
@@ -770,7 +776,7 @@ def get_leaderboard_data(user_id: str | None = None) -> dict:
         conn.close()
         return {"entries": top_10, "rank": user_rank}
     except Exception as e:
-        print(f"[WARNING] Failed to get leaderboard: {e}")
+        _log(f"[WARNING] Failed to get leaderboard: {e}")
         return {"entries": [], "rank": None}
 
 
@@ -785,4 +791,13 @@ async def leaderboard(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    asyncio.run(uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=PORT)).serve())
+    import logging
+
+    # 配置带时间戳的日志格式
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["access"]["fmt"] = '%(asctime)s - %(levelname)s - %(client_addr)s - "%(request_line)s" %(status_code)s'
+    log_config["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+    log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
+    log_config["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+
+    asyncio.run(uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=PORT, log_config=log_config)).serve())

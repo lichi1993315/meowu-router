@@ -619,6 +619,12 @@ class MetricsState:
                     WHERE user_id = ?
                 ''', (session_count, play_seconds, user_id))
             
+            # 更新 is_fake_user 标记 (total_requests < 2 的用户为假用户)
+            cursor.execute('''
+                UPDATE user_sessions 
+                SET is_fake_user = CASE WHEN total_requests < 2 THEN 1 ELSE 0 END
+            ''')
+            
             conn.commit()
             conn.close()
             logger.debug(f"Recalculated sessions for {len(user_stats)} users")
