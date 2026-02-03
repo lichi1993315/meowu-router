@@ -11,8 +11,14 @@ else
     echo "Port $PORT is free."
 fi
 
-# Start router.py
-echo "Starting router.py..."
+# Start API (legacy or new)
 export DB_PATH="$(pwd)/data/conversations.db"
-nohup python -u router.py > output.log 2>&1 &
-echo "router.py started with PID $!"
+if [ "${USE_NEW_APP}" = "1" ]; then
+    echo "Starting app.main:app..."
+    nohup uvicorn app.main:app --host 0.0.0.0 --port $PORT > output.log 2>&1 &
+    echo "app.main:app started with PID $!"
+else
+    echo "Starting router.py..."
+    nohup python -u router.py > output.log 2>&1 &
+    echo "router.py started with PID $!"
+fi

@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  # Router API - FastAPI 入口 (app.main:app)
+  router-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.router
+    container_name: llm-router-api
+    ports:
+      - "9000:8000"
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DB_PATH=/app/data/conversations.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_BASE_URL=${GEMINI_BASE_URL}
+      - GEMINI_SDK_URL=${GEMINI_SDK_URL}
+    restart: unless-stopped
+
   # Metrics Exporter - 扫描日志并暴露Prometheus指标
   metrics-exporter:
     build:
