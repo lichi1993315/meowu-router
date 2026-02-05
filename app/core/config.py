@@ -22,3 +22,10 @@ GEMINI_SDK_URL = (
 
 PORT = int(os.getenv("PORT", "8000"))
 DB_PATH = os.getenv("DB_PATH", "/app/data/conversations.db")
+
+R2_ENDPOINT = os.getenv("R2_ENDPOINT", "")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET = os.getenv("R2_BUCKET", "meowu-island-photos")
+R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")
+PHOTO_UPLOAD_DIR = os.getenv("PHOTO_UPLOAD_DIR", "/app/data/photos")

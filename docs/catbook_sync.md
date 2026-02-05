@@ -26,6 +26,40 @@
 
 ---
 
+## 风险与改进建议（按优先级）
+
+### 必须先修
+- 无签名/鉴权：任何人可伪造写入。
+  - 建议：引入轻量鉴权（token + HMAC 签名）；若短期不做，至少添加速率限制与写入审计。
+- 幂等冲突策略未定义：同 ID 但 payload 不一致时处理不清晰。
+  - 建议：明确 409 + 返回原始记录，或仅允许补齐字段，禁止覆盖。
+- Like/Bookmark 唯一键与身份不一致：唯一键用 `(post_id, actor_global_id)`，但接口只传 `actor_id`。
+  - 建议：统一 `actor_global_id` 参数（或服务端拼接并校验），协议写清。
+- `server_created_at` 精度/单位未统一：文档与结构体类型不一致。
+  - 建议：统一为 `int` 毫秒时间戳（或 ISO8601），全链路一致。
+- 游标语义不明确：分页可能重复/遗漏。
+  - 建议：使用复合游标 `(server_created_at, post_id)`，base64 JSON 编码，按倒序稳定排序。
+
+### 可后续（先不做）
+- 读写一致性与 merge 规则不足。
+  - 建议：服务端为权威源；客户端仅补齐字段，冲突记录落日志。
+- 删除/撤销缺失（like/bookmark）。
+  - 建议：后续增加 delete/unlike 接口或 tombstone。
+- `Topic`/`hot` 规则未定义。
+  - 建议：先空实现，后续补热度算法与索引。
+- `parent_comment_id` 校验缺失。
+  - 建议：校验 parent 存在且同帖；后续加防环。
+- 批量 `/sync` 失败语义不明确。
+  - 建议：per-item ack + error code，客户端按错误类型处理。
+- 计数一致性未定义（实时聚合 vs 冗余字段）。
+  - 建议：短期实时聚合，后续如冗余需事务内更新并幂等保护。
+
+### 可忽略（短期不影响核心同步）
+- `text`/`content` 字段语义边界模糊。
+  - 建议：暂保留，后续在 schema 注释中明确用途。
+- `author_id` 格式细节（大小写/命名空间）未定义。
+  - 建议：暂定原样区分大小写，后续标准化。
+
 ## 后端架构（FastAPI + PostgreSQL）
 
 ### 新增文件（已对齐新项目结构）
@@ -56,6 +90,162 @@
 - `POST /posts/{post_id}/bookmark`：收藏（幂等，唯一键）
 - `POST /sync`：批量上行（可选）
 - `GET /topics/hot`：热门话题
+
+### API 规范（字段/错误码）
+
+#### 通用约定
+- `server_created_at`：`int` 毫秒时间戳（UTC），服务端生成，排序主键。
+- `actor_global_id`：统一使用 `"{actor_id}@{user_id}"`，Like/Bookmark 必须传该字段。
+- `cursor`：base64(JSON)，包含 `{"server_created_at": <int>, "post_id": "<str>"}`。
+- 排序：`server_created_at` 倒序，`post_id` 倒序作为稳定 tiebreaker。
+
+#### POST /posts
+Request:
+```json
+{
+  "post_id": "p_xxx",
+  "author_id": "cat@user",
+  "title": "string",
+  "content": "string",
+  "text": "string",
+  "image_id": "optional"
+}
+```
+Response 200:
+```json
+{
+  "post_id": "p_xxx",
+  "server_created_at": 1710000000000
+}
+```
+Errors:
+- 400 invalid_payload
+- 409 id_conflict (same post_id, payload differs)
+
+#### POST /posts/{post_id}/comments
+Request:
+```json
+{
+  "comment_id": "c_xxx",
+  "post_id": "p_xxx",
+  "author_id": "cat@user",
+  "content": "string",
+  "parent_comment_id": "optional"
+}
+```
+Response 200:
+```json
+{
+  "comment_id": "c_xxx",
+  "server_created_at": 1710000000000
+}
+```
+Errors:
+- 400 invalid_payload
+- 404 post_not_found
+- 409 id_conflict
+
+#### POST /posts/{post_id}/like | /bookmark
+Request:
+```json
+{
+  "post_id": "p_xxx",
+  "actor_global_id": "actor@user"
+}
+```
+Response 200:
+```json
+{
+  "post_id": "p_xxx",
+  "actor_global_id": "actor@user",
+  "server_created_at": 1710000000000
+}
+```
+Errors:
+- 400 invalid_payload
+- 404 post_not_found
+
+#### GET /posts
+Response 200:
+```json
+{
+  "posts": [
+    {
+      "post_id": "p_xxx",
+      "author_id": "cat@user",
+      "title": "string",
+      "content": "string",
+      "text": "string",
+      "image_id": "optional",
+      "server_created_at": 1710000000000
+    }
+  ],
+  "cursor": "base64(json)",
+  "has_more": true
+}
+```
+Errors:
+- 400 invalid_cursor
+
+#### GET /posts/{post_id}
+Response 200: 单帖详情（含 `server_created_at`）
+Errors:
+- 404 post_not_found
+
+#### GET /posts/{post_id}/comments
+Response 200:
+```json
+{
+  "comments": [
+    {
+      "comment_id": "c_xxx",
+      "post_id": "p_xxx",
+      "author_id": "cat@user",
+      "content": "string",
+      "parent_comment_id": "optional",
+      "server_created_at": 1710000000000
+    }
+  ]
+}
+```
+Errors:
+- 404 post_not_found
+
+#### POST /sync (optional)
+Request:
+```json
+{
+  "items": [
+    {
+      "kind": "post|comment|like|bookmark",
+      "entity_id": "stable_key",
+      "payload": {}
+    }
+  ]
+}
+```
+Response 200:
+```json
+{
+  "acks": [
+    {
+      "entity_id": "stable_key",
+      "ok": true,
+      "server_created_at": 1710000000000,
+      "error_code": "optional"
+    }
+  ]
+}
+```
+Errors:
+- 400 invalid_payload
+
+#### 错误码约定
+- `invalid_payload` (400): 字段缺失/类型错误
+- `id_conflict` (409): 同 ID 不同 payload
+- `post_not_found` (404): 目标帖子不存在
+- `invalid_cursor` (400): 游标无效/过期
+- `rate_limited` (429): 触发限流
 
 ### 幂等约束（数据库）
 - `posts.post_id` 唯一

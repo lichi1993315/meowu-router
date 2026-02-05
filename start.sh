@@ -1,24 +1,23 @@
 #!/bin/bash
 
-PORT=9000
+# Router API 使用 Docker 容器运行
+# 参考 docker-compose.monitoring.yml 中的 router-api 服务
 
-# Check/Kill process on port 9000
-PID=$(lsof -t -i:$PORT)
-if [ -n "$PID" ]; then
-    echo "Port $PORT is occupied by PID $PID. Killing it..."
-    kill -9 $PID
-else
-    echo "Port $PORT is free."
-fi
+set -e
 
-# Start API (legacy or new)
-export DB_PATH="$(pwd)/data/conversations.db"
-if [ "${USE_NEW_APP}" = "1" ]; then
-    echo "Starting app.main:app..."
-    nohup uvicorn app.main:app --host 0.0.0.0 --port $PORT > output.log 2>&1 &
-    echo "app.main:app started with PID $!"
-else
-    echo "Starting router.py..."
-    nohup python -u router.py > output.log 2>&1 &
-    echo "router.py started with PID $!"
-fi
+COMPOSE_FILE="docker-compose.monitoring.yml"
+SERVICE_NAME="router-api"
+
+echo "=== Stopping existing $SERVICE_NAME container (if any) ==="
+sudo docker compose -f "$COMPOSE_FILE" stop "$SERVICE_NAME" 2>/dev/null || true
+
+echo "=== Rebuilding and starting $SERVICE_NAME ==="
+sudo docker compose -f "$COMPOSE_FILE" up -d --build "$SERVICE_NAME"
+
+echo "=== Checking $SERVICE_NAME status ==="
+sudo docker compose -f "$COMPOSE_FILE" ps "$SERVICE_NAME"
+
+echo ""
+echo "✅ $SERVICE_NAME started successfully!"
+echo "   - API available at: http://localhost:9000"
+echo "   - View logs: sudo docker compose -f $COMPOSE_FILE logs -f $SERVICE_NAME"
