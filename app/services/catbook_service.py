@@ -6,6 +6,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from app.db.sqlite import get_connection
 
+_ALLOWED_POST_TYPES = {"life", "review"}
+
 
 @dataclass
 class CatbookError(Exception):
@@ -65,6 +67,19 @@ def _normalize_player_name(value: Optional[str]) -> Optional[str]:
     return stripped or None
 
 
+def _normalize_post_type(value: Any) -> str:
+    if value is None:
+        return "life"
+    if not isinstance(value, str):
+        raise InvalidPayloadError("post_type must be a string")
+    normalized = value.strip().lower()
+    if not normalized:
+        return "life"
+    if normalized not in _ALLOWED_POST_TYPES:
+        raise InvalidPayloadError("post_type must be one of: life, review")
+    return normalized
+
+
 def _rows_to_posts(rows: Iterable[Tuple[Any, ...]]) -> List[Dict[str, Any]]:
     posts = []
     for row in rows:
@@ -77,7 +92,8 @@ def _rows_to_posts(rows: Iterable[Tuple[Any, ...]]) -> List[Dict[str, Any]]:
                 "content": row[4],
                 "image_id": row[5],
                 "image_url": row[6],
-                "server_created_at": row[7],
+                "post_type": row[7] or "life",
+                "server_created_at": row[8],
             }
         )
     return posts
@@ -114,6 +130,7 @@ def ensure_schema() -> None:
                 content TEXT NOT NULL,
                 image_id TEXT,
                 image_url TEXT,
+                post_type TEXT NOT NULL DEFAULT 'life',
                 server_created_at INTEGER NOT NULL
             )
             """
@@ -124,6 +141,17 @@ def ensure_schema() -> None:
             cursor.execute("ALTER TABLE catbook_posts ADD COLUMN player_name TEXT")
         if "image_url" not in columns:
             cursor.execute("ALTER TABLE catbook_posts ADD COLUMN image_url TEXT")
+        if "post_type" not in columns:
+            cursor.execute(
+                "ALTER TABLE catbook_posts ADD COLUMN post_type TEXT NOT NULL DEFAULT 'life'"
+            )
+        cursor.execute(
+            """
+            UPDATE catbook_posts
+            SET post_type = 'life'
+            WHERE post_type IS NULL OR TRIM(post_type) = ''
+            """
+        )
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS catbook_comments (
@@ -165,6 +193,12 @@ def ensure_schema() -> None:
             "CREATE INDEX IF NOT EXISTS idx_catbook_posts_created ON catbook_posts(server_created_at)"
         )
         cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_catbook_posts_type_created
+            ON catbook_posts(post_type, server_created_at DESC, post_id DESC)
+            """
+        )
+        cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_catbook_comments_post ON catbook_comments(post_id)"
         )
         cursor.execute(
@@ -179,7 +213,16 @@ def _fetch_post(conn, post_id: str) -> Optional[Dict[str, Any]]:
     cursor = conn.cursor()
     cursor.execute(
         """
-        SELECT post_id, author_id, player_name, title, content, image_id, image_url, server_created_at
+        SELECT
+            post_id,
+            author_id,
+            player_name,
+            title,
+            content,
+            image_id,
+            image_url,
+            COALESCE(post_type, 'life') AS post_type,
+            server_created_at
         FROM catbook_posts
         WHERE post_id = ?
         """,
@@ -211,6 +254,7 @@ def create_post(payload: Dict[str, Any]) -> Dict[str, Any]:
     ensure_schema()
     conn = get_connection()
     try:
+        normalized_post_type = _normalize_post_type(payload.get("post_type"))
         existing = _fetch_post(conn, payload["post_id"])
         if existing:
             payload_player_name = _normalize_player_name(payload.get("player_name"))
@@ -218,6 +262,7 @@ def create_post(payload: Dict[str, Any]) -> Dict[str, Any]:
                 existing[field] != payload.get(field)
                 for field in ("author_id", "title", "content", "image_id", "image_url")
             )
+            mismatch = mismatch or existing["post_type"] != normalized_post_type
             existing_player_name = _normalize_player_name(existing.get("player_name"))
             player_name_conflict = (
                 payload_player_name
@@ -240,8 +285,8 @@ def create_post(payload: Dict[str, Any]) -> Dict[str, Any]:
         conn.execute(
             """
             INSERT INTO catbook_posts
-                (post_id, author_id, player_name, title, content, image_id, image_url, server_created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (post_id, author_id, player_name, title, content, image_id, image_url, post_type, server_created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 payload["post_id"],
@@ -251,6 +296,7 @@ def create_post(payload: Dict[str, Any]) -> Dict[str, Any]:
                 payload["content"],
                 payload.get("image_id"),
                 payload.get("image_url"),
+                normalized_post_type,
                 server_created_at,
             ),
         )
@@ -384,7 +430,16 @@ def list_posts(cursor: Optional[str], limit: int) -> Dict[str, Any]:
             args.extend([created_at, created_at, post_id])
 
         query = f"""
-            SELECT post_id, author_id, player_name, title, content, image_id, image_url, server_created_at
+            SELECT
+                post_id,
+                author_id,
+                player_name,
+                title,
+                content,
+                image_id,
+                image_url,
+                COALESCE(post_type, 'life') AS post_type,
+                server_created_at
             FROM catbook_posts
             {where_clause}
             ORDER BY server_created_at DESC, post_id DESC

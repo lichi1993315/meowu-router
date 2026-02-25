@@ -16,6 +16,7 @@ class PostCreate(BaseModel):
     content: str
     image_id: Optional[str] = None
     image_url: Optional[str] = None
+    post_type: Optional[str] = None
 
 
 class PostAck(BaseModel):
@@ -56,6 +57,7 @@ class PostItem(BaseModel):
     content: str
     image_id: Optional[str] = None
     image_url: Optional[str] = None
+    post_type: str = "life"
     server_created_at: int = Field(..., description="UTC milliseconds since epoch.")
 
 
