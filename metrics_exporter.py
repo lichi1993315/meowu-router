@@ -162,35 +162,7 @@ class MetricsState:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         
         self.processed_files: set = set()
-        self.user_activity: dict = {}  # user_id -> {"first_seen", "last_seen", "country", "requests"}
-        self.recent_activity: dict = {}  # user_id -> last_activity_timestamp
-        self.preset_phrases: set = set() # loaded from db
-        self.lock = Lock()
-        
-        # 今日token统计
-        self.today_prompt_tokens = 0
-        self.today_completion_tokens = 0
-        self.today_cached_tokens = 0
-        self.today_date = datetime.now().date()
-        
-        self._load_state()
-        self._init_db()
-        self._load_presets()
-    
-    def _state_file(self) -> Path:
-        return self.data_dir / "exporter_state.json"
-    
-    def _db_file(self) -> Path:
-        return self.data_dir / "conversations.db"
-    
-    def _load_state(self):
-        """加载已处理文件列表"""
-        state_file = self._state_file()
-        if state_file.exists():
-            try:
-                with open(state_file, 'r') as f:
-                    data = json.load(f)
-                    self.processed_files = set(data.get("processed_files", []))
+                    self.processed_file_mtimes = data.get("processed_file_mtimes", {})
                     self.user_activity = data.get("user_activity", {})
                     logger.info(f"Loaded state: {len(self.processed_files)} processed files")
             except Exception as e:
@@ -202,155 +174,24 @@ class MetricsState:
             with open(self._state_file(), 'w') as f:
                 json.dump({
                     "processed_files": list(self.processed_files),
-                    "user_activity": self.user_activity,
-                }, f)
-        except Exception as e:
-            logger.warning(f"Failed to save state: {e}")
-    
-    def _init_db(self):
-        """初始化SQLite数据库"""
-        conn = sqlite3.connect(self._db_file())
-        cursor = conn.cursor()
-        
-        # 对话记录表
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS conversations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT,
-                user_id TEXT,
-                country TEXT,
-                user_query TEXT,
-                ai_response TEXT,
-                ai_action TEXT,
-                duration_ms REAL,
-                prompt_tokens INTEGER,
-                completion_tokens INTEGER,
-                cached_tokens INTEGER,
-                file_path TEXT UNIQUE
-            )
-        ''')
-        
-        # 用户会话表
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user_sessions (
-                user_id TEXT PRIMARY KEY,
-                first_seen TEXT,
-                last_seen TEXT,
-                total_requests INTEGER DEFAULT 0,
-                total_play_seconds INTEGER DEFAULT 0,
-                country TEXT,
-                is_developer INTEGER DEFAULT 0
-            )
-        ''')
-        
-        # 添加is_developer列（如果不存在）
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN is_developer INTEGER DEFAULT 0')
-        except:
-            pass  # 列已存在
-        
-        # 添加session_count列（如果不存在）
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN session_count INTEGER DEFAULT 0')
-        except:
-            pass  # 列已存在
-        
-        # 添加player_name列（如果不存在）- 从system prompt提取的玩家名
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN player_name TEXT')
-        except:
-            pass  # 列已存在
-        
-        # 添加nickname列（如果不存在）- 手动设置的昵称
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN nickname TEXT')
-        except:
-            pass  # 列已存在
-
-        # 添加is_blacklisted列（如果不存在）
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN is_blacklisted INTEGER DEFAULT 0')
-        except:
-            pass  # 列已存在
-        
-        # 添加money列（如果不存在）- 玩家金币数
-        try:
-            cursor.execute('ALTER TABLE user_sessions ADD COLUMN money INTEGER DEFAULT 0')
-        except:
-            pass  # 列已存在
-        
-        # 添加游戏进度相关列
-        game_progress_columns = [
-            ('island_level', 'INTEGER DEFAULT 1'),
-            ('tasks_completed', 'INTEGER DEFAULT 0'),
-            ('tasks_total', 'INTEGER DEFAULT 0'),
-            ('current_task_title', 'TEXT'),
-            ('current_task_status', 'TEXT'),
-            ('achievements_unlocked', 'INTEGER DEFAULT 0'),
-            ('achievements_total', 'INTEGER DEFAULT 0'),
-        ]
-        for col_name, col_type in game_progress_columns:
-            try:
-                cursor.execute(f'ALTER TABLE user_sessions ADD COLUMN {col_name} {col_type}')
-            except:
-                pass  # 列已存在
-            
-        # 预设对话表
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS preset_phrases (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                phrase TEXT UNIQUE
-            )
-        ''')
-        
-        # 添加is_preset列到conversations (如果不存在)
-        try:
-            cursor.execute('ALTER TABLE conversations ADD COLUMN is_preset INTEGER DEFAULT 0')
-        except:
-            pass
-        
-        # 添加message_type列到conversations (如果不存在) - 区分 login/chat/logoff
-        try:
-            cursor.execute('ALTER TABLE conversations ADD COLUMN message_type TEXT DEFAULT "chat"')
-        except:
-            pass  # 列已存在
-        
-        # 添加session_id列 - 精确的 session 追踪
-        try:
-            cursor.execute('ALTER TABLE conversations ADD COLUMN session_id TEXT')
-        except:
-            pass
-        
-        # 添加client_version列 - 客户端版本
-        try:
-            cursor.execute('ALTER TABLE conversations ADD COLUMN client_version TEXT')
-        except:
-            pass
-        
-        # 添加session_duration_sec列 - logoff 时的精确 session 时长
-        try:
-            cursor.execute('ALTER TABLE conversations ADD COLUMN session_duration_sec REAL')
-        except:
-            pass
-        
-        # 创建索引
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_time ON conversations(timestamp)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_country ON conversations(country)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_session ON conversations(session_id)')
-        
-        conn.commit()
-        conn.close()
-        logger.info("SQLite database initialized")
-    
-    def mark_processed(self, filepath: str):
+    def mark_processed(self, filepath: str, mtime_ns: int | None = None):
         """标记文件为已处理"""
         with self.lock:
             self.processed_files.add(filepath)
+            if mtime_ns is not None:
+                self.processed_file_mtimes[filepath] = int(mtime_ns)
     
-    def is_processed(self, filepath: str) -> bool:
+    def is_processed(self, filepath: str, mtime_ns: int | None = None) -> bool:
         """检查文件是否已处理"""
-        return filepath in self.processed_files
+        if filepath not in self.processed_files:
+            return False
+        if mtime_ns is None:
+            return True
+        stored_mtime = self.processed_file_mtimes.get(filepath)
+        if stored_mtime is None:
+            # 兼容旧状态文件：对于需要mtime追踪的可变文件，允许重跑一次建立基线
+            return False
+        return int(stored_mtime) == int(mtime_ns)
     
     def update_user_activity(self, user_id: str, timestamp: str, country: str):
         """更新用户活动状态"""
@@ -457,415 +298,190 @@ class MetricsState:
                 record.get("client_version"),
                 record.get("session_duration_sec")
             ))
-            
-            # 检查是否为预设对话并更新
-            user_query = record.get("user_query", "")
-            is_preset = 1 if user_query in self.preset_phrases else 0
-            if is_preset:
-                cursor.execute(
-                    "UPDATE conversations SET is_preset = 1 WHERE file_path = ?", 
-                    (record.get("file_path"),)
-                )
-            
-            # 更新用户会话 - 只在新时间戳更新时才更新last_seen
-            cursor.execute('''
-                INSERT INTO user_sessions (user_id, first_seen, last_seen, total_requests, country)
-                VALUES (?, ?, ?, 1, ?)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    first_seen = CASE WHEN excluded.first_seen < first_seen THEN excluded.first_seen ELSE first_seen END,
-                    last_seen = CASE WHEN excluded.last_seen > last_seen THEN excluded.last_seen ELSE last_seen END,
-                    total_requests = total_requests + 1,
-                    country = COALESCE(excluded.country, country)
-            ''', (
-                record.get("user_id"),
-                record.get("timestamp"),
-                record.get("timestamp"),
-                record.get("country")
-            ))
-            
-            # 更新player_name（如果提取到了，且timestamp更新）
-            player_name = record.get("player_name")
-            if player_name:
-                cursor.execute('''
-                    UPDATE user_sessions 
-                    SET player_name = ?
-                    WHERE user_id = ? AND (last_seen = ? OR player_name IS NULL)
-                ''', (player_name, record.get("user_id"), record.get("timestamp")))
-            
-            # 更新money（如果是logoff且有total_money）
-            total_money = record.get("total_money")
-            if total_money is not None:
-                cursor.execute('''
-                    UPDATE user_sessions 
-                    SET money = ?,
-                        island_level = COALESCE(?, island_level),
-                        tasks_completed = COALESCE(?, tasks_completed),
-                        tasks_total = COALESCE(?, tasks_total),
-                        current_task_title = COALESCE(?, current_task_title),
-                        current_task_status = COALESCE(?, current_task_status),
-                        achievements_unlocked = COALESCE(?, achievements_unlocked),
-                        achievements_total = COALESCE(?, achievements_total)
-                    WHERE user_id = ?
-                ''', (
-                    total_money,
-                    record.get("island_level"),
-                    record.get("tasks_completed"),
-                    record.get("tasks_total"),
-                    record.get("current_task_title"),
-                    record.get("current_task_status"),
-                    record.get("achievements_unlocked"),
-                    record.get("achievements_total"),
-                    record.get("user_id")
-                ))
-            
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            logger.warning(f"Failed to save conversation: {e}")
-    
-    def recalculate_user_sessions(self):
-        """
-        计算用户的游玩时长和会话数（混合策略）:
-        
-        对于每个用户，累加所有 session 的时长：
-        1. 有 logoff + session_duration_sec 的 session：使用精确的 session_duration_sec
-        2. 有 session_id 但无 logoff 的 session：使用该 session 的首尾时间差
-        3. 无 session_id 的历史数据：使用 5 分钟间隔规则
-        """
-        try:
-            conn = sqlite3.connect(self._db_file())
-            cursor = conn.cursor()
-            
-            # 获取所有用户
-            cursor.execute('SELECT DISTINCT user_id FROM conversations WHERE user_id IS NOT NULL AND user_id != ""')
-            all_users = [row[0] for row in cursor.fetchall()]
-            
-            user_stats = {}
-            
-            for user_id in all_users:
-                total_play_seconds = 0
-                total_sessions = 0
-                
-                # 1. 有 logoff + session_duration_sec 的 session
-                cursor.execute('''
-                    SELECT session_id, session_duration_sec
-                    FROM conversations
-                    WHERE user_id = ? AND message_type = 'logoff' 
-                      AND session_duration_sec IS NOT NULL AND session_id IS NOT NULL
-                ''', (user_id,))
-                logoff_sessions = {}
-                for session_id, duration in cursor.fetchall():
-                    logoff_sessions[session_id] = duration
-                    total_play_seconds += int(duration or 0)
-                    total_sessions += 1
-                
-                # 2. 有 session_id 但无 logoff 的 session（排除上面已统计的）
-                cursor.execute('''
-                    SELECT session_id, MIN(timestamp), MAX(timestamp)
-                    FROM conversations
-                    WHERE user_id = ? AND session_id IS NOT NULL
-                    GROUP BY session_id
-                ''', (user_id,))
-                for session_id, start_ts, end_ts in cursor.fetchall():
-                    if session_id not in logoff_sessions:
-                        # 计算该 session 的时长
-                        if start_ts and end_ts:
-                            cursor.execute(
-                                'SELECT (julianday(?) - julianday(?)) * 86400',
-                                (end_ts, start_ts)
-                            )
-                            diff = cursor.fetchone()[0] or 0
-                            total_play_seconds += int(diff)
-                            total_sessions += 1
-                
-                # 3. 无 session_id 的记录（历史数据）使用 5 分钟规则
-                cursor.execute('''
-                    SELECT timestamp FROM conversations
-                    WHERE user_id = ? AND session_id IS NULL
-                    ORDER BY timestamp
-                ''', (user_id,))
-                no_session_records = [row[0] for row in cursor.fetchall()]
-                
-                if no_session_records:
-                    prev_ts = None
-                    session_play = 0
-                    sessions_from_fallback = 0
-                    
-                    for ts in no_session_records:
-                        if prev_ts is None:
-                            sessions_from_fallback = 1
-                        else:
-                            cursor.execute(
-                                'SELECT (julianday(?) - julianday(?)) * 86400',
-                                (ts, prev_ts)
-                            )
-                            diff = cursor.fetchone()[0] or 0
-                            if diff <= 300:  # 5分钟内
-                                session_play += diff
-                            else:
-                                sessions_from_fallback += 1
-                        prev_ts = ts
-                    
-                    total_play_seconds += int(session_play)
-                    total_sessions += sessions_from_fallback
-                
-                user_stats[user_id] = (total_sessions, total_play_seconds)
-            
-            # 更新数据库
-            for user_id, (session_count, play_seconds) in user_stats.items():
-                cursor.execute('''
-                    UPDATE user_sessions 
-                    SET session_count = ?, total_play_seconds = ?
-                    WHERE user_id = ?
-                ''', (session_count, play_seconds, user_id))
-            
-            # 更新 is_fake_user 标记 (total_requests < 2 的用户为假用户)
-            cursor.execute('''
-                UPDATE user_sessions 
-                SET is_fake_user = CASE WHEN total_requests < 2 THEN 1 ELSE 0 END
-            ''')
-            
-            conn.commit()
-            conn.close()
-            logger.debug(f"Recalculated sessions for {len(user_stats)} users")
-        except Exception as e:
-            logger.warning(f"Failed to recalculate user sessions: {e}")
-    
+def _parse_int(value, default=0) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return default
 
-    def update_user_gauges(self):
-        """更新用户统计Gauge"""
-        try:
-            conn = sqlite3.connect(self._db_file())
-            cursor = conn.cursor()
-            
-            # 从数据库读取用户统计
-            cursor.execute('''
-                SELECT user_id, country, total_requests, total_play_seconds, session_count
-                FROM user_sessions
-                WHERE is_developer = 0
-            ''')
-            
-            for row in cursor.fetchall():
-                user_id, country, requests, play_seconds, session_count = row
-                country = country or "unknown"
-                
-                user_total_requests.labels(user_id=user_id, country=country).set(requests or 0)
-                user_play_seconds.labels(user_id=user_id, country=country).set(play_seconds or 0)
-                user_session_count.labels(user_id=user_id, country=country).set(session_count or 0)
-            
-            # 计算总Token数并设置cost
-            cursor.execute('''
-                SELECT SUM(prompt_tokens), SUM(completion_tokens), SUM(cached_tokens)
-                FROM conversations
-            ''')
-            row = cursor.fetchone()
-            if row:
-                p, c, cached = row
-                p = p or 0
-                c = c or 0
-                cached = cached or 0
-                
-                # 计算费用 (修正逻辑: prompt_tokens 包含 cached_tokens)
-                real_prompt = max(0, p - cached)
-                cost = (
-                    (real_prompt * PRICE_PROMPT / 1_000_000) +
-                    (c * PRICE_COMPLETION / 1_000_000) +
-                    (cached * PRICE_CACHED / 1_000_000)
-                )
-                total_cost_usd.set(cost)
-                
-                # 设置总Tokens和分项Tokens
-                total_tokens_global.set((p or 0) + (c or 0))
-                total_prompt_tokens_global.set(p or 0)
-                total_completion_tokens_global.set(c or 0)
-                total_cached_tokens_global.set(cached or 0)
-                
-                # 从conversations表获取准确的总请求数
-                cursor.execute('SELECT COUNT(*) FROM conversations')
-                total_reqs = cursor.fetchone()[0]
-                total_requests_global.set(total_reqs)
-            
-            conn.close()
-        except Exception as e:
-            logger.warning(f"Failed to update user gauges: {e}")
 
-    def get_deep_analytics(self) -> dict:
-        """获取深度分析数据 (User Distribution, Median, Whales)"""
-        try:
-            conn = sqlite3.connect(self._db_file())
-            c = conn.cursor()
-            
-            # 1. 真实对话统计 (排除 is_preset=1) - 这里我们统计每个用户的真实请求数
-            # 注意：我们在 conversations 表里标记了 is_preset，但在 user_sessions 里只有 total_requests (包含所有)。
-            # 所以我们需要从 conversations 表聚合。
-            
-            c.execute('''
-                SELECT user_id, COUNT(*) as real_reqs
-                FROM conversations
-                WHERE is_preset = 0 AND user_id != 'anonymous'
-                GROUP BY user_id
-                HAVING real_reqs > 0
-            ''')
-            rows = c.fetchall()
-            
-            req_counts = [r[1] for r in rows]
-            total_users = len(req_counts)
-            
-            if total_users == 0:
-                stats = {
-                    "avg": 0, "median": 0, 
-                    "distribution": {"1": 0, "2-5": 0, "6-20": 0, "21-100": 0, "100+": 0},
-                    "whales": {"top_10_percent_vol": 0, "total_vol": 0}
+def _select_session_events(session_record: dict) -> dict:
+    """从 session 聚合记录中挑选 login/logoff 事件（同类型按 source 优先级择优）"""
+    selected = {}
+    sources = session_record.get("sources", {})
+    if not isinstance(sources, dict):
+        return selected
+
+    def source_priority(source_name: str) -> int:
+        if source_name == "launcher":
+            return 2
+        if source_name == "python":
+            return 1
+        return 0
+
+    for source_name, source_data in sources.items():
+        if not isinstance(source_data, dict):
+            continue
+        priority = source_priority(source_name)
+        for event_type in ("login", "logoff"):
+            event_data = source_data.get(event_type)
+            if not isinstance(event_data, dict):
+                continue
+
+            current = selected.get(event_type)
+            if current is None:
+                selected[event_type] = {
+                    "source": source_name,
+                    "priority": priority,
+                    "event": event_data,
                 }
-            else:
-                req_counts.sort()
-                total_vol = sum(req_counts)
-                avg_reqs = round(total_vol / total_users, 1)
-                median_reqs = req_counts[total_users // 2]
-                
-                # Distribution
-                dist = {"1": 0, "2-5": 0, "6-20": 0, "21-100": 0, "100+": 0}
-                for count in req_counts:
-                    if count == 1: dist["1"] += 1
-                    elif 2 <= count <= 5: dist["2-5"] += 1
-                    elif 6 <= count <= 20: dist["6-20"] += 1
-                    elif 21 <= count <= 100: dist["21-100"] += 1
-                    else: dist["100+"] += 1
-                
-                # Whales (Top 10%)
-                top_10_count = max(1, int(total_users * 0.1))
-                top_10_vol = sum(req_counts[-top_10_count:])
-                top_10_percent = round((top_10_vol / total_vol) * 100, 1) if total_vol > 0 else 0
-                
-                stats = {
-                    "avg": avg_reqs, 
-                    "median": median_reqs, 
-                    "distribution": dist,
-                    "whales": {
-                        "top_10_percent_vol": top_10_percent, 
-                        "total_vol": total_vol
-                    }
+                continue
+
+            current_payload = current["event"].get("payload", {})
+            current_payload_len = len(current_payload) if isinstance(current_payload, dict) else 0
+            incoming_payload = event_data.get("payload", {})
+            incoming_payload_len = len(incoming_payload) if isinstance(incoming_payload, dict) else 0
+
+            if priority > current["priority"] or (
+                priority == current["priority"] and incoming_payload_len > current_payload_len
+            ):
+                selected[event_type] = {
+                    "source": source_name,
+                    "priority": priority,
+                    "event": event_data,
                 }
-            
-            conn.close()
-            return stats
-        except Exception as e:
-            logger.error(f"Analytics error: {e}")
-            return {}
-
-    def get_wordcloud_data(self) -> list:
-        """生成词云数据"""
-        try:
-            conn = sqlite3.connect(self._db_file())
-            c = conn.cursor()
-            
-            # 获取所有非预设的真实用户查询
-            c.execute("SELECT user_query FROM conversations WHERE is_preset = 0 AND user_query != ''")
-            queries = [row[0] for row in c.fetchall()]
-            conn.close()
-            
-            text = "\n".join(queries)
-            # 停用词
-            stop_words = {'的', '了', '我', '是', '你', '在', '吗', '这', '那', '有', '个', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '去', '与', '会', '对', '但', '能', '而', '之', '用', '于', '着', '等', '及', '下', '以', '帮', '我', '把', '它', '什么', '可以', '如何', '怎么'}
-            
-            words = jieba.cut(text)
-            counts = defaultdict(int)
-            
-            for word in words:
-                if len(word) > 1 and word not in stop_words:
-                    counts[word] += 1
-            
-            # Top 100
-            sorted_words = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:100]
-            return [{"word": w, "count": c} for w, c in sorted_words]
-            
-        except Exception as e:
-            logger.error(f"Wordcloud error: {e}")
-            return []
+    return selected
 
 
-# ============ 日志解析 ============
+def _process_session_file(session_record: dict, filepath: Path, state: MetricsState) -> None:
+    """处理 session-*.jsonl 聚合文件，将 login/logoff 展开为 conversations 记录"""
+    if not isinstance(session_record, dict):
+        return
 
-def extract_user_query(body: dict) -> str:
-    """从请求body中提取<user_query>内容"""
-    try:
-        messages = body.get("messages", [])
-        for msg in messages:
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                # 提取<user_query>标签内容
-                match = re.search(r'<user_query>(.*?)</user_query>', content, re.DOTALL)
-                if match:
-                    return match.group(1).strip()
-        return ""
-    except Exception:
-        return ""
+    selected_events = _select_session_events(session_record)
+    if not selected_events:
+        return
 
+    session_id_global = session_record.get("session_id")
+    user_id_global = session_record.get("user_id")
+    created_at = session_record.get("created_at")
+    updated_at = session_record.get("updated_at")
 
-def extract_player_name(body: dict) -> str:
-    """从system prompt中提取玩家名 (Master名字)
-    格式: - **Master**: 主人名字
-    """
-    try:
-        messages = body.get("messages", [])
-        for msg in messages:
-            if msg.get("role") == "system":
-                content = msg.get("content", "")
-                # 匹配 - **Master**: 后面的文本
-                match = re.search(r'-\s*\*\*Master\*\*:\s*(.+?)(?:\n|$)', content)
-                if match:
-                    name = match.group(1).strip()
-                    # 排除默认值 "主人"
-                    if name and name != "主人":
-                        return name
-        return ""
-    except Exception:
-        return ""
+    for event_type in ("login", "logoff"):
+        event_wrap = selected_events.get(event_type)
+        if not event_wrap:
+            continue
 
+        event_data = event_wrap.get("event", {})
+        if not isinstance(event_data, dict):
+            continue
 
-def extract_ai_response(body: dict) -> tuple:
-    """从响应body中提取AI回复和action"""
-    try:
-        choices = body.get("choices", [])
-        if choices:
-            message = choices[0].get("message", {})
-            
-            # 提取tool_calls
-            tool_calls = message.get("tool_calls", [])
-            if tool_calls:
-                action = tool_calls[0].get("function", {}).get("name", "")
-                args = tool_calls[0].get("function", {}).get("arguments", "{}")
-                try:
-                    args_dict = json.loads(args)
-                    # 提取talk或self_talk
-                    talk = args_dict.get("talk", "")
-                    self_talk = args_dict.get("self_talk", [])
-                    if isinstance(self_talk, list):
-                        self_talk = " | ".join(self_talk)
-                    response = talk or self_talk
-                except:
-                    response = args
-                return response[:500], action  # 限制长度
-            
-            # 普通content回复
-            content = message.get("content", "")
-            return content[:500], ""
-    except Exception:
-        pass
-    return "", ""
+        headers = event_data.get("headers", {})
+        if not isinstance(headers, dict):
+            headers = {}
+        payload = event_data.get("payload", {})
+        if not isinstance(payload, dict):
+            payload = {}
+
+        timestamp = (
+            event_data.get("received_at")
+            or event_data.get("event_timestamp")
+            or (created_at if event_type == "login" else updated_at)
+            or updated_at
+            or created_at
+            or datetime.now().isoformat()
+        )
+
+        user_id = (
+            user_id_global
+            or headers.get("x-user-id")
+            or headers.get("X-User-ID")
+            or "anonymous"
+        )
+        country = headers.get("cf-ipcountry") or "unknown"
+        session_id = (
+            session_id_global
+            or payload.get("session_id")
+            or headers.get("x-session-id")
+            or headers.get("X-Session-ID")
+        )
+        client_version = (
+            headers.get("x-client-version")
+            or headers.get("X-Client-Version")
+            or payload.get("client_version")
+        )
+
+        username = payload.get("username") or "anonymous"
+        user_query = f"[{event_type.upper()}] {username}"
+
+        # 登录/退出属于系统事件，不计入tokens和延迟统计
+        model = "system"
+        status_str = "200"
+        content_length_in = _parse_int(headers.get("content-length"), 0)
+        content_length_out = 0
+
+        requests_total.labels(
+            user_id=user_id, country=country, model=model, status=status_str
+        ).inc()
+        bandwidth_bytes.labels(user_id=user_id, direction="in").inc(content_length_in)
+        bandwidth_bytes.labels(user_id=user_id, direction="out").inc(content_length_out)
+        state.update_user_activity(user_id, timestamp, country)
+
+        state.save_conversation({
+            "timestamp": timestamp,
+            "user_id": user_id,
+            "country": country,
+            "user_query": user_query,
+            "ai_response": "",
+            "ai_action": event_type,
+            "duration_ms": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "cached_tokens": 0,
+            "file_path": f"{filepath}#{event_type}",
+            "player_name": username if username != "anonymous" else "",
+            "message_type": event_type,
+            "session_id": session_id,
+            "client_version": client_version,
+            "session_duration_sec": payload.get("session_duration_sec") if event_type == "logoff" else None,
+            "total_money": payload.get("total_money") if event_type == "logoff" else None,
+            "island_level": payload.get("island_level") if event_type == "logoff" else None,
+            "tasks_completed": payload.get("tasks_completed") if event_type == "logoff" else None,
+            "tasks_total": payload.get("tasks_total") if event_type == "logoff" else None,
+            "current_task_title": payload.get("current_task_title") if event_type == "logoff" else None,
+            "current_task_status": payload.get("current_task_status") if event_type == "logoff" else None,
+            "achievements_unlocked": payload.get("achievements_unlocked") if event_type == "logoff" else None,
+            "achievements_total": payload.get("achievements_total") if event_type == "logoff" else None,
+        })
+
+        logger.debug(
+            "Processed session event: %s | user=%s | session=%s | source=%s",
+            event_type,
+            user_id,
+            session_id,
+            event_wrap.get("source", "unknown"),
+        )
 
 
 def parse_jsonl_file(filepath: Path, state: MetricsState):
     """解析单个JSONL文件"""
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        
+            lines = [line.strip() for line in f if line.strip()]
+
+        if not lines:
+            return
+
+        # session 聚合日志（单行）
+        line1_data = json.loads(lines[0])
+        if line1_data.get("type") == "session":
+            _process_session_file(line1_data, filepath, state)
+            return
+
         if len(lines) < 2:
             return
-        
-        # 解析两行数据
-        line1_data = json.loads(lines[0])
+
+        # 解析两行 request/response 数据
         line2_data = json.loads(lines[1])
         
         # 根据 type 字段正确识别 request 和 response（不依赖行顺序）
@@ -1053,12 +669,17 @@ def scan_output_directory(state: MetricsState):
         
         for jsonl_file in user_dir.glob("*.jsonl"):
             filepath_str = str(jsonl_file)
-            
-            if state.is_processed(filepath_str):
+
+            is_session_file = jsonl_file.name.startswith("session-")
+            mtime_ns = None
+            if is_session_file:
+                mtime_ns = jsonl_file.stat().st_mtime_ns
+
+            if state.is_processed(filepath_str, mtime_ns):
                 continue
             
             parse_jsonl_file(jsonl_file, state)
-            state.mark_processed(filepath_str)
+            state.mark_processed(filepath_str, mtime_ns)
             new_files += 1
     
     if new_files > 0:

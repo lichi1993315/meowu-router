@@ -1,0 +1,7 @@
+.git
+backups
+output
+data
+__pycache__
+*.tar.gz
+.agent
