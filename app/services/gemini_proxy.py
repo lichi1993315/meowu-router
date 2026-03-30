@@ -1,6 +1,40 @@
 import asyncio
 import json
 from datetime import datetime
+from typing import Any
+
+import httpx
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
+
+from app.core.config import GEMINI_API_KEY, GEMINI_BASE_URL, GEMINI_SDK_URL
+from app.core.logging import log
+from app.services import sessions
+from app.utils.crypto import decrypt_payload
+
+
+def _get_user_id(request: Request) -> str:
+    return request.headers.get("x-user-id") or "anonymous_user"
+
+
+def _check_blacklist(user_id: str, blacklist: set[str]) -> None:
+    if user_id and user_id in blacklist:
+        log(f"🚫 Blocked blacklisted user: {user_id}")
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+def _maybe_decrypt(request: Request, raw_body: bytes) -> bytes:
+    is_encrypted = request.headers.get("x-encrypted", "").lower() == "true"
+    if not is_encrypted:
+        return raw_body
+
+    encrypted_str = raw_body.decode("utf-8")
+    decrypted_str = decrypt_payload(encrypted_str)
+    if decrypted_str is None:
+        raise HTTPException(status_code=400, detail="Failed to decrypt request body")
+    return decrypted_str.encode("utf-8")
+
+
 def _is_image_model(model: str | None) -> bool:
     if not model:
         return False

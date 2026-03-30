@@ -675,12 +675,106 @@
             "type": "table"
         },
         {
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${DS_SQLITE}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "footer": {
+                            "reducers": [
+                                "countAll"
+                            ]
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "玩家消息"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 260
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "AI回复"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 380
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 30
+            },
+            "id": 102,
+            "options": {
+                "cellHeight": "sm",
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "时间(北京)"
+                    }
+                ]
+            },
+            "pluginVersion": "12.3.1",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "frser-sqlite-datasource",
+                        "uid": "${DS_SQLITE}"
+                    },
+                    "queryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.country = 'CN' AND c.ai_action = 'speak' AND (s.is_developer = 0 OR s.is_developer IS NULL) ORDER BY c.timestamp DESC",
+                    "queryType": "table",
+                    "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') as '时间(北京)', COALESCE(s.nickname, s.player_name, '') as '昵称', c.user_id as '用户ID', c.country as '国家', c.user_query as '玩家消息', c.ai_response as 'AI回复', c.ai_action as 'AI动作', c.duration_ms as '延迟(ms)' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.country = 'CN' AND c.ai_action = 'speak' AND (s.is_developer = 0 OR s.is_developer IS NULL) ORDER BY c.timestamp DESC",
+                    "refId": "A"
+                }
+            ],
+            "title": "🇨🇳 CN + speak 对话历史（排除开发者）",
+            "type": "table"
+        },
+        {
             "collapsed": false,
             "gridPos": {
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 30
+                "y": 40
             },
             "id": 101,
             "panels": [],
@@ -712,7 +806,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 31
+                "y": 41
             },
             "id": 10,
             "options": {
@@ -806,7 +900,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 31
+                "y": 41
             },
             "id": 11,
             "options": {
@@ -902,7 +996,7 @@
                 "h": 10,
                 "w": 24,
                 "x": 0,
-                "y": 50
+                "y": 60
             },
             "id": 44,
             "options": {
@@ -966,7 +1060,7 @@
                 "h": 10,
                 "w": 24,
                 "x": 0,
-                "y": 60
+                "y": 70
             },
             "id": 21,
             "options": {
@@ -1034,7 +1128,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 70
+                "y": 80
             },
             "id": 45,
             "options": {
@@ -1110,7 +1204,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 70
+                "y": 80
             },
             "id": 46,
             "options": {
@@ -1173,7 +1267,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 78
+                "y": 88
             },
             "id": 110,
             "panels": [],
@@ -1186,7 +1280,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 79
+                "y": 89
             },
             "id": 103,
             "panels": [],
@@ -1245,7 +1339,7 @@
                 "h": 8,
                 "w": 8,
                 "x": 0,
-                "y": 80
+                "y": 90
             },
             "id": 111,
             "options": {
@@ -1319,7 +1413,7 @@
                 "h": 8,
                 "w": 8,
                 "x": 8,
-                "y": 80
+                "y": 90
             },
             "id": 112,
             "options": {
@@ -1375,7 +1469,7 @@
                 "h": 8,
                 "w": 8,
                 "x": 16,
-                "y": 80
+                "y": 90
             },
             "id": 113,
             "options": {
@@ -1399,7 +1493,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 88
+                "y": 98
             },
             "id": 200,
             "panels": [],
@@ -1462,7 +1556,7 @@
                 "h": 8,
                 "w": 24,
                 "x": 0,
-                "y": 89
+                "y": 99
             },
             "id": 202,
             "options": {
@@ -1492,7 +1586,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 97
+                "y": 107
             },
             "id": 300,
             "panels": [],
@@ -1548,7 +1642,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 98
+                "y": 108
             },
             "id": 301,
             "options": {
@@ -1636,7 +1730,7 @@
                 "h": 4,
                 "w": 6,
                 "x": 12,
-                "y": 98
+                "y": 108
             },
             "id": 302,
             "options": {
@@ -1673,7 +1767,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 106
+                "y": 116
             },
             "id": 400,
             "panels": [],
@@ -1729,7 +1823,7 @@
                 "h": 10,
                 "w": 24,
                 "x": 0,
-                "y": 107
+                "y": 117
             },
             "id": 401,
             "options": {
@@ -1771,7 +1865,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 117
+                "y": 127
             },
             "id": 500,
             "panels": [],
@@ -1866,7 +1960,7 @@
                 "h": 15,
                 "w": 24,
                 "x": 0,
-                "y": 118
+                "y": 128
             },
             "id": 501,
             "options": {
@@ -1964,5 +2058,5 @@
     "timezone": "browser",
     "title": "🗣️ 对话历史与用户分析",
     "uid": "llm-conversations",
-    "version": 22
+    "version": 23
 }
