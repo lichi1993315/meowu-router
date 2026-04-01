@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -11,6 +12,77 @@ from app.core.config import GEMINI_API_KEY, GEMINI_BASE_URL, GEMINI_SDK_URL
 from app.core.logging import log
 from app.services import sessions
 from app.utils.crypto import decrypt_payload
+
+_FINISH_REASON_MAP = {
+    "STOP": "stop",
+    "MAX_TOKENS": "length",
+    "SAFETY": "content_filter",
+    "RECITATION": "content_filter",
+    "OTHER": "stop",
+}
+
+
+def _gemini_response_to_openai(response_json: dict, model: str) -> dict:
+    """Convert native Gemini generateContent response to OpenAI chat completion format."""
+    choices = []
+    candidates = response_json.get("candidates") or []
+    for i, candidate in enumerate(candidates):
+        content = candidate.get("content") or {}
+        parts = content.get("parts") or []
+        text_parts = []
+        tool_calls = []
+        
+        for p in parts:
+            if "text" in p:
+                text_parts.append(p["text"])
+            elif "functionCall" in p:
+                fc = p["functionCall"]
+                name = fc.get("name", "")
+                args = fc.get("args", {})
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:16]}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": json.dumps(args, ensure_ascii=False)
+                    }
+                })
+                
+        finish_reason_raw = candidate.get("finishReason", "STOP")
+        finish_reason = _FINISH_REASON_MAP.get(finish_reason_raw, "stop")
+        
+        if tool_calls and finish_reason == "stop":
+            finish_reason = "tool_calls"
+            
+        message = {
+            "role": "assistant",
+            "content": "".join(text_parts) if text_parts else None,
+        }
+        if tool_calls:
+            message["tool_calls"] = tool_calls
+
+        choices.append({
+            "index": i,
+            "message": message,
+            "finish_reason": finish_reason,
+        })
+
+    usage_meta = response_json.get("usageMetadata") or {}
+    prompt_tokens = usage_meta.get("promptTokenCount", 0)
+    completion_tokens = usage_meta.get("candidatesTokenCount", 0)
+
+    return {
+        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+        "object": "chat.completion",
+        "created": int(datetime.now().timestamp()),
+        "model": model,
+        "choices": choices,
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+    }
 
 
 def _get_user_id(request: Request) -> str:
@@ -115,6 +187,42 @@ def _openai_messages_to_gemini_contents(messages: list[Any]) -> list[dict[str, A
     return contents
 
 
+def _sanitize_schema(schema: Any) -> Any:
+    if not isinstance(schema, dict):
+        return schema
+    
+    sanitized = {}
+    for k, v in schema.items():
+        if k in {"anyOf", "allOf", "oneOf"}:
+            continue
+        if isinstance(v, dict):
+            sanitized[k] = _sanitize_schema(v)
+        elif isinstance(v, list):
+            sanitized[k] = [_sanitize_schema(item) if isinstance(item, dict) else item for item in v]
+        else:
+            sanitized[k] = v
+    return sanitized
+
+
+def _openai_tools_to_gemini(tools: list[Any]) -> list[dict[str, Any]]:
+    if not isinstance(tools, list):
+        return []
+    
+    function_declarations = []
+    for tool in tools:
+        if not isinstance(tool, dict):
+            continue
+        if tool.get("type") == "function" and "function" in tool:
+            func_def = dict(tool["function"])
+            if "parameters" in func_def:
+                func_def["parameters"] = _sanitize_schema(func_def["parameters"])
+            function_declarations.append(func_def)
+            
+    if function_declarations:
+        return [{"functionDeclarations": function_declarations}]
+    return []
+
+
 def _to_list(value: Any) -> list[Any]:
     if value is None:
         return []
@@ -160,7 +268,7 @@ async def handle_chat_completions(
         except json.JSONDecodeError:
             request_json = {}
 
-        model_name = request_json.get("model")
+        model_name = request_json.get("model") or "gemini-3.0-flash"
         extra_body = request_json.get("extra_body") or {}
         google_extra = extra_body.get("google") or {}
         response_modalities = _to_list(
@@ -179,68 +287,65 @@ async def handle_chat_completions(
         response_modalities_upper = {str(item).upper() for item in response_modalities}
         is_image_request = _is_image_model(model_name) or ("IMAGE" in response_modalities_upper)
 
-        if is_image_request:
-            if not model_name:
-                raise HTTPException(status_code=400, detail="Missing 'model' for image request")
+        model_id = str(model_name)
+        if model_id.startswith("models/"):
+            model_id = model_id[len("models/") :]
 
-            model_id = str(model_name)
-            if model_id.startswith("models/"):
-                model_id = model_id[len("models/") :]
-
-            if "contents" in request_json:
-                gemini_payload = dict(request_json)
-                gemini_payload.pop("model", None)
-                gemini_payload.pop("extra_body", None)
-            else:
-                gemini_payload: dict[str, Any] = {
-                    "contents": _openai_messages_to_gemini_contents(
-                        request_json.get("messages", [])
-                    )
-                }
-
-                image_generation_config: dict[str, Any] = {}
-                if response_modalities:
-                    image_generation_config["responseModalities"] = response_modalities
-
-                image_config = google_extra.get("image_config") or google_extra.get("imageConfig")
-                if image_config:
-                    image_generation_config["imageConfig"] = image_config
-
-                if "temperature" in request_json:
-                    image_generation_config["temperature"] = request_json.get("temperature")
-
-                if "max_tokens" in request_json:
-                    image_generation_config["maxOutputTokens"] = request_json.get("max_tokens")
-
-                if image_generation_config:
-                    gemini_payload["generationConfig"] = image_generation_config
-
-                if request_json.get("tools"):
-                    gemini_payload["tools"] = request_json.get("tools")
-
-            response = await http_client.post(
-                f"{GEMINI_SDK_URL.rstrip('/')}/models/{model_id}:generateContent",
-                json=gemini_payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": api_key,
-                },
-            )
+        # Build Gemini-native payload from OpenAI-format request
+        if "contents" in request_json:
+            gemini_payload = dict(request_json)
+            gemini_payload.pop("model", None)
+            gemini_payload.pop("extra_body", None)
         else:
-            response = await http_client.post(
-                f"{GEMINI_BASE_URL}/chat/completions",
-                content=body,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                },
-            )
+            gemini_payload: dict[str, Any] = {
+                "contents": _openai_messages_to_gemini_contents(
+                    request_json.get("messages", [])
+                )
+            }
+
+        gen_config: dict[str, Any] = {}
+
+        if is_image_request:
+            if response_modalities:
+                gen_config["responseModalities"] = response_modalities
+
+            image_config = google_extra.get("image_config") or google_extra.get("imageConfig")
+            if image_config:
+                gen_config["imageConfig"] = image_config
+
+        if "temperature" in request_json:
+            gen_config["temperature"] = request_json["temperature"]
+
+        if "max_tokens" in request_json:
+            gen_config["maxOutputTokens"] = request_json["max_tokens"]
+
+        if "top_p" in request_json:
+            gen_config["topP"] = request_json["top_p"]
+
+        if gen_config:
+            gemini_payload["generationConfig"] = gen_config
+
+        if request_json.get("tools"):
+            gemini_tools = _openai_tools_to_gemini(request_json["tools"])
+            if gemini_tools:
+                gemini_payload["tools"] = gemini_tools
+
+        base_url = GEMINI_SDK_URL.rstrip("/")
+        response = await http_client.post(
+            f"{base_url}/models/{model_id}:generateContent?key={api_key}",
+            json=gemini_payload,
+            headers={"Content-Type": "application/json"},
+        )
 
         duration_ms = (datetime.now() - start_time).total_seconds() * 1000
         try:
             response_json = response.json()
         except Exception:
             response_json = None
+
+        # Convert native Gemini response to OpenAI format for non-image requests
+        if response_json is not None and response.is_success and not is_image_request:
+            response_json = _gemini_response_to_openai(response_json, model_name)
 
         asyncio.create_task(
             sessions.save_response_to_file(
@@ -361,13 +466,14 @@ async def handle_embeddings(
         else:
             raise HTTPException(status_code=400, detail="Missing 'content' or 'requests' field")
 
+        # Use query-param auth (key=) instead of header auth (x-goog-api-key)
+        # because header-based auth hangs from this server
+        separator = "&" if "?" in endpoint else "?"
+        endpoint_with_key = f"{endpoint}{separator}key={api_key}"
         response = await http_client.post(
-            endpoint,
+            endpoint_with_key,
             json=payload,
-            headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": api_key,
-            },
+            headers={"Content-Type": "application/json"},
         )
 
         duration_ms = (datetime.now() - start_time).total_seconds() * 1000

@@ -26,6 +26,9 @@ services:
       - REPORT_TIMEZONE=Asia/Shanghai
     depends_on:
       - grafana
+    networks:
+      - default
+      - edge-shared
     restart: unless-stopped
 
   # Metrics Exporter - 扫描日志并暴露Prometheus指标

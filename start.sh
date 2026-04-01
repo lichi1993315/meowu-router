@@ -7,11 +7,12 @@ set -e
 
 COMPOSE_FILE="docker-compose.monitoring.yml"
 SERVICE_NAME="router-api"
+CONTAINER_NAME="llm-router-api"
 
-echo "=== Stopping existing $SERVICE_NAME container (if any) ==="
-sudo docker compose -f "$COMPOSE_FILE" stop "$SERVICE_NAME" 2>/dev/null || true
+echo "=== Removing old container (if any) ==="
+sudo docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 
-echo "=== Rebuilding and starting $SERVICE_NAME ==="
+echo "=== Building and starting $SERVICE_NAME ==="
 sudo docker compose -f "$COMPOSE_FILE" up -d --build "$SERVICE_NAME"
 
 echo "=== Checking $SERVICE_NAME status ==="
