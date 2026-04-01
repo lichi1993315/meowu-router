@@ -178,31 +178,82 @@ def _openai_messages_to_gemini_contents(messages: list[Any]) -> list[dict[str, A
                 if text:
                     parts.append({"text": text})
 
+        if role == "assistant" and "tool_calls" in message:
+            for tc in message.get("tool_calls", []):
+                if tc.get("type") == "function" and "function" in tc:
+                    func = tc["function"]
+                    try:
+                        args = json.loads(func.get("arguments", "{}"))
+                    except Exception:
+                        args = {}
+                    parts.append({
+                        "functionCall": {
+                            "name": func.get("name", ""),
+                            "args": args
+                        }
+                    })
+
+        if role == "tool":
+            name = message.get("name") or "unknown_function"
+            try:
+                resp_json = json.loads(message.get("content", "{}") or "{}")
+            except Exception:
+                resp_json = {"result": message.get("content", "")}
+                
+            parts.append({
+                "functionResponse": {
+                    "name": name,
+                    "response": {"name": name, "content": resp_json}
+                }
+            })
+
         if not parts:
             continue
 
-        gemini_role = "model" if role == "assistant" else "user"
+        if role == "assistant":
+            gemini_role = "model"
+        else:
+            gemini_role = "user"
+            
         contents.append({"role": gemini_role, "parts": parts})
 
     return contents
 
 
-def _sanitize_schema(schema: Any) -> Any:
+def _sanitize_schema(schema: Any, is_properties_dict: bool = False) -> Any:
     if not isinstance(schema, dict):
         return schema
     
     sanitized = {}
+    
+    if is_properties_dict:
+        for k, v in schema.items():
+            sanitized[k] = _sanitize_schema(v, is_properties_dict=False)
+        return sanitized
+    
+    # Google Gemini FunctionDeclaration Schema object only supports these exact fields.
+    # Any other OpenAPI fields (like anyOf, minItems, etc.) will cause a 400 Bad Request.
+    allowed_keys = {
+        "type", "format", "description", "nullable", 
+        "enum", "properties", "required", "items",
+        "minimum", "maximum", "minLength", "maxLength",
+        "pattern", "minItems", "maxItems", "minProperties", "maxProperties",
+        "title", "default", "example", "propertyOrdering"
+    }
+    
     for k, v in schema.items():
-        if k in {"anyOf", "allOf", "oneOf"}:
+        if k not in allowed_keys:
             continue
-        if isinstance(v, dict):
-            sanitized[k] = _sanitize_schema(v)
+            
+        if k == "properties" and isinstance(v, dict):
+            sanitized[k] = _sanitize_schema(v, is_properties_dict=True)
+        elif isinstance(v, dict):
+            sanitized[k] = _sanitize_schema(v, is_properties_dict=False)
         elif isinstance(v, list):
-            sanitized[k] = [_sanitize_schema(item) if isinstance(item, dict) else item for item in v]
+            sanitized[k] = [_sanitize_schema(item, is_properties_dict=False) if isinstance(item, dict) else item for item in v]
         else:
             sanitized[k] = v
     return sanitized
-
 
 def _openai_tools_to_gemini(tools: list[Any]) -> list[dict[str, Any]]:
     if not isinstance(tools, list):
@@ -297,11 +348,27 @@ async def handle_chat_completions(
             gemini_payload.pop("model", None)
             gemini_payload.pop("extra_body", None)
         else:
+            messages = request_json.get("messages", [])
+            system_messages = [m for m in messages if m.get("role") == "system"]
+            user_and_model_messages = [m for m in messages if m.get("role") != "system"]
             gemini_payload: dict[str, Any] = {
-                "contents": _openai_messages_to_gemini_contents(
-                    request_json.get("messages", [])
-                )
+                "contents": _openai_messages_to_gemini_contents(user_and_model_messages)
             }
+            if system_messages:
+                system_text_parts = []
+                for sm in system_messages:
+                    content = sm.get("content")
+                    if isinstance(content, str):
+                        system_text_parts.append(content)
+                    elif isinstance(content, list):
+                        for p in content:
+                            if isinstance(p, dict) and p.get("type") == "text":
+                                system_text_parts.append(p.get("text", ""))
+                if system_text_parts:
+                    gemini_payload["systemInstruction"] = {
+                        "role": "user",
+                        "parts": [{"text": "\n\n".join(system_text_parts)}]
+                    }
 
         gen_config: dict[str, Any] = {}
 
