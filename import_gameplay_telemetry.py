@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-Import gameplay telemetry JSON into SQLite for Grafana analytics.
+Import gameplay telemetry into SQLite for Grafana analytics.
 
-The importer scans a directory of JSON files, flattens telemetry samples into
-session/day/event tables, and keeps the import idempotent by replacing data for
-each source file on re-import.
+The importer supports two sources:
+1. Standalone telemetry JSON files in a data directory.
+2. Live session log files under output/*/session-*.jsonl where gameplay
+   telemetry is embedded in logoff.payload.gameplay_telemetry.
+
+Imports are idempotent per source file and are replaced on re-import.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ from typing import Any, Iterable
 
 DB_PATH = Path(os.getenv("DB_PATH", "/app/data/conversations.db"))
 TELEMETRY_DIR = Path(os.getenv("GAMEPLAY_TELEMETRY_DIR", "/app/data/gameplay_telemetry"))
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/output"))
 STATE_PATH = Path(os.getenv("GAMEPLAY_IMPORTER_STATE_PATH", "/app/data/gameplay_importer_state.json"))
 IMPORT_INTERVAL_SEC = int(os.getenv("GAMEPLAY_IMPORT_INTERVAL_SEC", "300"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -138,11 +142,12 @@ CREATE INDEX IF NOT EXISTS idx_gameplay_events_user_type ON gameplay_events(user
 CREATE INDEX IF NOT EXISTS idx_gameplay_events_user_day ON gameplay_events(user_id, game_day);
 CREATE INDEX IF NOT EXISTS idx_gameplay_events_type ON gameplay_events(event_type);
 
+DROP VIEW IF EXISTS gameplay_player_summary;
 CREATE VIEW IF NOT EXISTS gameplay_player_summary AS
 WITH player_sessions AS (
     SELECT
         s.user_id,
-        COALESCE(NULLIF(MAX(s.nickname), ''), s.user_id) AS nickname,
+        MAX(NULLIF(s.nickname, '')) AS telemetry_nickname,
         MIN(date(s.real_time_started_iso)) AS first_login_date,
         MIN(s.real_time_started_iso) AS first_login_iso,
         MAX(s.real_time_started_iso) AS latest_session_started_iso,
@@ -178,7 +183,12 @@ latest_day AS (
 )
 SELECT
     ps.user_id,
-    ps.nickname,
+    COALESCE(
+        NULLIF(us.nickname, ''),
+        NULLIF(us.player_name, ''),
+        ps.telemetry_nickname,
+        ps.user_id
+    ) AS nickname,
     ps.first_login_date,
     ps.first_login_iso,
     ps.latest_session_started_iso,
@@ -189,6 +199,8 @@ SELECT
     COALESCE(ls.country, '') AS country,
     COALESCE(ld.cats_count, 0) AS cats_count
 FROM player_sessions ps
+LEFT JOIN user_sessions us
+    ON us.user_id = ps.user_id
 LEFT JOIN latest_session ls
     ON ls.user_id = ps.user_id AND ls.rn = 1
 LEFT JOIN latest_day ld
@@ -258,10 +270,16 @@ def as_float(value: Any) -> float | None:
         return None
 
 
-def discover_files(root: Path) -> list[Path]:
+def discover_json_files(root: Path) -> list[Path]:
     if not root.exists():
         return []
     return sorted(path for path in root.rglob("*.json") if path.is_file())
+
+
+def discover_session_files(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    return sorted(path for path in root.rglob("session-*.jsonl") if path.is_file())
 
 
 def iter_samples(payload: Any) -> Iterable[dict[str, Any]]:
@@ -281,6 +299,52 @@ def iter_samples(payload: Any) -> Iterable[dict[str, Any]]:
         for entry in payload:
             if isinstance(entry, dict):
                 yield from iter_samples(entry)
+
+
+def sample_from_session_record(session_record: dict[str, Any]) -> dict[str, Any] | None:
+    if not isinstance(session_record, dict) or session_record.get("type") != "session":
+        return None
+
+    sources = session_record.get("sources") or {}
+    if not isinstance(sources, dict):
+        return None
+
+    selected_logoff = None
+    for source_name in ("launcher", "python"):
+        source_bucket = sources.get(source_name) or {}
+        if not isinstance(source_bucket, dict):
+            continue
+        logoff = source_bucket.get("logoff")
+        if isinstance(logoff, dict):
+            selected_logoff = logoff
+            break
+    if not isinstance(selected_logoff, dict):
+        return None
+
+    headers = selected_logoff.get("headers") or {}
+    payload = selected_logoff.get("payload") or {}
+    if not isinstance(headers, dict) or not isinstance(payload, dict):
+        return None
+
+    telemetry = payload.get("gameplay_telemetry")
+    if not isinstance(telemetry, dict):
+        return None
+
+    user_id = (
+        session_record.get("user_id")
+        or headers.get("x-user-id")
+        or headers.get("X-User-ID")
+        or "unknown"
+    )
+    sample = {
+        "user_id": user_id,
+        "username": payload.get("username"),
+        "player_name": payload.get("username"),
+        "country": headers.get("cf-ipcountry", ""),
+        "client_version": payload.get("client_version") or headers.get("x-client-version"),
+        "gameplay_telemetry": telemetry,
+    }
+    return sample
 
 
 def infer_country(sample: dict[str, Any], session_meta: dict[str, Any]) -> str:
@@ -518,10 +582,16 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
     source_file = str(path.resolve())
     imported_at = now_iso()
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    samples = list(iter_samples(payload))
+    if path.name.startswith("session-") and path.suffix == ".jsonl":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        sample = sample_from_session_record(payload)
+        samples = [sample] if sample else []
+    else:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        samples = list(iter_samples(payload))
+
     if not samples:
-        logger.info("Skip %s: no gameplay telemetry samples found", path)
+        logger.debug("Skip %s: no gameplay telemetry samples found", path)
         return 0, 0
 
     conn.execute("DELETE FROM gameplay_events WHERE source_file = ?", (source_file,))
@@ -538,15 +608,15 @@ def run_import_once() -> int:
     TELEMETRY_DIR.mkdir(parents=True, exist_ok=True)
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     state = ImportState.load(STATE_PATH)
-    files = discover_files(TELEMETRY_DIR)
-
-    if not files:
-        logger.info("No telemetry files found under %s", TELEMETRY_DIR)
-        return 0
-
     imported_files = 0
     with sqlite3.connect(DB_PATH) as conn:
         ensure_schema(conn)
+        files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)
+        if not files:
+            logger.info("No gameplay telemetry sources found under %s or %s", TELEMETRY_DIR, OUTPUT_DIR)
+            conn.commit()
+            state.save(STATE_PATH)
+            return 0
         for path in files:
             mtime_ns = path.stat().st_mtime_ns
             key = str(path.resolve())
@@ -577,6 +647,7 @@ def main() -> None:
     logger.info("Gameplay importer started")
     logger.info("DB_PATH=%s", DB_PATH)
     logger.info("GAMEPLAY_TELEMETRY_DIR=%s", TELEMETRY_DIR)
+    logger.info("OUTPUT_DIR=%s", OUTPUT_DIR)
     logger.info("STATE_PATH=%s", STATE_PATH)
 
     loop_mode = "--loop" in os.sys.argv

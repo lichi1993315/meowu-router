@@ -149,9 +149,11 @@ services:
     container_name: llm-gameplay-importer
     volumes:
       - ./data:/app/data
+      - ./output:/app/output:ro
     environment:
       - DB_PATH=/app/data/conversations.db
       - GAMEPLAY_TELEMETRY_DIR=/app/data/gameplay_telemetry
+      - OUTPUT_DIR=/app/output
       - GAMEPLAY_IMPORTER_STATE_PATH=/app/data/gameplay_importer_state.json
       - GAMEPLAY_IMPORT_INTERVAL_SEC=300
     command: [ "python", "-u", "import_gameplay_telemetry.py", "--loop" ]
