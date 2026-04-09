@@ -133,10 +133,28 @@ services:
       - "9095:9095"
     volumes:
       - ./data:/app/data
+      - ./output:/app/output:ro
     environment:
       - ADMIN_PORT=9095
       - DB_PATH=/app/data/conversations.db
+      - OUTPUT_DIR=/app/output
     command: [ "python", "-u", "developer_admin.py" ]
+    restart: unless-stopped
+
+  # Gameplay Telemetry Importer - 导入 gameplay JSON 到 SQLite
+  gameplay-importer:
+    build:
+      context: .
+      dockerfile: Dockerfile.metrics
+    container_name: llm-gameplay-importer
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/conversations.db
+      - GAMEPLAY_TELEMETRY_DIR=/app/data/gameplay_telemetry
+      - GAMEPLAY_IMPORTER_STATE_PATH=/app/data/gameplay_importer_state.json
+      - GAMEPLAY_IMPORT_INTERVAL_SEC=300
+    command: [ "python", "-u", "import_gameplay_telemetry.py", "--loop" ]
     restart: unless-stopped
 
 volumes:

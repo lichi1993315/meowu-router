@@ -1,0 +1,263 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": false,
+      "title": "返回 Gameplay 总览",
+      "type": "link",
+      "url": "/d/gameplay-overview/gameplay"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "基础数据",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] }, "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT ROUND(total_play_duration_sec, 2) AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT ROUND(total_play_duration_sec, 2) AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "游玩时长",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT play_days_total AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT play_days_total AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "游玩天数",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT island_level_max AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT island_level_max AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "岛屿等级",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] }, "unit": "currencyCNY" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT total_money AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT total_money AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "总金币数",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT cats_count AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT cats_count AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "猫数量",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "value_and_name", "wideLayout": true },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT first_login_date AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT first_login_date AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "title": "首次登录日期",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 5 },
+      "id": 7,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "购买最多前5个商品",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 5 },
+      "id": 8,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "进行最多前5个行为",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 5 },
+      "id": 9,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "种最多的5个种子",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
+      "id": 10,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "做最多的5种菜",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
+      "id": 11,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "体力" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "花费体力最多的5个行为",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
+      "id": 12,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "title": "建造最多的5种建筑",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 101,
+      "panels": [],
+      "title": "日期一览",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "id": 13,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": false, "displayName": "日期" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH ranked_days AS (SELECT game_day, day_meta_json, ROW_NUMBER() OVER (PARTITION BY game_day ORDER BY imported_at DESC) AS rn FROM gameplay_days WHERE user_id = ${user_id:sqlstring}), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT game_day, event_type FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "queryType": "table",
+          "rawQueryText": "WITH ranked_days AS (SELECT game_day, day_meta_json, ROW_NUMBER() OVER (PARTITION BY game_day ORDER BY imported_at DESC) AS rn FROM gameplay_days WHERE user_id = ${user_id:sqlstring}), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT game_day, event_type FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "日期一览",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "id": 102,
+      "panels": [],
+      "title": "事件一览",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "${DS_SQLITE}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "footer": { "reducers": [] }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": 0 } ] } }, "overrides": [] },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 33 },
+      "id": 14,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "#" } ] },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY game_day DESC, event_index DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY game_day DESC, event_index DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "事件一览",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "5m",
+  "schemaVersion": 42,
+  "tags": [ "gameplay", "analytics", "player-detail" ],
+  "templating": {
+    "list": [
+      {
+        "current": { "text": "SQLite", "value": "SQLite" },
+        "includeAll": false,
+        "label": "SQLite Datasource",
+        "name": "DS_SQLITE",
+        "options": [],
+        "query": "frser-sqlite-datasource",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": { "text": "", "value": "" },
+        "label": "用户ID",
+        "name": "user_id",
+        "options": [
+          { "selected": true, "text": "", "value": "" }
+        ],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": { "from": "now-180d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Gameplay 玩家详情",
+  "uid": "gameplay-player-detail",
+  "version": 1
+}
