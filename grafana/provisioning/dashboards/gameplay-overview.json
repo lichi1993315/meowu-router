@@ -35,7 +35,7 @@
       "id": 1,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COUNT(*) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT COUNT(*) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COUNT(*) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT COUNT(*) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "玩家数",
       "type": "stat"
     },
@@ -46,7 +46,7 @@
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date = date(latest.d, '-1 day')", "queryType": "table", "rawQueryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date = date(latest.d, '-1 day')", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date = date(latest.d, '-1 day')", "queryType": "table", "rawQueryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date = date(latest.d, '-1 day')", "refId": "A" } ],
       "title": "昨日新增",
       "type": "stat"
     },
@@ -57,7 +57,7 @@
       "id": 3,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date BETWEEN date(latest.d, '-6 day') AND latest.d", "queryType": "table", "rawQueryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date BETWEEN date(latest.d, '-6 day') AND latest.d", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date BETWEEN date(latest.d, '-6 day') AND latest.d", "queryType": "table", "rawQueryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date BETWEEN date(latest.d, '-6 day') AND latest.d", "refId": "A" } ],
       "title": "7日新增",
       "type": "stat"
     },
@@ -68,7 +68,7 @@
       "id": 4,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date BETWEEN date(latest.d, '-29 day') AND latest.d", "queryType": "table", "rawQueryText": "WITH latest AS (SELECT MAX(first_login_date) AS d FROM gameplay_player_summary) SELECT COUNT(*) AS value FROM gameplay_player_summary, latest WHERE first_login_date BETWEEN date(latest.d, '-29 day') AND latest.d", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date BETWEEN date(latest.d, '-29 day') AND latest.d", "queryType": "table", "rawQueryText": "WITH base AS (SELECT * FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0), latest AS (SELECT MAX(first_login_date) AS d FROM base) SELECT COUNT(*) AS value FROM base, latest WHERE first_login_date BETWEEN date(latest.d, '-29 day') AND latest.d", "refId": "A" } ],
       "title": "30日新增",
       "type": "stat"
     },
@@ -79,7 +79,7 @@
       "id": 5,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH ordered AS (SELECT total_play_duration_sec AS v, ROW_NUMBER() OVER (ORDER BY total_play_duration_sec) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT total_play_duration_sec AS v, ROW_NUMBER() OVER (ORDER BY total_play_duration_sec) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH ordered AS (SELECT total_play_duration_sec AS v, ROW_NUMBER() OVER (ORDER BY total_play_duration_sec) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT total_play_duration_sec AS v, ROW_NUMBER() OVER (ORDER BY total_play_duration_sec) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
       "title": "游玩时长中位数",
       "type": "stat"
     },
@@ -90,7 +90,7 @@
       "id": 6,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT ROUND(AVG(total_play_duration_sec), 2) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(total_play_duration_sec), 2) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT ROUND(AVG(total_play_duration_sec), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(total_play_duration_sec), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "游玩时长平均数",
       "type": "stat"
     },
@@ -101,7 +101,7 @@
       "id": 7,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH ordered AS (SELECT play_days_total AS v, ROW_NUMBER() OVER (ORDER BY play_days_total) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT play_days_total AS v, ROW_NUMBER() OVER (ORDER BY play_days_total) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH ordered AS (SELECT play_days_total AS v, ROW_NUMBER() OVER (ORDER BY play_days_total) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT play_days_total AS v, ROW_NUMBER() OVER (ORDER BY play_days_total) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
       "title": "游玩天数中位数",
       "type": "stat"
     },
@@ -112,7 +112,7 @@
       "id": 8,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT ROUND(AVG(play_days_total), 2) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(play_days_total), 2) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT ROUND(AVG(play_days_total), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(play_days_total), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "游玩天数平均数",
       "type": "stat"
     },
@@ -123,7 +123,7 @@
       "id": 9,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "WITH ordered AS (SELECT island_level_max AS v, ROW_NUMBER() OVER (ORDER BY island_level_max) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT island_level_max AS v, ROW_NUMBER() OVER (ORDER BY island_level_max) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH ordered AS (SELECT island_level_max AS v, ROW_NUMBER() OVER (ORDER BY island_level_max) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "queryType": "table", "rawQueryText": "WITH ordered AS (SELECT island_level_max AS v, ROW_NUMBER() OVER (ORDER BY island_level_max) AS rn, COUNT(*) OVER () AS cnt FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0) SELECT ROUND(AVG(v), 2) AS value FROM ordered WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)", "refId": "A" } ],
       "title": "岛屿等级中位数",
       "type": "stat"
     },
@@ -134,7 +134,7 @@
       "id": 10,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT ROUND(AVG(island_level_max), 2) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(island_level_max), 2) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT ROUND(AVG(island_level_max), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT ROUND(AVG(island_level_max), 2) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "岛屿等级平均数",
       "type": "stat"
     },
@@ -145,7 +145,7 @@
       "id": 11,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(SUM(total_money), 0) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT COALESCE(SUM(total_money), 0) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(SUM(total_money), 0) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT COALESCE(SUM(total_money), 0) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "总金币数",
       "type": "stat"
     },
@@ -156,7 +156,7 @@
       "id": 12,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(SUM(cats_count), 0) AS value FROM gameplay_player_summary", "queryType": "table", "rawQueryText": "SELECT COALESCE(SUM(cats_count), 0) AS value FROM gameplay_player_summary", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(SUM(cats_count), 0) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "queryType": "table", "rawQueryText": "SELECT COALESCE(SUM(cats_count), 0) AS value FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0", "refId": "A" } ],
       "title": "猫总数",
       "type": "stat"
     },
@@ -167,7 +167,7 @@
       "id": 13,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "购买最多前5个商品",
       "type": "table"
     },
@@ -178,7 +178,7 @@
       "id": 14,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "进行最多前5个行为",
       "type": "table"
     },
@@ -189,7 +189,7 @@
       "id": 15,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "种最多的5个种子",
       "type": "table"
     },
@@ -200,7 +200,7 @@
       "id": 16,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "做最多的5种菜",
       "type": "table"
     },
@@ -211,7 +211,7 @@
       "id": 17,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "体力" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "花费体力最多的5个行为",
       "type": "table"
     },
@@ -222,7 +222,7 @@
       "id": 18,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE COALESCE(is_dev, 0) = 0 AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "建造最多的5种建筑",
       "type": "table"
     },
@@ -267,9 +267,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT nickname AS 昵称, user_id, user_id AS ID, ROUND(total_play_duration_sec, 2) AS '游玩时长(秒)', play_days_total AS '游玩天数', island_level_max AS '岛屿等级', first_login_date AS '首次登录日期', total_money AS '总金币数' FROM gameplay_player_summary ORDER BY total_play_duration_sec DESC",
+          "queryText": "SELECT nickname AS 昵称, user_id, user_id AS ID, ROUND(total_play_duration_sec, 2) AS '游玩时长(秒)', play_days_total AS '游玩天数', island_level_max AS '岛屿等级', first_login_date AS '首次登录日期', total_money AS '总金币数' FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0 ORDER BY total_play_duration_sec DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT nickname AS 昵称, user_id, user_id AS ID, ROUND(total_play_duration_sec, 2) AS '游玩时长(秒)', play_days_total AS '游玩天数', island_level_max AS '岛屿等级', first_login_date AS '首次登录日期', total_money AS '总金币数' FROM gameplay_player_summary ORDER BY total_play_duration_sec DESC",
+          "rawQueryText": "SELECT nickname AS 昵称, user_id, user_id AS ID, ROUND(total_play_duration_sec, 2) AS '游玩时长(秒)', play_days_total AS '游玩天数', island_level_max AS '岛屿等级', first_login_date AS '首次登录日期', total_money AS '总金币数' FROM gameplay_player_summary WHERE COALESCE(is_dev, 0) = 0 ORDER BY total_play_duration_sec DESC",
           "refId": "A"
         }
       ],

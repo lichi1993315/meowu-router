@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS gameplay_sessions (
     source_file TEXT NOT NULL,
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
+    is_dev INTEGER DEFAULT 0,
     nickname TEXT,
     country TEXT,
     real_time_started_iso TEXT,
@@ -71,6 +72,7 @@ CREATE TABLE IF NOT EXISTS gameplay_days (
     source_file TEXT NOT NULL,
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
+    is_dev INTEGER DEFAULT 0,
     game_day INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
     day_end_completed INTEGER,
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS gameplay_events (
     source_file TEXT NOT NULL,
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
+    is_dev INTEGER DEFAULT 0,
     game_day INTEGER,
     event_index INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
@@ -141,12 +144,16 @@ CREATE TABLE IF NOT EXISTS gameplay_events (
 CREATE INDEX IF NOT EXISTS idx_gameplay_events_user_type ON gameplay_events(user_id, event_type);
 CREATE INDEX IF NOT EXISTS idx_gameplay_events_user_day ON gameplay_events(user_id, game_day);
 CREATE INDEX IF NOT EXISTS idx_gameplay_events_type ON gameplay_events(event_type);
+"""
 
+
+VIEW_SQL = """
 DROP VIEW IF EXISTS gameplay_player_summary;
 CREATE VIEW IF NOT EXISTS gameplay_player_summary AS
 WITH player_sessions AS (
     SELECT
         s.user_id,
+        MAX(COALESCE(s.is_dev, 0)) AS is_dev,
         MAX(NULLIF(s.nickname, '')) AS telemetry_nickname,
         MIN(date(s.real_time_started_iso)) AS first_login_date,
         MIN(s.real_time_started_iso) AS first_login_iso,
@@ -183,6 +190,7 @@ latest_day AS (
 )
 SELECT
     ps.user_id,
+    ps.is_dev,
     COALESCE(
         NULLIF(us.nickname, ''),
         NULLIF(us.player_name, ''),
@@ -310,14 +318,22 @@ def sample_from_session_record(session_record: dict[str, Any]) -> dict[str, Any]
         return None
 
     selected_logoff = None
+    fallback_logoff = None
     for source_name in ("launcher", "python"):
         source_bucket = sources.get(source_name) or {}
         if not isinstance(source_bucket, dict):
             continue
         logoff = source_bucket.get("logoff")
-        if isinstance(logoff, dict):
+        if not isinstance(logoff, dict):
+            continue
+        if fallback_logoff is None:
+            fallback_logoff = logoff
+        payload = logoff.get("payload") or {}
+        if isinstance(payload, dict) and isinstance(payload.get("gameplay_telemetry"), dict):
             selected_logoff = logoff
             break
+    if not isinstance(selected_logoff, dict):
+        selected_logoff = fallback_logoff
     if not isinstance(selected_logoff, dict):
         return None
 
@@ -369,6 +385,14 @@ def infer_nickname(sample: dict[str, Any]) -> str:
     return sample.get("user_id") or "unknown"
 
 
+def infer_is_dev(conn: sqlite3.Connection, user_id: str) -> int:
+    row = conn.execute(
+        "SELECT COALESCE(is_developer, 0) FROM user_sessions WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+    return int(row[0]) if row else 0
+
+
 def import_sample(
     conn: sqlite3.Connection,
     *,
@@ -386,6 +410,7 @@ def import_sample(
 
     user_id = str(sample.get("user_id") or sample.get("player_id") or "unknown")
     nickname = infer_nickname(sample)
+    is_dev = infer_is_dev(conn, user_id)
     country = infer_country(sample, session_meta)
     session_id = str(session_meta.get("session_id") or f"{user_id}:{source_file}")
     days = telemetry.get("days") or {}
@@ -412,6 +437,7 @@ def import_sample(
                 source_file,
                 user_id,
                 session_id,
+                is_dev,
                 game_day,
                 imported_at,
                 as_int(day_meta.get("day_end_completed")),
@@ -459,6 +485,7 @@ def import_sample(
                     source_file,
                     user_id,
                     session_id,
+                    is_dev,
                     as_int(event.get("event_game_day")) or game_day,
                     event_index,
                     imported_at,
@@ -512,18 +539,19 @@ def import_sample(
     conn.execute(
         """
         INSERT INTO gameplay_sessions (
-            source_file, user_id, session_id, nickname, country,
+            source_file, user_id, session_id, is_dev, nickname, country,
             real_time_started_iso, real_time_ended_iso, imported_at,
             game_duration_sec, game_day_start, game_day_end, game_days_total,
             island_level_max, money_start, money_end, money_total_earned,
             money_total_spent, money_net_delta, money_reconciliation_ok,
             pluma_luoqiu_total, new_player_task_progress_json, session_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_file,
             user_id,
             session_id,
+            is_dev,
             nickname,
             country,
             session_meta.get("real_time_started_iso"),
@@ -549,17 +577,17 @@ def import_sample(
     conn.executemany(
         """
         INSERT INTO gameplay_days (
-            source_file, user_id, session_id, game_day, imported_at,
+            source_file, user_id, session_id, is_dev, game_day, imported_at,
             day_end_completed, energy_remaining_end, energy_total_end,
             cats_count, cats_json, day_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         day_rows,
     )
     conn.executemany(
         """
         INSERT INTO gameplay_events (
-            source_file, user_id, session_id, game_day, event_index, imported_at,
+            source_file, user_id, session_id, is_dev, game_day, event_index, imported_at,
             event_type, event_game_minutes, event_real_time_iso, actor_id, actor_name,
             actor_is_player, island_level, duration_minutes, energy_cost, meowu_output,
             mounted_cats_count, rod_id, rod_name, fish_id, fish_name, fish_rarity,
@@ -568,7 +596,7 @@ def import_sample(
             bug_price, recipe_id, recipe_name, building_id, building_name,
             building_sub_type, item_id, item_name, money_spent, earned_money,
             adopted_cat_id, adopted_cat_name, adopt_source, region, meta_json, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         event_rows,
     )
@@ -577,6 +605,19 @@ def import_sample(
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
+    session_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_sessions)")}
+    if "is_dev" not in session_cols:
+        conn.execute("ALTER TABLE gameplay_sessions ADD COLUMN is_dev INTEGER DEFAULT 0")
+
+    day_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_days)")}
+    if "is_dev" not in day_cols:
+        conn.execute("ALTER TABLE gameplay_days ADD COLUMN is_dev INTEGER DEFAULT 0")
+
+    event_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_events)")}
+    if "is_dev" not in event_cols:
+        conn.execute("ALTER TABLE gameplay_events ADD COLUMN is_dev INTEGER DEFAULT 0")
+
+    conn.executescript(VIEW_SQL)
 
 
 def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
@@ -628,7 +669,8 @@ def run_import_once() -> int:
             except Exception:
                 logger.exception("Failed to import %s", path)
                 continue
-            state.files[key] = mtime_ns
+            if sample_count > 0 or path.suffix != ".jsonl" or not path.name.startswith("session-"):
+                state.files[key] = mtime_ns
             imported_files += 1
             logger.info(
                 "Imported %s sessions from %s samples in %s",
