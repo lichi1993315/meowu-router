@@ -39,14 +39,20 @@ def _gemini_response_to_openai(response_json: dict, model: str) -> dict:
                 fc = p["functionCall"]
                 name = fc.get("name", "")
                 args = fc.get("args", {})
-                tool_calls.append({
+                tool_call = {
                     "id": f"call_{uuid.uuid4().hex[:16]}",
                     "type": "function",
                     "function": {
                         "name": name,
                         "arguments": json.dumps(args, ensure_ascii=False)
                     }
-                })
+                }
+                thought_signature = _extract_function_call_thought_signature(fc, p)
+                if thought_signature:
+                    tool_call["extra_content"] = {
+                        "google": {"thought_signature": thought_signature}
+                    }
+                tool_calls.append(tool_call)
                 
         finish_reason_raw = candidate.get("finishReason", "STOP")
         finish_reason = _FINISH_REASON_MAP.get(finish_reason_raw, "stop")
@@ -122,6 +128,66 @@ def _extract_data_url_base64(data_url: str) -> str | None:
     return data_url.split(marker, 1)[1] or None
 
 
+def _extract_function_call_thought_signature(
+    function_call: dict[str, Any],
+    part: dict[str, Any] | None = None,
+) -> str | None:
+    if not isinstance(function_call, dict):
+        return None
+
+    if isinstance(part, dict):
+        part_signature = part.get("thoughtSignature") or part.get("thought_signature")
+        if part_signature:
+            return part_signature
+
+    google_payload = function_call.get("google") or {}
+    google_signature = (
+        google_payload.get("thought_signature")
+        or google_payload.get("thoughtSignature")
+    )
+    if google_signature:
+        return google_signature
+
+    direct_signature = (
+        function_call.get("thought_signature")
+        or function_call.get("thoughtSignature")
+    )
+    if direct_signature:
+        return direct_signature
+
+    return None
+
+
+def _extract_tool_call_thought_signature(tool_call: dict[str, Any]) -> str | None:
+    if not isinstance(tool_call, dict):
+        return None
+
+    extra_content_signature = (
+        ((tool_call.get("extra_content") or {}).get("google") or {}).get("thought_signature")
+    )
+    if extra_content_signature:
+        return extra_content_signature
+
+    extra_content_signature_camel = (
+        ((tool_call.get("extra_content") or {}).get("google") or {}).get("thoughtSignature")
+    )
+    if extra_content_signature_camel:
+        return extra_content_signature_camel
+
+    top_level_signature = tool_call.get("thought_signature") or tool_call.get("thoughtSignature")
+    if top_level_signature:
+        return top_level_signature
+
+    function_signature = (
+        ((tool_call.get("function") or {}).get("thought_signature"))
+        or ((tool_call.get("function") or {}).get("thoughtSignature"))
+    )
+    if function_signature:
+        return function_signature
+
+    return None
+
+
 def _openai_messages_to_gemini_contents(messages: list[Any]) -> list[dict[str, Any]]:
     contents: list[dict[str, Any]] = []
     if not isinstance(messages, list):
@@ -186,12 +252,16 @@ def _openai_messages_to_gemini_contents(messages: list[Any]) -> list[dict[str, A
                         args = json.loads(func.get("arguments", "{}"))
                     except Exception:
                         args = {}
-                    parts.append({
+                    function_call = {
                         "functionCall": {
                             "name": func.get("name", ""),
                             "args": args
                         }
-                    })
+                    }
+                    thought_signature = _extract_tool_call_thought_signature(tc)
+                    if thought_signature:
+                        function_call["thoughtSignature"] = thought_signature
+                    parts.append(function_call)
 
         if role == "tool":
             name = message.get("name") or "unknown_function"
