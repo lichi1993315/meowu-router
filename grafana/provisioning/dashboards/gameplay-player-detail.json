@@ -146,7 +146,7 @@
       "id": 10,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_cook' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_serve' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_serve' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "做最多的5种菜",
       "type": "table"
     },

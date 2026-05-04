@@ -135,6 +135,36 @@ sudo docker compose -f docker-compose.monitoring.yml ps
 - **热门词汇 / Word Cloud** - 表格或柱状图展示 Top N
 - **用户行为统计** - 时段分布、活跃度等
 
+### ✅ SQLite Schema / View 迁移必须真实落库
+
+只修改 Python 代码、SQL 字符串、Grafana Dashboard JSON **不算完成迁移**。凡是新增/修改 SQLite 的 table、column、index、view，必须确保变更已经实际落到当前 `./data/conversations.db`，否则 Grafana 线上报表可能直接不可用。
+
+必须同时满足：
+
+1. **代码已更新** - 例如 `SCHEMA_SQL`、`VIEW_SQL`、查询语句已修改
+2. **现有 SQLite 已迁移** - 目标表/列/view 已经在当前数据库中真实存在
+3. **依赖方已刷新** - Grafana 或相关 importer/service 已重启或重跑，开始读取新结构
+
+常见风险：
+
+- Dashboard 已引用新列，但线上 SQLite view 还是旧版本
+- `CREATE VIEW IF NOT EXISTS` 不会覆盖旧 view，必须显式 `DROP VIEW IF EXISTS` 后重建
+- 代码里新增了 `ensure_schema()` / migration 逻辑，但容器未执行，线上库不会自动更新
+
+发布前至少验证：
+
+```bash
+# 查看当前线上 SQLite 中的真实 view / schema
+sqlite3 ./data/conversations.db "SELECT sql FROM sqlite_master WHERE type='view' AND name='your_view';"
+sqlite3 ./data/conversations.db "PRAGMA table_info(your_table);"
+
+# 必要时执行迁移逻辑，让现有库真实更新
+sudo docker compose -f docker-compose.monitoring.yml up -d --build service-name
+sudo docker compose -f docker-compose.monitoring.yml restart grafana
+```
+
+如果 Grafana 面板依赖某个新字段，发布时必须先确认该字段已经存在于当前 SQLite 实体表或 view 中，再上线 Dashboard 查询。
+
 ### ❌ Developer Admin 不做数据分析
 
 `developer_admin.py` 只做 **Grafana 无法实现的功能**：
@@ -146,12 +176,17 @@ sudo docker compose -f docker-compose.monitoring.yml ps
 ### 开发流程
 
 1. **新增分析需求** → 在 `grafana/provisioning/dashboards/*.json` 添加 Panel
-2. **新增管理功能** → 在 `developer_admin.py` 添加 action handler
-3. **重启服务**:
+2. **涉及 SQLite schema / view 变更** → 先修改迁移代码，再确认变更已实际落到 `./data/conversations.db`
+3. **新增管理功能** → 在 `developer_admin.py` 添加 action handler
+4. **验证与重启服务**:
    ```bash
+   # 验证 SQLite 当前结构
+   sqlite3 ./data/conversations.db "SELECT sql FROM sqlite_master WHERE type='view' AND name='your_view';"
+   sqlite3 ./data/conversations.db "PRAGMA table_info(your_table);"
+
    # Grafana Dashboard 更新
    sudo docker compose -f docker-compose.monitoring.yml restart grafana
-   
-   # Admin 功能更新
-   sudo docker compose -f docker-compose.monitoring.yml up -d --build developer-admin
+
+   # Admin / Importer / Metrics 等功能更新
+   sudo docker compose -f docker-compose.monitoring.yml up -d --build service-name
    ```

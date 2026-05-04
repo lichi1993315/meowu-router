@@ -620,6 +620,14 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(VIEW_SQL)
 
 
+def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM gameplay_sessions WHERE source_file = ? LIMIT 1",
+        (source_file,),
+    ).fetchone()
+    return row is not None
+
+
 def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
     source_file = str(path.resolve())
     imported_at = now_iso()
@@ -661,7 +669,7 @@ def run_import_once() -> int:
         for path in files:
             mtime_ns = path.stat().st_mtime_ns
             key = str(path.resolve())
-            if state.files.get(key) == mtime_ns:
+            if state.files.get(key) == mtime_ns and has_imported_source(conn, key):
                 continue
             logger.info("Importing gameplay telemetry from %s", path)
             try:
