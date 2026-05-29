@@ -18,7 +18,9 @@ services:
       - DB_PATH=/app/data/conversations.db
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_BASE_URL=${GEMINI_BASE_URL}
-      - GEMINI_SDK_URL=${GEMINI_SDK_URL}
+      - GEMINI_SDK_URL=${GEMINI_SDK_URL:-}
+      - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL:-gemini-3-flash-preview}
+      - GEMINI_IMAGE_MODEL=${GEMINI_IMAGE_MODEL:-gemini-3-pro-image-preview}
       - GRAFANA_URL=http://47.89.135.221:9001/
       - GRAFANA_TOKEN=${GRAFANA_TOKEN}
       # 渲染整个 Dashboard

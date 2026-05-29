@@ -7,6 +7,8 @@ OUTPUT_DIR = BASE_DIR / "output"
 ERROR_LOG_DIR = OUTPUT_DIR / "error_logs"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gemini-3-flash-preview")
+GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3-pro-image-preview")
 _gemini_base_url = os.getenv("GEMINI_BASE_URL", "").strip()
 GEMINI_BASE_URL = (
     _gemini_base_url

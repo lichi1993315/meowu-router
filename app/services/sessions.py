@@ -9,11 +9,43 @@ from app.core.config import ERROR_LOG_DIR, OUTPUT_DIR
 from app.core.logging import log
 
 SENSITIVE_HEADERS = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
+SENSITIVE_BODY_KEYS = {
+    "api_key",
+    "apikey",
+    "apiKey",
+    "provider_api_key",
+    "providerApiKey",
+    "providerapikey",
+    "llm_api_key",
+    "llmApiKey",
+    "llmapikey",
+    "access_key",
+    "accessKey",
+    "accesskey",
+    "secret_key",
+    "secretKey",
+    "secretkey",
+    "token",
+}
 SESSION_FILE_INDEX: dict[str, Path] = {}
 
 
 def _safe_headers(headers: dict) -> dict:
     return {k: v for k, v in headers.items() if k.lower() not in SENSITIVE_HEADERS}
+
+
+def _safe_body(value):
+    if isinstance(value, dict):
+        safe = {}
+        for key, item in value.items():
+            if str(key) in SENSITIVE_BODY_KEYS or str(key).lower() in SENSITIVE_BODY_KEYS:
+                safe[key] = "[REDACTED]"
+            else:
+                safe[key] = _safe_body(item)
+        return safe
+    if isinstance(value, list):
+        return [_safe_body(item) for item in value]
+    return value
 
 
 def _infer_event_source(payload: object) -> str:
@@ -100,6 +132,7 @@ async def save_request_to_file(
             request_json = json.loads(request_body) if request_body else None
         except json.JSONDecodeError:
             request_json = request_body.decode("utf-8", errors="replace")
+        request_json = _safe_body(request_json)
 
         safe_headers = _safe_headers(headers)
 
@@ -221,6 +254,7 @@ async def save_error_log_to_file(
             request_json = json.loads(request_body) if request_body else None
         except json.JSONDecodeError:
             request_json = request_body.decode("utf-8", errors="replace")
+        request_json = _safe_body(request_json)
 
         safe_headers = {
             k: v for k, v in headers.items() if k.lower() not in SENSITIVE_HEADERS
