@@ -717,7 +717,16 @@ async def handle_chat_completions(
         requested_model = _clean_optional_str(request_json.get("model"))
         requested_provider = _extract_body_field(request_json, _MODEL_TYPE_FIELDS)
         client_api_key = _extract_client_api_key(request, request_json)
+        requested_provider_normalized = (
+            _normalize_provider(requested_provider)
+            or _infer_provider_from_model(requested_model)
+        )
         use_client_model = bool(requested_model and client_api_key)
+        use_server_gemini_model = bool(
+            requested_model
+            and not client_api_key
+            and requested_provider_normalized == "gemini"
+        )
 
         if _is_image_request(request_json, requested_model):
             api_key = GEMINI_API_KEY
@@ -840,7 +849,10 @@ async def handle_chat_completions(
             upstream_api_key = GEMINI_API_KEY
             if not upstream_api_key:
                 raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
-            litellm_model, provider = _resolve_litellm_model(DEFAULT_LLM_MODEL, "gemini")
+            if use_server_gemini_model:
+                litellm_model, provider = _resolve_litellm_model(requested_model, "gemini")
+            else:
+                litellm_model, provider = _resolve_litellm_model(DEFAULT_LLM_MODEL, "gemini")
 
         litellm_kwargs = _build_litellm_kwargs(
             request_json,

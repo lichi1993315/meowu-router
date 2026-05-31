@@ -1,0 +1,18 @@
+api.meowuisland.com {
+	reverse_proxy router-api:8000
+
+	encode gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

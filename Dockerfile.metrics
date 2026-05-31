@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir \
 COPY metrics_exporter.py .
 COPY developer_admin.py .
 COPY import_gameplay_telemetry.py .
+COPY cleanup_output_retention.py .
 
 # 创建数据目录
 RUN mkdir -p /app/data /app/output

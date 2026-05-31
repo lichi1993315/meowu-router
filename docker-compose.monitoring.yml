@@ -1,5 +1,11 @@
 version: '3.8'
 
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 services:
   # Router API - FastAPI 入口 (app.main:app)
   router-api:
@@ -31,6 +37,26 @@ services:
     networks:
       - default
       - edge-shared
+    logging: *default-logging
+    restart: unless-stopped
+
+  # Caddy - public HTTPS entrypoint for api.meowuisland.com
+  caddy:
+    image: caddy:2-alpine
+    container_name: llm-router-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - router-api
+    networks:
+      - edge-shared
+    logging: *default-logging
     restart: unless-stopped
 
   # Metrics Exporter - 扫描日志并暴露Prometheus指标
@@ -50,6 +76,7 @@ services:
       - PRICE_PROMPT=0.50
       - PRICE_COMPLETION=3.00
       - PRICE_CACHED=0.05
+    logging: *default-logging
     restart: unless-stopped
 
   # Prometheus - 时序数据库
@@ -66,6 +93,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
+    logging: *default-logging
     restart: unless-stopped
 
   # Grafana Image Renderer - 独立渲染服务
@@ -78,6 +106,7 @@ services:
       - ENABLE_METRICS=true
       - RENDERING_MODE=default
       - RENDERING_CLUSTERING_MODE=browser
+    logging: *default-logging
     restart: unless-stopped
 
   # Grafana - 可视化面板
@@ -101,6 +130,7 @@ services:
     depends_on:
       - prometheus
       - renderer
+    logging: *default-logging
     restart: unless-stopped
 
   # Grafana Report Sender - 定时发送报表
@@ -123,6 +153,7 @@ services:
       - ./output:/app/output
     depends_on:
       - grafana
+    logging: *default-logging
     restart: unless-stopped
 
   # Developer Admin - 开发者管理界面
@@ -141,6 +172,7 @@ services:
       - DB_PATH=/app/data/conversations.db
       - OUTPUT_DIR=/app/output
     command: [ "python", "-u", "developer_admin.py" ]
+    logging: *default-logging
     restart: unless-stopped
 
   # Gameplay Telemetry Importer - 导入 gameplay JSON 到 SQLite
@@ -159,11 +191,36 @@ services:
       - GAMEPLAY_IMPORTER_STATE_PATH=/app/data/gameplay_importer_state.json
       - GAMEPLAY_IMPORT_INTERVAL_SEC=300
     command: [ "python", "-u", "import_gameplay_telemetry.py", "--loop" ]
+    logging: *default-logging
+    restart: unless-stopped
+
+  # Output Retention - 归档并清理 30 天前的原始 router 输出
+  output-retention:
+    build:
+      context: .
+      dockerfile: Dockerfile.metrics
+    container_name: llm-output-retention
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    environment:
+      - OUTPUT_DIR=/app/output
+      - OUTPUT_ARCHIVE_DIR=/app/data/output_archive
+      - OUTPUT_RETENTION_DAYS=30
+      - OUTPUT_ARCHIVE_RETENTION_DAYS=90
+      - OUTPUT_ARCHIVE_MAX_BYTES=20G
+      - OUTPUT_MAX_BYTES=20G
+      - OUTPUT_MIN_FREE_BYTES=10G
+      - OUTPUT_RETENTION_INTERVAL_SEC=3600
+    command: [ "python", "-u", "cleanup_output_retention.py", "--loop" ]
+    logging: *default-logging
     restart: unless-stopped
 
 volumes:
   prometheus_data:
   grafana_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   edge-shared:

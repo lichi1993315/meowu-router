@@ -658,6 +658,8 @@ def run_import_once() -> int:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     state = ImportState.load(STATE_PATH)
     imported_files = 0
+    imported_sessions = 0
+    scanned_files = 0
     with sqlite3.connect(DB_PATH) as conn:
         ensure_schema(conn)
         files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)
@@ -669,27 +671,34 @@ def run_import_once() -> int:
         for path in files:
             mtime_ns = path.stat().st_mtime_ns
             key = str(path.resolve())
-            if state.files.get(key) == mtime_ns and has_imported_source(conn, key):
+            if state.files.get(key) == mtime_ns:
                 continue
-            logger.info("Importing gameplay telemetry from %s", path)
+            scanned_files += 1
+            logger.debug("Importing gameplay telemetry from %s", path)
             try:
                 session_count, sample_count = import_file(conn, path)
             except Exception:
                 logger.exception("Failed to import %s", path)
                 continue
-            if sample_count > 0 or path.suffix != ".jsonl" or not path.name.startswith("session-"):
-                state.files[key] = mtime_ns
+            state.files[key] = mtime_ns
             imported_files += 1
-            logger.info(
-                "Imported %s sessions from %s samples in %s",
-                session_count,
-                sample_count,
-                path.name,
-            )
+            imported_sessions += session_count
+            if session_count > 0:
+                logger.debug(
+                    "Imported %s sessions from %s samples in %s",
+                    session_count,
+                    sample_count,
+                    path.name,
+                )
         conn.commit()
 
     state.save(STATE_PATH)
-    logger.info("Gameplay import finished, %s file(s) updated", imported_files)
+    logger.info(
+        "Gameplay import finished, %s file(s) scanned, %s file(s) updated, %s session(s) imported",
+        scanned_files,
+        imported_files,
+        imported_sessions,
+    )
     return imported_files
 
 
