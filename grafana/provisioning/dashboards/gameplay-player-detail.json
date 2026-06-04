@@ -47,7 +47,7 @@
       "id": 1,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT ROUND(total_play_duration_sec, 2) AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT ROUND(total_play_duration_sec, 2) AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions", "refId": "A" } ],
       "title": "游玩时长",
       "type": "stat"
     },
@@ -58,7 +58,7 @@
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT play_days_total AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT play_days_total AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions", "refId": "A" } ],
       "title": "游玩天数",
       "type": "stat"
     },
@@ -69,7 +69,7 @@
       "id": 3,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT island_level_max AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT island_level_max AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions", "refId": "A" } ],
       "title": "岛屿等级",
       "type": "stat"
     },
@@ -80,7 +80,7 @@
       "id": 4,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT total_money AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT total_money AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT money_end, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT money_end FROM latest_session WHERE rn = 1), 0) AS value", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT money_end, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT money_end FROM latest_session WHERE rn = 1), 0) AS value", "refId": "A" } ],
       "title": "总金币数",
       "type": "stat"
     },
@@ -91,7 +91,7 @@
       "id": 5,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT cats_count AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT cats_count AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id) SELECT COALESCE((SELECT cats_count FROM latest_day WHERE rn = 1), 0) AS value", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id) SELECT COALESCE((SELECT cats_count FROM latest_day WHERE rn = 1), 0) AS value", "refId": "A" } ],
       "title": "猫数量",
       "type": "stat"
     },
@@ -102,7 +102,7 @@
       "id": 6,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "values": false }, "showPercentChange": false, "textMode": "value_and_name", "wideLayout": true },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT first_login_date AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "queryType": "table", "rawQueryText": "SELECT first_login_date AS value FROM gameplay_player_summary WHERE user_id = ${user_id:sqlstring}", "refId": "A" } ],
+      "targets": [ { "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT MIN(date(real_time_started_iso)) AS value FROM selected_sessions", "queryType": "table", "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT MIN(date(real_time_started_iso)) AS value FROM selected_sessions", "refId": "A" } ],
       "title": "首次登录日期",
       "type": "stat"
     },
@@ -113,7 +113,7 @@
       "id": 7,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "购买最多前5个商品",
       "type": "table"
     },
@@ -124,7 +124,7 @@
       "id": 8,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "进行最多前5个行为",
       "type": "table"
     },
@@ -135,7 +135,7 @@
       "id": 9,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "种最多的5个种子",
       "type": "table"
     },
@@ -146,7 +146,7 @@
       "id": 10,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_serve' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type = 'restaurant_serve' GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "做最多的5种菜",
       "type": "table"
     },
@@ -157,7 +157,7 @@
       "id": 11,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "体力" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "花费体力最多的5个行为",
       "type": "table"
     },
@@ -168,7 +168,7 @@
       "id": 12,
       "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [ { "desc": true, "displayName": "次数" } ] },
       "pluginVersion": "12.3.1",
-      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), building_id, 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events WHERE user_id = ${user_id:sqlstring} AND event_type IN ('building_construct', 'building_upgrade') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
+      "targets": [ { "queryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "queryType": "table", "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5", "refId": "A" } ],
       "title": "建造最多的5种建筑",
       "type": "table"
     },
@@ -189,9 +189,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH ranked_days AS (SELECT game_day, day_meta_json, ROW_NUMBER() OVER (PARTITION BY game_day ORDER BY imported_at DESC) AS rn FROM gameplay_days WHERE user_id = ${user_id:sqlstring}), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT game_day, event_type FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "queryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(gd.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
           "queryType": "table",
-          "rawQueryText": "WITH ranked_days AS (SELECT game_day, day_meta_json, ROW_NUMBER() OVER (PARTITION BY game_day ORDER BY imported_at DESC) AS rn FROM gameplay_days WHERE user_id = ${user_id:sqlstring}), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT game_day, event_type FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "rawQueryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(gd.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
           "refId": "A"
         }
       ],
@@ -215,9 +215,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY game_day DESC, event_index DESC",
+          "queryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events WHERE user_id = ${user_id:sqlstring} ORDER BY game_day DESC, event_index DESC",
+          "rawQueryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
           "refId": "A"
         }
       ],
@@ -243,6 +243,30 @@
         "type": "datasource"
       },
       {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "definition": "SELECT display AS __text, value AS __value FROM (SELECT 'unity-all' AS display, 'unity-all' AS value UNION SELECT COALESCE(NULLIF(client_version, ''), '(empty)') AS display, COALESCE(NULLIF(client_version, ''), '__empty__') AS value FROM gameplay_sessions GROUP BY client_version) versions ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN lower(value) LIKE 'unity%' THEN 2 WHEN value = '__empty__' THEN 4 ELSE 3 END, value",
+        "hide": 0,
+        "includeAll": true,
+        "label": "客户端版本",
+        "multi": true,
+        "name": "client_version",
+        "options": [],
+        "query": "SELECT display AS __text, value AS __value FROM (SELECT 'unity-all' AS display, 'unity-all' AS value UNION SELECT COALESCE(NULLIF(client_version, ''), '(empty)') AS display, COALESCE(NULLIF(client_version, ''), '__empty__') AS value FROM gameplay_sessions GROUP BY client_version) versions ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN lower(value) LIKE 'unity%' THEN 2 WHEN value = '__empty__' THEN 4 ELSE 3 END, value",
+        "refresh": 1,
+        "regex": "",
+        "sort": 0,
+        "type": "query",
+        "allValue": "__all__"
+      },
+      {
         "current": { "text": "", "value": "" },
         "label": "用户ID",
         "name": "user_id",
@@ -259,5 +283,5 @@
   "timezone": "browser",
   "title": "Gameplay 玩家详情",
   "uid": "gameplay-player-detail",
-  "version": 1
+  "version": 2
 }

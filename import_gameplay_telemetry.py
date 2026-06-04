@@ -29,6 +29,7 @@ OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/output"))
 STATE_PATH = Path(os.getenv("GAMEPLAY_IMPORTER_STATE_PATH", "/app/data/gameplay_importer_state.json"))
 IMPORT_INTERVAL_SEC = int(os.getenv("GAMEPLAY_IMPORT_INTERVAL_SEC", "300"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+STATE_SCHEMA_VERSION = 2
 
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
@@ -43,6 +44,7 @@ CREATE TABLE IF NOT EXISTS gameplay_sessions (
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
     is_dev INTEGER DEFAULT 0,
+    client_version TEXT,
     nickname TEXT,
     country TEXT,
     real_time_started_iso TEXT,
@@ -73,6 +75,7 @@ CREATE TABLE IF NOT EXISTS gameplay_days (
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
     is_dev INTEGER DEFAULT 0,
+    client_version TEXT,
     game_day INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
     day_end_completed INTEGER,
@@ -91,6 +94,7 @@ CREATE TABLE IF NOT EXISTS gameplay_events (
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
     is_dev INTEGER DEFAULT 0,
+    client_version TEXT,
     game_day INTEGER,
     event_index INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
@@ -157,7 +161,10 @@ WITH player_sessions AS (
         MAX(NULLIF(s.nickname, '')) AS telemetry_nickname,
         MIN(date(s.real_time_started_iso)) AS first_login_date,
         MIN(s.real_time_started_iso) AS first_login_iso,
+        MAX(date(s.real_time_started_iso)) AS latest_login_date,
+        MAX(s.real_time_started_iso) AS latest_login_iso,
         MAX(s.real_time_started_iso) AS latest_session_started_iso,
+        GROUP_CONCAT(DISTINCT COALESCE(NULLIF(s.client_version, ''), '(empty)')) AS client_versions,
         SUM(COALESCE(s.game_duration_sec, 0)) AS total_play_duration_sec,
         MAX(COALESCE(s.game_days_total, s.game_day_end, 0)) AS play_days_total,
         MAX(COALESCE(s.island_level_max, 0)) AS island_level_max
@@ -199,7 +206,10 @@ SELECT
     ) AS nickname,
     ps.first_login_date,
     ps.first_login_iso,
+    ps.latest_login_date,
+    ps.latest_login_iso,
     ps.latest_session_started_iso,
+    ps.client_versions,
     ROUND(ps.total_play_duration_sec, 2) AS total_play_duration_sec,
     ps.play_days_total,
     ps.island_level_max,
@@ -219,6 +229,7 @@ LEFT JOIN latest_day ld
 @dataclass
 class ImportState:
     files: dict[str, int]
+    schema_version: int = 0
 
     @classmethod
     def load(cls, path: Path) -> "ImportState":
@@ -232,18 +243,20 @@ class ImportState:
         files = data.get("files", {})
         if not isinstance(files, dict):
             files = {}
+        schema_version = as_int(data.get("schema_version")) or 0
         normalized = {}
         for key, value in files.items():
             try:
                 normalized[str(key)] = int(value)
             except Exception:
                 continue
-        return cls(files=normalized)
+        return cls(files=normalized, schema_version=schema_version)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "updated_at": datetime.now(timezone.utc).isoformat(),
+            "schema_version": self.schema_version,
             "files": self.files,
         }
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -357,7 +370,9 @@ def sample_from_session_record(session_record: dict[str, Any]) -> dict[str, Any]
         "username": payload.get("username"),
         "player_name": payload.get("username"),
         "country": headers.get("cf-ipcountry", ""),
-        "client_version": payload.get("client_version") or headers.get("x-client-version"),
+        "client_version": payload.get("client_version")
+        or headers.get("x-client-version")
+        or headers.get("X-Client-Version"),
         "gameplay_telemetry": telemetry,
     }
     return sample
@@ -393,6 +408,13 @@ def infer_is_dev(conn: sqlite3.Connection, user_id: str) -> int:
     return int(row[0]) if row else 0
 
 
+def infer_client_version(sample: dict[str, Any], session_meta: dict[str, Any]) -> str:
+    for value in (sample.get("client_version"), session_meta.get("client_version")):
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
 def import_sample(
     conn: sqlite3.Connection,
     *,
@@ -412,6 +434,9 @@ def import_sample(
     nickname = infer_nickname(sample)
     is_dev = infer_is_dev(conn, user_id)
     country = infer_country(sample, session_meta)
+    client_version = infer_client_version(sample, session_meta)
+    if client_version and not session_meta.get("client_version"):
+        session_meta = {**session_meta, "client_version": client_version}
     session_id = str(session_meta.get("session_id") or f"{user_id}:{source_file}")
     days = telemetry.get("days") or {}
     if not isinstance(days, dict):
@@ -438,6 +463,7 @@ def import_sample(
                 user_id,
                 session_id,
                 is_dev,
+                client_version,
                 game_day,
                 imported_at,
                 as_int(day_meta.get("day_end_completed")),
@@ -486,6 +512,7 @@ def import_sample(
                     user_id,
                     session_id,
                     is_dev,
+                    client_version,
                     as_int(event.get("event_game_day")) or game_day,
                     event_index,
                     imported_at,
@@ -539,19 +566,20 @@ def import_sample(
     conn.execute(
         """
         INSERT INTO gameplay_sessions (
-            source_file, user_id, session_id, is_dev, nickname, country,
+            source_file, user_id, session_id, is_dev, client_version, nickname, country,
             real_time_started_iso, real_time_ended_iso, imported_at,
             game_duration_sec, game_day_start, game_day_end, game_days_total,
             island_level_max, money_start, money_end, money_total_earned,
             money_total_spent, money_net_delta, money_reconciliation_ok,
             pluma_luoqiu_total, new_player_task_progress_json, session_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_file,
             user_id,
             session_id,
             is_dev,
+            client_version,
             nickname,
             country,
             session_meta.get("real_time_started_iso"),
@@ -577,17 +605,17 @@ def import_sample(
     conn.executemany(
         """
         INSERT INTO gameplay_days (
-            source_file, user_id, session_id, is_dev, game_day, imported_at,
+            source_file, user_id, session_id, is_dev, client_version, game_day, imported_at,
             day_end_completed, energy_remaining_end, energy_total_end,
             cats_count, cats_json, day_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         day_rows,
     )
     conn.executemany(
         """
         INSERT INTO gameplay_events (
-            source_file, user_id, session_id, is_dev, game_day, event_index, imported_at,
+            source_file, user_id, session_id, is_dev, client_version, game_day, event_index, imported_at,
             event_type, event_game_minutes, event_real_time_iso, actor_id, actor_name,
             actor_is_player, island_level, duration_minutes, energy_cost, meowu_output,
             mounted_cats_count, rod_id, rod_name, fish_id, fish_name, fish_rarity,
@@ -596,26 +624,90 @@ def import_sample(
             bug_price, recipe_id, recipe_name, building_id, building_name,
             building_sub_type, item_id, item_name, money_spent, earned_money,
             adopted_cat_id, adopted_cat_name, adopt_source, region, meta_json, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         event_rows,
     )
     return 1
 
 
+def ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
-    session_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_sessions)")}
-    if "is_dev" not in session_cols:
-        conn.execute("ALTER TABLE gameplay_sessions ADD COLUMN is_dev INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_sessions", "is_dev", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_sessions", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_days", "is_dev", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_days", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_events", "is_dev", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_events", "client_version", "TEXT")
 
-    day_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_days)")}
-    if "is_dev" not in day_cols:
-        conn.execute("ALTER TABLE gameplay_days ADD COLUMN is_dev INTEGER DEFAULT 0")
-
-    event_cols = {row[1] for row in conn.execute("PRAGMA table_info(gameplay_events)")}
-    if "is_dev" not in event_cols:
-        conn.execute("ALTER TABLE gameplay_events ADD COLUMN is_dev INTEGER DEFAULT 0")
+    conn.execute(
+        """
+        UPDATE gameplay_sessions
+        SET client_version = COALESCE(
+            NULLIF(
+                CASE
+                    WHEN json_valid(session_meta_json)
+                    THEN json_extract(session_meta_json, '$.client_version')
+                END,
+                ''
+            ),
+            client_version,
+            ''
+        )
+        WHERE client_version IS NULL OR client_version = ''
+        """
+    )
+    conn.execute(
+        """
+        UPDATE gameplay_days
+        SET client_version = COALESCE(
+            (
+                SELECT NULLIF(s.client_version, '')
+                FROM gameplay_sessions s
+                WHERE s.source_file = gameplay_days.source_file
+                  AND s.user_id = gameplay_days.user_id
+                  AND s.session_id = gameplay_days.session_id
+                LIMIT 1
+            ),
+            client_version,
+            ''
+        )
+        WHERE client_version IS NULL OR client_version = ''
+        """
+    )
+    conn.execute(
+        """
+        UPDATE gameplay_events
+        SET client_version = COALESCE(
+            (
+                SELECT NULLIF(s.client_version, '')
+                FROM gameplay_sessions s
+                WHERE s.source_file = gameplay_events.source_file
+                  AND s.user_id = gameplay_events.user_id
+                  AND s.session_id = gameplay_events.session_id
+                LIMIT 1
+            ),
+            client_version,
+            ''
+        )
+        WHERE client_version IS NULL OR client_version = ''
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_client_version ON gameplay_sessions(client_version)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_days_client_version ON gameplay_days(client_version)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_events_client_version ON gameplay_events(client_version)"
+    )
 
     conn.executescript(VIEW_SQL)
 
@@ -660,18 +752,21 @@ def run_import_once() -> int:
     imported_files = 0
     imported_sessions = 0
     scanned_files = 0
+    failed_files = 0
+    force_reimport = state.schema_version < STATE_SCHEMA_VERSION
     with sqlite3.connect(DB_PATH) as conn:
         ensure_schema(conn)
         files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)
         if not files:
             logger.info("No gameplay telemetry sources found under %s or %s", TELEMETRY_DIR, OUTPUT_DIR)
             conn.commit()
+            state.schema_version = STATE_SCHEMA_VERSION
             state.save(STATE_PATH)
             return 0
         for path in files:
             mtime_ns = path.stat().st_mtime_ns
             key = str(path.resolve())
-            if state.files.get(key) == mtime_ns:
+            if not force_reimport and state.files.get(key) == mtime_ns:
                 continue
             scanned_files += 1
             logger.debug("Importing gameplay telemetry from %s", path)
@@ -679,6 +774,7 @@ def run_import_once() -> int:
                 session_count, sample_count = import_file(conn, path)
             except Exception:
                 logger.exception("Failed to import %s", path)
+                failed_files += 1
                 continue
             state.files[key] = mtime_ns
             imported_files += 1
@@ -692,6 +788,8 @@ def run_import_once() -> int:
                 )
         conn.commit()
 
+    if failed_files == 0:
+        state.schema_version = STATE_SCHEMA_VERSION
     state.save(STATE_PATH)
     logger.info(
         "Gameplay import finished, %s file(s) scanned, %s file(s) updated, %s session(s) imported",
