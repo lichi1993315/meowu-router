@@ -26,6 +26,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "meowuisland")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 AUTH_SECRET = os.getenv("ADMIN_AUTH_SECRET", "meowuisland-admin-secret")
 AUTH_COOKIE_NAME = "developer_admin_auth"
+USERS_PER_PAGE = 30
 
 
 def get_html_template():
@@ -294,7 +295,10 @@ def get_stats():
     return total, devs, total - devs, avg_all, avg_real, median
 
 
-def get_users():
+def get_users(page=1, page_size=USERS_PER_PAGE):
+    page = max(1, int(page))
+    page_size = min(USERS_PER_PAGE, max(1, int(page_size)))
+    offset = (page - 1) * page_size
     conn = get_db()
     c = conn.cursor()
     c.execute(
@@ -306,7 +310,9 @@ def get_users():
                datetime(last_seen, '+8 hours') as last_seen_bj,
                COALESCE(is_blacklisted, 0)
         FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC
-        '''
+        LIMIT ? OFFSET ?
+        ''',
+        (page_size, offset),
     )
     users = c.fetchall()
     conn.close()
@@ -800,26 +806,31 @@ def format_bytes(size):
     return f"{size} B"
 
 
-def render_main_page(message):
+def render_main_page(message, page=1):
     total, devs, players, avg_all, avg_real, median = get_stats()
+    total_pages = max(1, (total + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
+    page = min(max(1, page), total_pages)
+    visible_start = 0 if total == 0 else (page - 1) * USERS_PER_PAGE + 1
+    visible_end = min(page * USERS_PER_PAGE, total)
+    pagination_html = render_pagination("/", page, total_pages, {}, page_param="page")
     rows = ""
-    for user in get_users():
+    for user in get_users(page, USERS_PER_PAGE):
         user_id, is_dev, country, requests, mins, nickname, player_name, first_seen_bj, last_seen_bj, is_black = user
         nickname = nickname or ""
         player_name = player_name or ""
         if is_black:
             badge = '<span class="black-badge">黑名单</span>'
-            actions = f'<a class="btn btn-player" href="/?action=remove_blacklist&user_id={quote(user_id)}">移出黑名单</a>'
+            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_blacklist", user_id=user_id, page=page)}">移出黑名单</a>'
         elif is_dev:
             badge = '<span class="dev-badge">开发者</span>'
-            actions = f'<a class="btn btn-player" href="/?action=remove_dev&user_id={quote(user_id)}">设为玩家</a>'
+            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_dev", user_id=user_id, page=page)}">设为玩家</a>'
         else:
             badge = '<span class="player-badge">玩家</span>'
             actions = (
-                f'<a class="btn btn-dev" href="/?action=add_dev&user_id={quote(user_id)}">设为开发</a>'
-                f'<a class="btn btn-black" href="/?action=add_blacklist&user_id={quote(user_id)}">拉黑</a>'
+                f'<a class="btn btn-dev" href="{build_query("/", action="add_dev", user_id=user_id, page=page)}">设为开发</a>'
+                f'<a class="btn btn-black" href="{build_query("/", action="add_blacklist", user_id=user_id, page=page)}">拉黑</a>'
             )
-        actions += f'<a class="btn btn-view" href="/user?user_id={quote(user_id)}">查看 JSONL</a>'
+        actions += f'<a class="btn btn-view" href="{build_query("/user", user_id=user_id)}">查看 JSONL</a>'
         if nickname:
             nickname_display = f'<span class="nickname-display">{escape(nickname)}</span>'
         elif player_name:
@@ -830,6 +841,7 @@ def render_main_page(message):
         <form class="nickname-form" method="get" action="/">
             <input type="hidden" name="action" value="set_nickname">
             <input type="hidden" name="user_id" value="{escape(user_id)}">
+            <input type="hidden" name="page" value="{page}">
             <input type="text" name="nickname" class="nickname-input" placeholder="输入昵称" value="{escape(nickname)}">
             <button type="submit" class="btn btn-save">保存</button>
         </form>
@@ -847,6 +859,8 @@ def render_main_page(message):
             <td>{mins}</td>
             <td>{actions}</td>
         </tr>'''
+    if not rows:
+        rows = '<tr><td colspan="9" class="empty">暂无用户。</td></tr>'
 
     avg, median_reqs, dist, top10_pct = get_analytics()
     max_dist = max(dist.values()) if dist else 1
@@ -873,7 +887,7 @@ def render_main_page(message):
 
     presets_html = ""
     for phrase in get_presets():
-        presets_html += f'<div class="preset-tag">{escape(phrase)} <a href="/?action=remove_preset&phrase={quote(phrase)}" class="preset-delete">×</a></div>'
+        presets_html += f'<div class="preset-tag">{escape(phrase)} <a href="{build_query("/", action="remove_preset", phrase=phrase, page=page)}" class="preset-delete">×</a></div>'
 
     ret_rows = ""
     for row in get_retention_data():
@@ -908,6 +922,10 @@ def render_main_page(message):
         <div class="stat-card"><div class="stat-value">{avg_real}</div><div class="stat-label">真实平均(分)</div></div>
         <div class="stat-card"><div class="stat-value">{median}</div><div class="stat-label">中位数(分)</div></div>
     </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+        <div class="muted">用户 {visible_start}-{visible_end} / {total}，每页最多 {USERS_PER_PAGE} 个</div>
+        {pagination_html}
+    </div>
     <table>
         <thead>
             <tr>
@@ -924,6 +942,7 @@ def render_main_page(message):
         </thead>
         <tbody>{rows}</tbody>
     </table>
+    {pagination_html}
     <div class="analytics-section">
         <h2 class="h2-title">深度分析 (真实对话)</h2>
         <div class="chart-container">
@@ -949,6 +968,7 @@ def render_main_page(message):
             <p style="color:#888; font-size: 0.9em;">以下文本将不计入真实对话统计，且不会出现在词云中。</p>
             <form method="get" action="/" style="display:flex; gap:10px; margin-bottom:15px;">
                 <input type="hidden" name="action" value="add_preset">
+                <input type="hidden" name="page" value="{page}">
                 <input type="text" name="phrase" class="nickname-input" style="width: 300px;" placeholder="输入要排除的预设对话..." required>
                 <button type="submit" class="btn btn-save">添加排除</button>
             </form>
@@ -1192,6 +1212,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/":
+            page = parse_positive_int(query.get("page", ["1"])[0], 1)
             if "action" in query:
                 action = query["action"][0]
                 user_id = query.get("user_id", [""])[0]
@@ -1222,7 +1243,7 @@ class Handler(BaseHTTPRequestHandler):
                         message = f'<div class="success">已移除排除: {escape(phrase)}</div>'
                 except Exception as exc:
                     message = f'<div class="error">操作失败: {escape(str(exc))}</div>'
-            self._send_html(render_main_page(message))
+            self._send_html(render_main_page(message, page))
             return
 
         if parsed.path == "/user":

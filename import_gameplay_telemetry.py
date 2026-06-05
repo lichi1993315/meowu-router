@@ -171,10 +171,35 @@ WITH player_sessions AS (
     FROM gameplay_sessions s
     GROUP BY s.user_id
 ),
+event_island AS (
+    SELECT
+        user_id,
+        MAX(COALESCE(island_level, 0)) AS island_level_max
+    FROM gameplay_events
+    GROUP BY user_id
+),
+event_cats AS (
+    SELECT
+        user_id,
+        COUNT(DISTINCT COALESCE(
+            NULLIF(json_extract(payload_json, '$.cat_id'), ''),
+            NULLIF(actor_id, '')
+        )) AS cats_count
+    FROM gameplay_events
+    WHERE
+        event_type = 'cat_tool_completed'
+        OR json_extract(payload_json, '$.cat_id') IS NOT NULL
+        OR json_extract(payload_json, '$.cat_name') IS NOT NULL
+    GROUP BY user_id
+),
 latest_session AS (
     SELECT
         user_id,
-        money_end,
+        COALESCE(
+            money_end,
+            money_start + COALESCE(money_total_earned, 0) - COALESCE(money_total_spent, 0),
+            money_start
+        ) AS total_money,
         country,
         ROW_NUMBER() OVER (
             PARTITION BY user_id
@@ -212,13 +237,17 @@ SELECT
     ps.client_versions,
     ROUND(ps.total_play_duration_sec, 2) AS total_play_duration_sec,
     ps.play_days_total,
-    ps.island_level_max,
-    COALESCE(ls.money_end, 0) AS total_money,
+    MAX(ps.island_level_max, COALESCE(ei.island_level_max, 0)) AS island_level_max,
+    COALESCE(ls.total_money, 0) AS total_money,
     COALESCE(ls.country, '') AS country,
-    COALESCE(ld.cats_count, 0) AS cats_count
+    COALESCE(NULLIF(ld.cats_count, 0), ec.cats_count, 0) AS cats_count
 FROM player_sessions ps
 LEFT JOIN user_sessions us
     ON us.user_id = ps.user_id
+LEFT JOIN event_island ei
+    ON ei.user_id = ps.user_id
+LEFT JOIN event_cats ec
+    ON ec.user_id = ps.user_id
 LEFT JOIN latest_session ls
     ON ls.user_id = ps.user_id AND ls.rn = 1
 LEFT JOIN latest_day ld
