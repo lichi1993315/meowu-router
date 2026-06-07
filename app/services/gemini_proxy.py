@@ -17,7 +17,7 @@ from app.core.config import (
 )
 from app.core.logging import log
 from app.services import sessions
-from app.utils.crypto import decrypt_payload
+from app.utils.crypto import FernetConfigError, decrypt_payload
 
 _FINISH_REASON_MAP = {
     "STOP": "stop",
@@ -160,7 +160,12 @@ def _maybe_decrypt(request: Request, raw_body: bytes) -> bytes:
         return raw_body
 
     encrypted_str = raw_body.decode("utf-8")
-    decrypted_str = decrypt_payload(encrypted_str)
+    try:
+        decrypted_str = decrypt_payload(encrypted_str)
+    except FernetConfigError as exc:
+        raise HTTPException(status_code=500, detail="PAW_FERNET_KEY is not configured") from exc
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Decrypted request body is not UTF-8") from exc
     if decrypted_str is None:
         raise HTTPException(status_code=400, detail="Failed to decrypt request body")
     return decrypted_str.encode("utf-8")

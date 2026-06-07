@@ -27,6 +27,29 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 AUTH_SECRET = os.getenv("ADMIN_AUTH_SECRET", "meowuisland-admin-secret")
 AUTH_COOKIE_NAME = "developer_admin_auth"
 USERS_PER_PAGE = 30
+DEFAULT_USER_SORT = "requests_desc"
+USER_SORT_OPTIONS = {
+    "requests_desc": {
+        "label": "请求数最多",
+        "order_by": "total_requests DESC, last_seen DESC, user_id ASC",
+    },
+    "last_seen_desc": {
+        "label": "最后游玩最新",
+        "order_by": "last_seen DESC, total_requests DESC, user_id ASC",
+    },
+    "last_seen_asc": {
+        "label": "最后游玩最早",
+        "order_by": "last_seen IS NULL ASC, last_seen ASC, total_requests DESC, user_id ASC",
+    },
+    "first_seen_desc": {
+        "label": "首次游玩最新",
+        "order_by": "first_seen DESC, total_requests DESC, user_id ASC",
+    },
+    "play_minutes_desc": {
+        "label": "游玩时长最长",
+        "order_by": "(julianday(last_seen) - julianday(first_seen)) DESC, total_requests DESC, user_id ASC",
+    },
+}
 
 
 def get_html_template():
@@ -112,6 +135,20 @@ def get_html_template():
         .nickname-input:focus { outline: none; border-color: #00d9ff; }
         .nickname-form { display: flex; gap: 5px; align-items: center; }
         .nickname-display { color: #ffd43b; font-weight: bold; }
+        .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .select-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: #fff;
+            padding: 6px 10px;
+            height: 32px;
+            font-size: 13px;
+        }
+        .select-input:focus { outline: none; border-color: #00d9ff; }
+        .select-input option { color: #111; }
+        .sort-link { color: inherit; text-decoration: none; display: inline-flex; gap: 4px; align-items: center; }
+        .sort-link.active { color: #ffd43b; }
         .analytics-section { margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
         .chart-container { display: flex; gap: 20px; flex-wrap: wrap; }
         .chart-box { flex: 1; min-width: 300px; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; }
@@ -295,24 +332,61 @@ def get_stats():
     return total, devs, total - devs, avg_all, avg_real, median
 
 
-def get_users(page=1, page_size=USERS_PER_PAGE):
+def normalize_user_sort(sort_key):
+    return sort_key if sort_key in USER_SORT_OPTIONS else DEFAULT_USER_SORT
+
+
+def get_user_sort_label(sort_key):
+    sort_key = normalize_user_sort(sort_key)
+    return USER_SORT_OPTIONS[sort_key]["label"]
+
+
+def normalize_user_search(search):
+    return (search or "").strip()
+
+
+def escape_like(value):
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def build_user_where_clause(search):
+    search = normalize_user_search(search)
+    if search:
+        return "WHERE user_id LIKE ? ESCAPE '\\'", [f"%{escape_like(search)}%"]
+    return "WHERE total_requests >= 2", []
+
+
+def get_user_count(search=""):
+    where_sql, params = build_user_where_clause(search)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(f"SELECT COUNT(*) FROM user_sessions {where_sql}", params)
+    total = c.fetchone()[0]
+    conn.close()
+    return total
+
+
+def get_users(page=1, page_size=USERS_PER_PAGE, sort=DEFAULT_USER_SORT, search=""):
     page = max(1, int(page))
     page_size = min(USERS_PER_PAGE, max(1, int(page_size)))
     offset = (page - 1) * page_size
+    sort = normalize_user_sort(sort)
+    order_by = USER_SORT_OPTIONS[sort]["order_by"]
+    where_sql, params = build_user_where_clause(search)
     conn = get_db()
     c = conn.cursor()
     c.execute(
-        '''
+        f'''
         SELECT user_id, COALESCE(is_developer, 0), country, total_requests,
                CAST((julianday(last_seen) - julianday(first_seen)) * 24 * 60 AS INTEGER),
                nickname, player_name,
                datetime(first_seen, '+8 hours') as first_seen_bj,
                datetime(last_seen, '+8 hours') as last_seen_bj,
                COALESCE(is_blacklisted, 0)
-        FROM user_sessions WHERE total_requests >= 2 ORDER BY total_requests DESC
+        FROM user_sessions {where_sql} ORDER BY {order_by}
         LIMIT ? OFFSET ?
         ''',
-        (page_size, offset),
+        (*params, page_size, offset),
     )
     users = c.fetchall()
     conn.close()
@@ -806,29 +880,43 @@ def format_bytes(size):
     return f"{size} B"
 
 
-def render_main_page(message, page=1):
+def render_main_page(message, page=1, sort=DEFAULT_USER_SORT, search=""):
+    sort = normalize_user_sort(sort)
+    search = normalize_user_search(search)
     total, devs, players, avg_all, avg_real, median = get_stats()
-    total_pages = max(1, (total + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
+    filtered_total = get_user_count(search)
+    total_pages = max(1, (filtered_total + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
     page = min(max(1, page), total_pages)
-    visible_start = 0 if total == 0 else (page - 1) * USERS_PER_PAGE + 1
-    visible_end = min(page * USERS_PER_PAGE, total)
-    pagination_html = render_pagination("/", page, total_pages, {}, page_param="page")
+    visible_start = 0 if filtered_total == 0 else (page - 1) * USERS_PER_PAGE + 1
+    visible_end = min(page * USERS_PER_PAGE, filtered_total)
+    list_params = {"sort": sort, "q": search}
+    pagination_html = render_pagination("/", page, total_pages, list_params, page_param="page")
+    sort_options_html = ""
+    for key, config in USER_SORT_OPTIONS.items():
+        selected = " selected" if key == sort else ""
+        sort_options_html += f'<option value="{escape(key)}"{selected}>{escape(config["label"])}</option>'
+
+    def render_sort_link(label, sort_key):
+        active = " active" if sort_key == sort else ""
+        suffix = " ↓" if sort_key == sort else ""
+        return f'<a class="sort-link{active}" href="{build_query("/", sort=sort_key, q=search, page=1)}">{escape(label)}{suffix}</a>'
+
     rows = ""
-    for user in get_users(page, USERS_PER_PAGE):
+    for user in get_users(page, USERS_PER_PAGE, sort, search):
         user_id, is_dev, country, requests, mins, nickname, player_name, first_seen_bj, last_seen_bj, is_black = user
         nickname = nickname or ""
         player_name = player_name or ""
         if is_black:
             badge = '<span class="black-badge">黑名单</span>'
-            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_blacklist", user_id=user_id, page=page)}">移出黑名单</a>'
+            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_blacklist", user_id=user_id, page=page, sort=sort, q=search)}">移出黑名单</a>'
         elif is_dev:
             badge = '<span class="dev-badge">开发者</span>'
-            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_dev", user_id=user_id, page=page)}">设为玩家</a>'
+            actions = f'<a class="btn btn-player" href="{build_query("/", action="remove_dev", user_id=user_id, page=page, sort=sort, q=search)}">设为玩家</a>'
         else:
             badge = '<span class="player-badge">玩家</span>'
             actions = (
-                f'<a class="btn btn-dev" href="{build_query("/", action="add_dev", user_id=user_id, page=page)}">设为开发</a>'
-                f'<a class="btn btn-black" href="{build_query("/", action="add_blacklist", user_id=user_id, page=page)}">拉黑</a>'
+                f'<a class="btn btn-dev" href="{build_query("/", action="add_dev", user_id=user_id, page=page, sort=sort, q=search)}">设为开发</a>'
+                f'<a class="btn btn-black" href="{build_query("/", action="add_blacklist", user_id=user_id, page=page, sort=sort, q=search)}">拉黑</a>'
             )
         actions += f'<a class="btn btn-view" href="{build_query("/user", user_id=user_id)}">查看 JSONL</a>'
         if nickname:
@@ -842,6 +930,8 @@ def render_main_page(message, page=1):
             <input type="hidden" name="action" value="set_nickname">
             <input type="hidden" name="user_id" value="{escape(user_id)}">
             <input type="hidden" name="page" value="{page}">
+            <input type="hidden" name="sort" value="{escape(sort)}">
+            <input type="hidden" name="q" value="{escape(search)}">
             <input type="text" name="nickname" class="nickname-input" placeholder="输入昵称" value="{escape(nickname)}">
             <button type="submit" class="btn btn-save">保存</button>
         </form>
@@ -860,7 +950,7 @@ def render_main_page(message, page=1):
             <td>{actions}</td>
         </tr>'''
     if not rows:
-        rows = '<tr><td colspan="9" class="empty">暂无用户。</td></tr>'
+        rows = '<tr><td colspan="9" class="empty">没有匹配的用户。</td></tr>'
 
     avg, median_reqs, dist, top10_pct = get_analytics()
     max_dist = max(dist.values()) if dist else 1
@@ -887,7 +977,14 @@ def render_main_page(message, page=1):
 
     presets_html = ""
     for phrase in get_presets():
-        presets_html += f'<div class="preset-tag">{escape(phrase)} <a href="{build_query("/", action="remove_preset", phrase=phrase, page=page)}" class="preset-delete">×</a></div>'
+        presets_html += f'<div class="preset-tag">{escape(phrase)} <a href="{build_query("/", action="remove_preset", phrase=phrase, page=page, sort=sort, q=search)}" class="preset-delete">×</a></div>'
+
+    result_text = (
+        f'匹配用户 {visible_start}-{visible_end} / {filtered_total}，总有效用户 {total}'
+        if search
+        else f'用户 {visible_start}-{visible_end} / {total}'
+    )
+    clear_search_html = f'<a class="btn btn-player" href="{build_query("/", sort=sort)}">清空搜索</a>' if search else ""
 
     ret_rows = ""
     for row in get_retention_data():
@@ -923,9 +1020,19 @@ def render_main_page(message, page=1):
         <div class="stat-card"><div class="stat-value">{median}</div><div class="stat-label">中位数(分)</div></div>
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-        <div class="muted">用户 {visible_start}-{visible_end} / {total}，每页最多 {USERS_PER_PAGE} 个</div>
+        <div class="muted">{escape(result_text)}，每页最多 {USERS_PER_PAGE} 个，当前排序：{escape(get_user_sort_label(sort))}</div>
         {pagination_html}
     </div>
+    <form method="get" action="/" class="toolbar" style="margin-bottom:12px;">
+        <span class="muted">搜索用户ID</span>
+        <input type="search" name="q" class="nickname-input" style="width: 280px;" placeholder="输入完整或部分 user_id" value="{escape(search)}">
+        <span class="muted">排序</span>
+        <select name="sort" class="select-input" onchange="this.form.submit()">
+            {sort_options_html}
+        </select>
+        <button type="submit" class="btn btn-save">搜索</button>
+        {clear_search_html}
+    </form>
     <table>
         <thead>
             <tr>
@@ -933,10 +1040,10 @@ def render_main_page(message, page=1):
                 <th>昵称</th>
                 <th>类型</th>
                 <th>国家</th>
-                <th>首次游玩(北京)</th>
-                <th>最后游玩(北京)</th>
-                <th>请求</th>
-                <th>时长(分)</th>
+                <th>{render_sort_link("首次游玩(北京)", "first_seen_desc")}</th>
+                <th>{render_sort_link("最后游玩(北京)", "last_seen_desc")}</th>
+                <th>{render_sort_link("请求", "requests_desc")}</th>
+                <th>{render_sort_link("时长(分)", "play_minutes_desc")}</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -969,6 +1076,8 @@ def render_main_page(message, page=1):
             <form method="get" action="/" style="display:flex; gap:10px; margin-bottom:15px;">
                 <input type="hidden" name="action" value="add_preset">
                 <input type="hidden" name="page" value="{page}">
+                <input type="hidden" name="sort" value="{escape(sort)}">
+                <input type="hidden" name="q" value="{escape(search)}">
                 <input type="text" name="phrase" class="nickname-input" style="width: 300px;" placeholder="输入要排除的预设对话..." required>
                 <button type="submit" class="btn btn-save">添加排除</button>
             </form>
@@ -1213,6 +1322,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if parsed.path == "/":
             page = parse_positive_int(query.get("page", ["1"])[0], 1)
+            sort = normalize_user_sort(query.get("sort", [DEFAULT_USER_SORT])[0])
+            search = normalize_user_search(query.get("q", [""])[0])
             if "action" in query:
                 action = query["action"][0]
                 user_id = query.get("user_id", [""])[0]
@@ -1243,7 +1354,7 @@ class Handler(BaseHTTPRequestHandler):
                         message = f'<div class="success">已移除排除: {escape(phrase)}</div>'
                 except Exception as exc:
                     message = f'<div class="error">操作失败: {escape(str(exc))}</div>'
-            self._send_html(render_main_page(message, page))
+            self._send_html(render_main_page(message, page, sort, search))
             return
 
         if parsed.path == "/user":

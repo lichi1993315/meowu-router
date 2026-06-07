@@ -10,17 +10,23 @@ from cryptography.fernet import Fernet, InvalidToken
 
 class EncryptedSaver:
     """加密存档器，支持字符串和 JSON 对象的加密保存和读取"""
-    
-    # 默认密钥（发布前请务必替换）
-    _DEFAULT_KEY = b'bpOh_iTn40gcs7lmeByXLh8mHa_au753W2UbX2SB9RU='
-    
-    def __init__(self, key: bytes = None):
+
+    _KEY_ENV = "PAW_FERNET_KEY"
+
+    def __init__(self, key: bytes | None = None):
         """
         初始化加密器。
-        :param key: 32字节的 Fernet 密钥 (bytes 类型)。如果为 None，使用默认密钥。
+        :param key: 32字节的 Fernet 密钥 (bytes 类型)。如果为 None，使用 PAW_FERNET_KEY。
         """
-        self.__key = key if key else self._DEFAULT_KEY
+        self.__key = key if key else self._load_key_from_env()
         self.cipher = Fernet(self.__key)
+
+    @classmethod
+    def _load_key_from_env(cls) -> bytes:
+        key = os.getenv(cls._KEY_ENV, "").strip()
+        if not key:
+            raise ValueError(f"{cls._KEY_ENV} is not configured")
+        return key.encode("utf-8")
 
     def save(self, data: Union[str, dict, list], filepath: str) -> bool:
         """
@@ -195,8 +201,14 @@ class EncryptedSaver:
         return Fernet.generate_key()
 
 
-# 创建默认加密器实例，方便直接使用
-_default_saver = EncryptedSaver()
+_default_saver: EncryptedSaver | None = None
+
+
+def _get_default_saver() -> EncryptedSaver:
+    global _default_saver
+    if _default_saver is None:
+        _default_saver = EncryptedSaver()
+    return _default_saver
 
 
 def save_encrypted(data: Union[str, dict, list], filepath: str) -> bool:
@@ -207,7 +219,7 @@ def save_encrypted(data: Union[str, dict, list], filepath: str) -> bool:
     :param filepath: 保存路径
     :return: 是否保存成功
     """
-    return _default_saver.save(data, filepath)
+    return _get_default_saver().save(data, filepath)
 
 
 def load_encrypted(filepath: str) -> Optional[str]:
@@ -217,7 +229,7 @@ def load_encrypted(filepath: str) -> Optional[str]:
     :param filepath: 文件路径
     :return: 解密后的字符串，失败返回 None
     """
-    return _default_saver.load(filepath)
+    return _get_default_saver().load(filepath)
 
 
 def load_encrypted_json(filepath: str) -> Optional[Union[dict, list]]:
@@ -227,7 +239,7 @@ def load_encrypted_json(filepath: str) -> Optional[Union[dict, list]]:
     :param filepath: 文件路径
     :return: 解密后的字典或列表，失败返回 None
     """
-    return _default_saver.load_json(filepath)
+    return _get_default_saver().load_json(filepath)
 
 
 def encrypt_to_string(data: Union[str, dict, list]) -> str:
@@ -237,7 +249,7 @@ def encrypt_to_string(data: Union[str, dict, list]) -> str:
     :param data: 要加密的数据（str, dict 或 list）
     :return: Base64 编码的加密字符串
     """
-    return _default_saver.encrypt_to_string(data)
+    return _get_default_saver().encrypt_to_string(data)
 
 
 def decrypt_from_string(encrypted_str: str) -> Optional[Union[str, dict, list]]:
@@ -247,7 +259,7 @@ def decrypt_from_string(encrypted_str: str) -> Optional[Union[str, dict, list]]:
     :param encrypted_str: Base64 编码的加密字符串
     :return: 解密后的数据（str, dict 或 list），失败返回 None
     """
-    return _default_saver.decrypt_from_string(encrypted_str)
+    return _get_default_saver().decrypt_from_string(encrypted_str)
 
 
 def decrypt_string_only(encrypted_str: str) -> Optional[str]:
@@ -257,7 +269,7 @@ def decrypt_string_only(encrypted_str: str) -> Optional[str]:
     :param encrypted_str: Base64 编码的加密字符串
     :return: 解密后的字符串，失败返回 None
     """
-    return _default_saver.decrypt_string_only(encrypted_str)
+    return _get_default_saver().decrypt_string_only(encrypted_str)
 
 
 # --- 测试模块 ---
