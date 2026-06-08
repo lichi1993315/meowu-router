@@ -1,0 +1,265 @@
+import sqlite3
+import unittest
+
+from import_gameplay_telemetry import ensure_schema, import_sample
+
+
+class GameplayTelemetryImporterTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        self.conn.execute(
+            """
+            CREATE TABLE user_sessions (
+                user_id TEXT PRIMARY KEY,
+                is_developer INTEGER DEFAULT 0,
+                nickname TEXT,
+                player_name TEXT
+            )
+            """
+        )
+        self.conn.execute(
+            "INSERT INTO user_sessions (user_id, is_developer, nickname) VALUES ('user-1', 0, '甜甜')"
+        )
+        ensure_schema(self.conn)
+
+    def tearDown(self) -> None:
+        self.conn.close()
+
+    def test_imports_session_ai_usage_and_call_detail(self) -> None:
+        sample = {
+            "user_id": "user-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "session-1",
+                    "real_time_started_iso": "2026-06-07T01:02:03",
+                    "game_day_start": 0,
+                    "game_day_end": 2,
+                    "ai_token_usage": {
+                        "session_input_tokens": 1000,
+                        "session_output_tokens": 100,
+                        "session_total_tokens": 1100,
+                        "session_cached_input_tokens": 200,
+                        "session_cache_read_input_tokens": 200,
+                        "session_billable_uncached_input_tokens": 800,
+                        "session_billable_cached_input_tokens": 200,
+                        "archive_total_consumed_tokens": 9000,
+                        "input_usd_per_million_tokens": 0.25,
+                        "output_usd_per_million_tokens": 1.5,
+                        "cached_input_usd_per_million_tokens": 0.025,
+                    },
+                },
+                "days": {
+                    "0": {
+                        "events": [
+                            {
+                                "event_type": "cat_agent_request",
+                                "payload": {"model": "gemini-test"},
+                            },
+                            {
+                                "event_type": "cat_agent_response",
+                                "event_game_minutes": 12,
+                                "timestamp": "2026-06-07T01:03:00",
+                                "actor": {"agent_id": "cat-1", "agent_name": "小猫"},
+                                "payload": {
+                                    "model": "gemini-test",
+                                    "mode": "plan",
+                                    "tag": "daily",
+                                    "prompt_profile": {"toolset_version": "v1"},
+                                    "request_stats": {
+                                        "message_count": 3,
+                                        "message_content_chars": 1200,
+                                        "message_json_chars": 1800,
+                                        "tool_count": 2,
+                                        "tool_schema_json_chars": 640,
+                                        "prompt_cache_key": "cache-1",
+                                    },
+                                    "response_stats": {
+                                        "prompt_tokens": 120,
+                                        "completion_tokens": 30,
+                                        "total_tokens": 150,
+                                        "cached_tokens": 50,
+                                        "cache_read_input_tokens": 50,
+                                    },
+                                },
+                            },
+                        ]
+                    }
+                },
+            },
+        }
+
+        imported = import_sample(
+            self.conn,
+            source_file="/tmp/sample.json",
+            sample=sample,
+            imported_at="2026-06-07T01:10:00+00:00",
+        )
+
+        self.assertEqual(imported, 1)
+        session = self.conn.execute("SELECT * FROM gameplay_sessions").fetchone()
+        self.assertEqual(session["ai_usage_source"], "session_meta.ai_token_usage")
+        self.assertEqual(session["ai_request_count"], 1)
+        self.assertEqual(session["ai_response_count"], 1)
+        self.assertEqual(session["ai_token_record_count"], 1)
+        self.assertEqual(session["ai_input_tokens"], 1000)
+        self.assertEqual(session["ai_output_tokens"], 100)
+        self.assertEqual(session["ai_total_tokens"], 1100)
+        self.assertEqual(session["ai_cached_input_tokens"], 200)
+        self.assertEqual(session["ai_archive_total_consumed_tokens"], 9000)
+        self.assertEqual(session["ai_models"], "gemini-test")
+        self.assertAlmostEqual(session["ai_estimated_cost_usd"], 0.000355)
+
+        call = self.conn.execute("SELECT * FROM gameplay_ai_calls").fetchone()
+        self.assertEqual(call["model"], "gemini-test")
+        self.assertEqual(call["toolset_version"], "v1")
+        self.assertEqual(call["prompt_cache_key"], "cache-1")
+        self.assertEqual(call["total_tokens"], 150)
+        self.assertEqual(call["cached_input_tokens"], 50)
+        self.assertAlmostEqual(call["estimated_cost_usd"], 0.00006375)
+
+        user_summary = self.conn.execute(
+            "SELECT * FROM gameplay_ai_user_summary WHERE user_id = 'user-1'"
+        ).fetchone()
+        self.assertEqual(user_summary["ai_total_tokens"], 1100)
+        self.assertAlmostEqual(user_summary["ai_estimated_cost_usd"], 0.000355)
+
+    def test_aggregates_event_ai_usage_without_session_meta(self) -> None:
+        sample = {
+            "user_id": "user-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {"session_id": "session-2"},
+                "days": {
+                    "0": {
+                        "events": [
+                            {
+                                "event_type": "cat_agent_response",
+                                "payload": {
+                                    "model": "gemini-test",
+                                    "input_usd_per_million_tokens": 0.25,
+                                    "output_usd_per_million_tokens": 1.5,
+                                    "cached_input_usd_per_million_tokens": 0.025,
+                                    "response_stats": {
+                                        "prompt_tokens": 100,
+                                        "completion_tokens": 20,
+                                        "total_tokens": 120,
+                                        "cached_tokens": 40,
+                                    },
+                                },
+                            },
+                            {
+                                "event_type": "cat_agent_response",
+                                "payload": {
+                                    "model": "gemini-test",
+                                    "input_usd_per_million_tokens": 0.25,
+                                    "output_usd_per_million_tokens": 1.5,
+                                    "cached_input_usd_per_million_tokens": 0.025,
+                                    "response_stats": {
+                                        "prompt_tokens": 200,
+                                        "completion_tokens": 50,
+                                        "total_tokens": 250,
+                                        "cached_tokens": 80,
+                                    },
+                                },
+                            },
+                        ]
+                    }
+                },
+            },
+        }
+
+        import_sample(
+            self.conn,
+            source_file="/tmp/sample-2.json",
+            sample=sample,
+            imported_at="2026-06-07T01:10:00+00:00",
+        )
+
+        session = self.conn.execute(
+            "SELECT * FROM gameplay_sessions WHERE session_id = 'session-2'"
+        ).fetchone()
+        self.assertEqual(session["ai_usage_source"], "event_payloads")
+        self.assertEqual(session["ai_response_count"], 2)
+        self.assertEqual(session["ai_token_record_count"], 2)
+        self.assertEqual(session["ai_input_tokens"], 300)
+        self.assertEqual(session["ai_output_tokens"], 70)
+        self.assertEqual(session["ai_total_tokens"], 370)
+        self.assertEqual(session["ai_cached_input_tokens"], 120)
+        self.assertAlmostEqual(session["ai_cache_hit_ratio"], 0.4)
+        self.assertAlmostEqual(session["ai_estimated_cost_usd"], 0.000153)
+
+    def test_reimport_replaces_rows_by_player_session_id_across_sources(self) -> None:
+        first_sample = {
+            "user_id": "user-1",
+            "player_session_id": "player-session-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "api-session-1",
+                    "real_time_started_iso": "2026-06-07T01:00:00",
+                    "money_end": 100,
+                },
+                "days": {
+                    "1": {
+                        "events": [
+                            {"event_type": "old_event", "payload": {"value": 1}},
+                        ]
+                    }
+                },
+            },
+        }
+        second_sample = {
+            "user_id": "user-1",
+            "player_session_id": "player-session-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "api-session-2",
+                    "real_time_started_iso": "2026-06-07T01:00:00",
+                    "money_end": 200,
+                },
+                "days": {
+                    "2": {
+                        "events": [
+                            {"event_type": "new_event", "payload": {"value": 2}},
+                        ]
+                    }
+                },
+            },
+        }
+
+        import_sample(
+            self.conn,
+            source_file="/tmp/outbox-old.json",
+            sample=first_sample,
+            imported_at="2026-06-07T01:10:00+00:00",
+        )
+        import_sample(
+            self.conn,
+            source_file="/tmp/outbox-retry.json",
+            sample=second_sample,
+            imported_at="2026-06-07T01:20:00+00:00",
+        )
+
+        sessions = self.conn.execute("SELECT * FROM gameplay_sessions").fetchall()
+        self.assertEqual(len(sessions), 1)
+        self.assertEqual(sessions[0]["source_file"], "/tmp/outbox-retry.json")
+        self.assertEqual(sessions[0]["session_id"], "api-session-2")
+        self.assertEqual(sessions[0]["player_session_id"], "player-session-1")
+        self.assertEqual(sessions[0]["money_end"], 200)
+
+        day = self.conn.execute("SELECT * FROM gameplay_days").fetchone()
+        self.assertEqual(day["session_id"], "api-session-2")
+        self.assertEqual(day["player_session_id"], "player-session-1")
+        self.assertEqual(day["game_day"], 2)
+
+        event = self.conn.execute("SELECT * FROM gameplay_events").fetchone()
+        self.assertEqual(event["session_id"], "api-session-2")
+        self.assertEqual(event["player_session_id"], "player-session-1")
+        self.assertEqual(event["event_type"], "new_event")
+
+
+if __name__ == "__main__":
+    unittest.main()

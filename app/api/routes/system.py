@@ -152,13 +152,25 @@ async def logoff(request: Request):
     try:
         payload = await read_encrypted_game_telemetry_payload(request)
         raw_body = _payload_to_body(payload)
+        headers = dict(request.headers)
         timestamp_iso = datetime.now().isoformat()
-        asyncio.create_task(
-            sessions.update_session_event_log(
+        try:
+            await sessions.update_session_event_log(
                 raw_body=raw_body,
-                headers=dict(request.headers),
+                headers=headers,
                 event_type="logoff",
                 timestamp_iso=timestamp_iso,
+                raise_on_error=True,
+            )
+        except Exception as exc:
+            log(f"[ERROR] Failed to persist logoff telemetry before response: {exc}")
+            raise HTTPException(status_code=503, detail="failed to persist logoff telemetry") from exc
+
+        asyncio.create_task(
+            feishu_alerts.send_logoff_telemetry_report(
+                payload=payload,
+                headers=headers,
+                received_at=timestamp_iso,
             )
         )
 

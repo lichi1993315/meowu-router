@@ -1,4 +1,7 @@
+import asyncio
 import json
+import os
+import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +31,7 @@ SENSITIVE_BODY_KEYS = {
     "token",
 }
 SESSION_FILE_INDEX: dict[str, Path] = {}
+SESSION_FILE_LOCKS: dict[str, asyncio.Lock] = {}
 
 
 def _safe_headers(headers: dict) -> dict:
@@ -112,10 +116,38 @@ async def _load_session_record(filepath: Path) -> dict | None:
         return None
 
 
-async def _save_session_record(filepath: Path, record: dict) -> None:
+def _write_session_record_atomic(filepath: Path, record: dict) -> None:
     filepath.parent.mkdir(parents=True, exist_ok=True)
-    async with aiofiles.open(filepath, "w", encoding="utf-8") as f:
-        await f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    payload = json.dumps(record, ensure_ascii=False) + "\n"
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{filepath.name}.",
+        suffix=".tmp",
+        dir=filepath.parent,
+        text=True,
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(payload)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, filepath)
+        if hasattr(os, "O_DIRECTORY"):
+            dir_fd = os.open(filepath.parent, os.O_DIRECTORY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+    except Exception:
+        try:
+            tmp_path.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+async def _save_session_record(filepath: Path, record: dict) -> None:
+    await asyncio.to_thread(_write_session_record_atomic, filepath, record)
 
 
 async def save_request_to_file(
@@ -187,7 +219,8 @@ async def update_session_event_log(
     headers: dict,
     event_type: str,
     timestamp_iso: str,
-) -> None:
+    raise_on_error: bool = False,
+) -> Path | None:
     try:
         try:
             payload = json.loads(raw_body) if raw_body else {}
@@ -199,47 +232,53 @@ async def update_session_event_log(
         source = _infer_event_source(payload)
         incoming_user_id = headers.get("x-user-id")
 
-        existing_path = _find_existing_session_file(session_id)
-        record = await _load_session_record(existing_path) if existing_path else None
+        lock = SESSION_FILE_LOCKS.setdefault(session_id, asyncio.Lock())
+        async with lock:
+            existing_path = _find_existing_session_file(session_id)
+            record = await _load_session_record(existing_path) if existing_path else None
 
-        if not record:
-            record = {
-                "type": "session",
-                "session_id": session_id,
-                "user_id": None,
-                "created_at": timestamp_iso,
-                "updated_at": timestamp_iso,
-                "sources": {},
-            }
+            if not record:
+                record = {
+                    "type": "session",
+                    "session_id": session_id,
+                    "user_id": None,
+                    "created_at": timestamp_iso,
+                    "updated_at": timestamp_iso,
+                    "sources": {},
+                }
 
-        if incoming_user_id and (record.get("user_id") is None or source == "python"):
-            record["user_id"] = incoming_user_id
+            if incoming_user_id and (record.get("user_id") is None or source == "python"):
+                record["user_id"] = incoming_user_id
 
-        record["updated_at"] = timestamp_iso
-        sources = record.setdefault("sources", {})
-        source_bucket = sources.setdefault(source, {})
-        event_bucket = source_bucket.setdefault(event_type, {})
-        event_bucket["received_at"] = timestamp_iso
-        if isinstance(payload, dict) and payload.get("timestamp"):
-            event_bucket["event_timestamp"] = payload.get("timestamp")
-        if "headers" in event_bucket:
-            event_bucket["headers"] = _merge_dict(event_bucket["headers"], safe_headers)
-        else:
-            event_bucket["headers"] = safe_headers
-        if "payload" in event_bucket and isinstance(payload, dict):
-            event_bucket["payload"] = _merge_dict(event_bucket["payload"], payload)
-        else:
-            event_bucket["payload"] = payload
+            record["updated_at"] = timestamp_iso
+            sources = record.setdefault("sources", {})
+            source_bucket = sources.setdefault(source, {})
+            event_bucket = source_bucket.setdefault(event_type, {})
+            event_bucket["received_at"] = timestamp_iso
+            if isinstance(payload, dict) and payload.get("timestamp"):
+                event_bucket["event_timestamp"] = payload.get("timestamp")
+            if "headers" in event_bucket:
+                event_bucket["headers"] = _merge_dict(event_bucket["headers"], safe_headers)
+            else:
+                event_bucket["headers"] = safe_headers
+            if "payload" in event_bucket and isinstance(payload, dict):
+                event_bucket["payload"] = _merge_dict(event_bucket["payload"], payload)
+            else:
+                event_bucket["payload"] = payload
 
-        target_path = _session_file_path(record.get("user_id"), session_id)
-        if existing_path and existing_path != target_path:
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            existing_path.replace(target_path)
+            target_path = _session_file_path(record.get("user_id"), session_id)
+            if existing_path and existing_path != target_path:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                existing_path.replace(target_path)
 
-        await _save_session_record(target_path, record)
-        SESSION_FILE_INDEX[session_id] = target_path
+            await _save_session_record(target_path, record)
+            SESSION_FILE_INDEX[session_id] = target_path
+            return target_path
     except Exception as exc:
         log(f"[WARNING] Failed to update session log: {exc}")
+        if raise_on_error:
+            raise
+        return None
 
 
 async def save_error_log_to_file(

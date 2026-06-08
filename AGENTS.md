@@ -124,6 +124,29 @@ sudo docker compose -f docker-compose.monitoring.yml logs -f service-name
 sudo docker compose -f docker-compose.monitoring.yml ps
 ```
 
+## 飞书消息代码部署
+
+飞书机器人消息由 `router-api` 容器发送。凡是修改飞书告警/消息/文档相关代码，例如：
+
+- `app/services/feishu_alerts.py`
+- `/logoff`、`/error_log` 等触发飞书发送的 API route
+- `FEISHU_*` 相关 compose/env 配置
+
+发布时必须重建并启动 `router-api`，否则线上飞书消息仍会使用旧容器里的旧代码：
+
+```bash
+./start.sh
+# 或
+sudo docker compose -f docker-compose.monitoring.yml up -d --build router-api
+```
+
+如果同次改动还涉及 gameplay importer 或 Grafana dashboard，需要另外重建/重启对应服务：
+
+```bash
+sudo docker compose -f docker-compose.monitoring.yml up -d --build gameplay-importer
+sudo docker compose -f docker-compose.monitoring.yml restart grafana
+```
+
 ## Analytics 开发规范
 
 ### ✅ 所有分析功能在 Grafana 开发
