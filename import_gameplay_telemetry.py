@@ -1604,13 +1604,18 @@ def run_import_once() -> int:
                 continue
             scanned_files += 1
             logger.debug("Importing gameplay telemetry from %s", path)
+            savepoint = f"import_file_{scanned_files}"
+            conn.execute(f"SAVEPOINT {savepoint}")
             try:
                 session_count, sample_count = import_file(conn, path)
-            except Exception as exc:
+            except Exception:
+                conn.execute(f"ROLLBACK TO {savepoint}")
+                conn.execute(f"RELEASE {savepoint}")
                 logger.exception("Failed to import %s", path)
                 record_ingest_import_failure(conn, path, str(exc))
                 failed_files += 1
                 continue
+            conn.execute(f"RELEASE {savepoint}")
             state.files[key] = mtime_ns
             imported_files += 1
             imported_sessions += session_count
