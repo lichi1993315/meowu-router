@@ -3,12 +3,13 @@
 Import gameplay telemetry into SQLite for Grafana analytics.
 
 The importer supports two sources:
-1. Standalone telemetry JSON files in a data directory.
+1. Raw gameplay telemetry ingest JSON files in a data directory.
 2. Live session log files under output/*/session-*.jsonl where gameplay
    telemetry is embedded in logoff.payload.gameplay_telemetry.
 
 Imports are idempotent per player_session_id when available, and per source
-file/session_id as a fallback.
+file/session_id as a fallback. Raw ingest files are tracked in
+gameplay_telemetry_ingest so missing sessions can be diagnosed by ingest state.
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/output"))
 STATE_PATH = Path(os.getenv("GAMEPLAY_IMPORTER_STATE_PATH", "/app/data/gameplay_importer_state.json"))
 IMPORT_INTERVAL_SEC = int(os.getenv("GAMEPLAY_IMPORT_INTERVAL_SEC", "300"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-STATE_SCHEMA_VERSION = 4
+STATE_SCHEMA_VERSION = 5
 
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
@@ -88,6 +89,34 @@ CREATE TABLE IF NOT EXISTS gameplay_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_user ON gameplay_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_started ON gameplay_sessions(real_time_started_iso);
+
+CREATE TABLE IF NOT EXISTS gameplay_telemetry_ingest (
+    source_file TEXT PRIMARY KEY,
+    ingest_id TEXT,
+    endpoint TEXT,
+    event_type TEXT,
+    received_at TEXT,
+    user_id TEXT,
+    session_id TEXT,
+    player_session_id TEXT,
+    player_id TEXT,
+    client_version TEXT,
+    outbox_id TEXT,
+    payload_size_bytes INTEGER DEFAULT 0,
+    import_status TEXT NOT NULL DEFAULT 'pending',
+    import_error TEXT,
+    sample_count INTEGER DEFAULT 0,
+    session_count INTEGER DEFAULT 0,
+    imported_at TEXT,
+    raw_json TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_status
+    ON gameplay_telemetry_ingest(import_status);
+CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_player_session
+    ON gameplay_telemetry_ingest(user_id, player_session_id);
+CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_received
+    ON gameplay_telemetry_ingest(received_at);
 
 CREATE TABLE IF NOT EXISTS gameplay_days (
     source_file TEXT NOT NULL,
@@ -694,6 +723,98 @@ def discover_session_files(root: Path) -> list[Path]:
     return sorted(path for path in root.rglob("session-*.jsonl") if path.is_file())
 
 
+def is_gameplay_telemetry_ingest_payload(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    ingest = payload.get("ingest")
+    return isinstance(ingest, dict) and ingest.get("type") == "gameplay_telemetry_ingest"
+
+
+def _path_is_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _short_error(error: str) -> str:
+    return error[:2000]
+
+
+def upsert_ingest_record(
+    conn: sqlite3.Connection,
+    *,
+    source_file: str,
+    payload: dict[str, Any] | None,
+    import_status: str,
+    import_error: str = "",
+    sample_count: int = 0,
+    session_count: int = 0,
+    imported_at: str | None = None,
+) -> None:
+    ingest = payload.get("ingest") if isinstance(payload, dict) else {}
+    if not isinstance(ingest, dict):
+        ingest = {}
+
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO gameplay_telemetry_ingest (
+            source_file, ingest_id, endpoint, event_type, received_at,
+            user_id, session_id, player_session_id, player_id, client_version,
+            outbox_id, payload_size_bytes, import_status, import_error,
+            sample_count, session_count, imported_at, raw_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            source_file,
+            as_nonempty_str(ingest.get("id")),
+            as_nonempty_str(ingest.get("endpoint")),
+            as_nonempty_str(ingest.get("event_type")),
+            as_nonempty_str(ingest.get("received_at")),
+            as_nonempty_str(ingest.get("user_id") or (payload or {}).get("user_id")),
+            as_nonempty_str(ingest.get("session_id") or (payload or {}).get("session_id")),
+            as_nonempty_str(
+                ingest.get("player_session_id") or (payload or {}).get("player_session_id")
+            ),
+            as_nonempty_str(ingest.get("player_id") or (payload or {}).get("player_id")),
+            as_nonempty_str(ingest.get("client_version") or (payload or {}).get("client_version")),
+            as_nonempty_str(ingest.get("outbox_id")),
+            int0(ingest.get("payload_size_bytes")),
+            import_status,
+            _short_error(import_error),
+            sample_count,
+            session_count,
+            imported_at,
+            as_json(payload or {}),
+        ),
+    )
+
+
+def record_ingest_import_failure(conn: sqlite3.Connection, path: Path, error: str) -> None:
+    if path.suffix != ".json" or not _path_is_under(path, TELEMETRY_DIR):
+        return
+    source_file = str(path.resolve())
+    imported_at = now_iso()
+    cursor = conn.execute(
+        """
+        UPDATE gameplay_telemetry_ingest
+        SET import_status = ?, import_error = ?, imported_at = ?
+        WHERE source_file = ?
+        """,
+        ("failed", _short_error(error), imported_at, source_file),
+    )
+    if cursor.rowcount == 0:
+        upsert_ingest_record(
+            conn,
+            source_file=source_file,
+            payload=None,
+            import_status="failed",
+            import_error=error,
+            imported_at=imported_at,
+        )
+
+
 def iter_samples(payload: Any) -> Iterable[dict[str, Any]]:
     if isinstance(payload, dict):
         if isinstance(payload.get("telemetry_samples"), list):
@@ -1220,6 +1341,23 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "gameplay_events", "is_dev", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_events", "client_version", "TEXT")
     ensure_column(conn, "gameplay_ai_calls", "player_session_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "ingest_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "endpoint", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "event_type", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "received_at", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "user_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "session_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "player_session_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "player_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "outbox_id", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "payload_size_bytes", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_telemetry_ingest", "import_status", "TEXT DEFAULT 'pending'")
+    ensure_column(conn, "gameplay_telemetry_ingest", "import_error", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "sample_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_telemetry_ingest", "session_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "gameplay_telemetry_ingest", "imported_at", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "raw_json", "TEXT")
 
     conn.execute(
         """
@@ -1363,6 +1501,15 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_ai_cost ON gameplay_sessions(ai_estimated_cost_usd)"
     )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_status ON gameplay_telemetry_ingest(import_status)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_player_session ON gameplay_telemetry_ingest(user_id, player_session_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_received ON gameplay_telemetry_ingest(received_at)"
+    )
 
     conn.executescript(VIEW_SQL)
 
@@ -1378,16 +1525,36 @@ def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:
 def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
     source_file = str(path.resolve())
     imported_at = now_iso()
+    is_ingest_file = False
+    payload: Any
     if path.name.startswith("session-") and path.suffix == ".jsonl":
         payload = json.loads(path.read_text(encoding="utf-8"))
         sample = sample_from_session_record(payload)
         samples = [sample] if sample else []
     else:
         payload = json.loads(path.read_text(encoding="utf-8"))
+        is_ingest_file = is_gameplay_telemetry_ingest_payload(payload)
+        if is_ingest_file:
+            upsert_ingest_record(
+                conn,
+                source_file=source_file,
+                payload=payload,
+                import_status="pending",
+                imported_at=imported_at,
+            )
         samples = list(iter_samples(payload))
 
     if not samples:
         logger.debug("Skip %s: no gameplay telemetry samples found", path)
+        if is_ingest_file:
+            upsert_ingest_record(
+                conn,
+                source_file=source_file,
+                payload=payload,
+                import_status="skipped",
+                import_error="no gameplay telemetry samples found",
+                imported_at=imported_at,
+            )
         return 0, 0
 
     conn.execute("DELETE FROM gameplay_ai_calls WHERE source_file = ?", (source_file,))
@@ -1398,6 +1565,17 @@ def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
     session_count = 0
     for sample in samples:
         session_count += import_sample(conn, source_file=source_file, sample=sample, imported_at=imported_at)
+    if is_ingest_file:
+        upsert_ingest_record(
+            conn,
+            source_file=source_file,
+            payload=payload,
+            import_status="imported" if session_count > 0 else "skipped",
+            import_error="" if session_count > 0 else "no gameplay sessions imported",
+            sample_count=len(samples),
+            session_count=session_count,
+            imported_at=imported_at,
+        )
     return session_count, len(samples)
 
 
@@ -1428,8 +1606,9 @@ def run_import_once() -> int:
             logger.debug("Importing gameplay telemetry from %s", path)
             try:
                 session_count, sample_count = import_file(conn, path)
-            except Exception:
+            except Exception as exc:
                 logger.exception("Failed to import %s", path)
+                record_ingest_import_failure(conn, path, str(exc))
                 failed_files += 1
                 continue
             state.files[key] = mtime_ns

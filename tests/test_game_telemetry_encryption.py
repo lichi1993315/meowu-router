@@ -3,6 +3,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from cryptography.fernet import Fernet
@@ -46,6 +47,8 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
             "X-Encrypted": "true",
             "X-User-ID": "user-1",
             "X-Session-ID": "session-1",
+            "X-Player-ID": "player-1",
+            "X-Player-Session-ID": "player-session-1",
             "X-Client-Version": "1.2.3",
         }
 
@@ -111,6 +114,11 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
             captured["payload"] = json.loads(kwargs["raw_body"])
             return object()
 
+        async def fake_save_gameplay_telemetry_ingest(**kwargs):
+            captured["ingest_payload"] = kwargs["payload"]
+            captured["ingest_headers"] = kwargs["headers"]
+            return object()
+
         def fake_send_logoff_telemetry_report(**kwargs):
             reports.update(kwargs)
             return object()
@@ -120,6 +128,10 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
             patch(
                 "app.api.routes.system.sessions.update_session_event_log",
                 fake_update_session_event_log,
+            ),
+            patch(
+                "app.api.routes.system.sessions.save_gameplay_telemetry_ingest",
+                fake_save_gameplay_telemetry_ingest,
             ),
             patch(
                 "app.api.routes.system.feishu_alerts.send_logoff_telemetry_report",
@@ -135,8 +147,69 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(captured["event_type"], "logoff")
         self.assertEqual(captured["payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
+        self.assertEqual(captured["ingest_payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
+        self.assertEqual(captured["ingest_headers"]["x-player-session-id"], "player-session-1")
         self.assertEqual(reports["payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
         self.assertEqual(reports["headers"]["x-session-id"], "session-1")
+
+    def test_encrypted_logoff_writes_raw_ingest_file_before_success(self) -> None:
+        payload = {
+            "session_id": "session-1",
+            "timestamp": "2026-06-07T01:02:03Z",
+            "username": "甜甜",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "session-1",
+                    "player_session_id": "player-session-1",
+                    "client_version": "1.2.3",
+                    "game_duration_sec": 125,
+                },
+                "days": {"1": {"events": [{"event_type": "fish"}]}},
+            },
+        }
+
+        def fake_create_task(value):
+            return value
+
+        async def fake_update_session_event_log(**kwargs):
+            return object()
+
+        def fake_send_logoff_telemetry_report(**kwargs):
+            return object()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                patch("app.api.routes.system.asyncio.create_task", fake_create_task),
+                patch(
+                    "app.api.routes.system.sessions.update_session_event_log",
+                    fake_update_session_event_log,
+                ),
+                patch("app.services.sessions.GAMEPLAY_TELEMETRY_DIR", Path(tmpdir)),
+                patch(
+                    "app.api.routes.system.feishu_alerts.send_logoff_telemetry_report",
+                    fake_send_logoff_telemetry_report,
+                ),
+            ):
+                response = self.client.post(
+                    "/logoff",
+                    content=self._encrypt(payload),
+                    headers=self._headers(),
+                )
+
+            files = list(Path(tmpdir).rglob("*.json"))
+            record = json.loads(files[0].read_text(encoding="utf-8")) if files else {}
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(files), 1)
+        self.assertEqual(record["ingest"]["type"], "gameplay_telemetry_ingest")
+        self.assertEqual(record["ingest"]["event_type"], "logoff")
+        self.assertEqual(record["ingest"]["import_status"], "pending")
+        self.assertEqual(record["ingest"]["user_id"], "user-1")
+        self.assertEqual(record["ingest"]["player_id"], "player-1")
+        self.assertEqual(record["ingest"]["player_session_id"], "player-session-1")
+        self.assertEqual(record["user_id"], "user-1")
+        self.assertEqual(record["client_version"], "1.2.3")
+        self.assertEqual(record["gameplay_telemetry"], payload["gameplay_telemetry"])
 
     def test_encrypted_logoff_returns_503_when_persist_fails(self) -> None:
         payload = {"session_id": "session-1", "timestamp": "2026-06-07T01:02:03Z"}
@@ -147,6 +220,38 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         with patch(
             "app.api.routes.system.sessions.update_session_event_log",
             fake_update_session_event_log,
+        ):
+            response = self.client.post(
+                "/logoff",
+                content=self._encrypt(payload),
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"], "failed to persist logoff telemetry")
+
+    def test_encrypted_logoff_returns_503_when_raw_ingest_fails(self) -> None:
+        payload = {
+            "session_id": "session-1",
+            "timestamp": "2026-06-07T01:02:03Z",
+            "gameplay_telemetry": {"session_meta": {"session_id": "session-1"}, "days": {}},
+        }
+
+        async def fake_update_session_event_log(**kwargs):
+            return object()
+
+        async def fake_save_gameplay_telemetry_ingest(**kwargs):
+            raise OSError("disk full")
+
+        with (
+            patch(
+                "app.api.routes.system.sessions.update_session_event_log",
+                fake_update_session_event_log,
+            ),
+            patch(
+                "app.api.routes.system.sessions.save_gameplay_telemetry_ingest",
+                fake_save_gameplay_telemetry_ingest,
+            ),
         ):
             response = self.client.post(
                 "/logoff",

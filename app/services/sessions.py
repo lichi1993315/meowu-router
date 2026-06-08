@@ -8,7 +8,7 @@ from pathlib import Path
 
 import aiofiles
 
-from app.core.config import ERROR_LOG_DIR, OUTPUT_DIR
+from app.core.config import ERROR_LOG_DIR, GAMEPLAY_TELEMETRY_DIR, OUTPUT_DIR
 from app.core.logging import log
 
 SENSITIVE_HEADERS = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
@@ -32,6 +32,14 @@ SENSITIVE_BODY_KEYS = {
 }
 SESSION_FILE_INDEX: dict[str, Path] = {}
 SESSION_FILE_LOCKS: dict[str, asyncio.Lock] = {}
+
+
+def _header_value(headers: dict, name: str) -> str:
+    lower_name = name.lower()
+    for key, value in headers.items():
+        if str(key).lower() == lower_name and value is not None:
+            return str(value)
+    return ""
 
 
 def _safe_headers(headers: dict) -> dict:
@@ -81,11 +89,113 @@ def _merge_dict(existing: dict, incoming: dict) -> dict:
     return merged
 
 
+def _first_nonempty(*values) -> str:
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return ""
+
+
+def _safe_filename_part(value: str, fallback: str) -> str:
+    text = value.strip() if value else fallback
+    safe = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in text)
+    safe = safe.strip("._")
+    return safe[:80] if safe else fallback
+
+
 def _get_session_id(headers: dict, payload: object) -> str:
-    session_id = headers.get("x-session-id")
+    session_id = _header_value(headers, "x-session-id")
     if not session_id and isinstance(payload, dict):
         session_id = payload.get("session_id")
     return session_id or f"unknown-{uuid.uuid4().hex[:8]}"
+
+
+def _get_session_meta(payload: object) -> dict:
+    if not isinstance(payload, dict):
+        return {}
+    telemetry = payload.get("gameplay_telemetry")
+    if not isinstance(telemetry, dict):
+        return {}
+    session_meta = telemetry.get("session_meta")
+    return session_meta if isinstance(session_meta, dict) else {}
+
+
+def _build_gameplay_telemetry_ingest_record(
+    *,
+    payload: dict,
+    headers: dict,
+    event_type: str,
+    timestamp_iso: str,
+    decrypted_body_bytes: int,
+) -> dict:
+    safe_payload = _safe_body(payload)
+    session_meta = _get_session_meta(payload)
+    safe_headers = _safe_headers(headers)
+    session_id = _first_nonempty(
+        _header_value(headers, "x-session-id"),
+        payload.get("session_id"),
+        session_meta.get("session_id"),
+    )
+    user_id = _first_nonempty(
+        _header_value(headers, "x-user-id"),
+        payload.get("user_id"),
+        payload.get("player_id"),
+        session_meta.get("user_id"),
+    )
+    player_id = _first_nonempty(
+        _header_value(headers, "x-player-id"),
+        payload.get("player_id"),
+        payload.get("user_id"),
+        user_id,
+    )
+    player_session_id = _first_nonempty(
+        _header_value(headers, "x-player-session-id"),
+        payload.get("player_session_id"),
+        payload.get("playerSessionId"),
+        session_meta.get("player_session_id"),
+        session_meta.get("playerSessionId"),
+    )
+    client_version = _first_nonempty(
+        _header_value(headers, "x-client-version"),
+        payload.get("client_version"),
+        session_meta.get("client_version"),
+    )
+    record = {
+        **safe_payload,
+        "ingest": {
+            "type": "gameplay_telemetry_ingest",
+            "id": uuid.uuid4().hex,
+            "endpoint": "/logoff",
+            "event_type": event_type,
+            "received_at": timestamp_iso,
+            "user_id": user_id,
+            "session_id": session_id,
+            "player_session_id": player_session_id,
+            "player_id": player_id,
+            "client_version": client_version,
+            "outbox_id": _header_value(headers, "x-outbox-id"),
+            "headers": safe_headers,
+            "payload_size_bytes": decrypted_body_bytes,
+            "import_status": "pending",
+            "import_error": "",
+        },
+        "user_id": user_id or safe_payload.get("user_id") or safe_payload.get("player_id"),
+        "player_id": player_id or safe_payload.get("player_id"),
+        "session_id": session_id or safe_payload.get("session_id"),
+        "player_session_id": player_session_id
+        or safe_payload.get("player_session_id")
+        or safe_payload.get("playerSessionId"),
+        "client_version": client_version or safe_payload.get("client_version"),
+        "country": _first_nonempty(
+            _header_value(headers, "cf-ipcountry"),
+            safe_payload.get("country"),
+            safe_payload.get("country_code"),
+        ),
+    }
+    return record
 
 
 def _session_file_path(user_id: str | None, session_id: str) -> Path:
@@ -148,6 +258,34 @@ def _write_session_record_atomic(filepath: Path, record: dict) -> None:
 
 async def _save_session_record(filepath: Path, record: dict) -> None:
     await asyncio.to_thread(_write_session_record_atomic, filepath, record)
+
+
+async def save_gameplay_telemetry_ingest(
+    *,
+    payload: dict,
+    headers: dict,
+    event_type: str,
+    timestamp_iso: str,
+    decrypted_body_bytes: int,
+) -> Path:
+    record = _build_gameplay_telemetry_ingest_record(
+        payload=payload,
+        headers=headers,
+        event_type=event_type,
+        timestamp_iso=timestamp_iso,
+        decrypted_body_bytes=decrypted_body_bytes,
+    )
+    ingest = record["ingest"]
+    user_part = _safe_filename_part(ingest.get("user_id") or "", "anonymous")
+    session_part = _safe_filename_part(
+        ingest.get("player_session_id") or ingest.get("session_id") or "",
+        "unknown-session",
+    )
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    filename = f"{timestamp}-{ingest['id'][:8]}.json"
+    filepath = GAMEPLAY_TELEMETRY_DIR / user_part / session_part / filename
+    await asyncio.to_thread(_write_session_record_atomic, filepath, record)
+    return filepath
 
 
 async def save_request_to_file(

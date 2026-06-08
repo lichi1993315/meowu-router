@@ -1,7 +1,10 @@
+import json
 import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 
-from import_gameplay_telemetry import ensure_schema, import_sample
+from import_gameplay_telemetry import ensure_schema, import_file, import_sample
 
 
 class GameplayTelemetryImporterTests(unittest.TestCase):
@@ -259,6 +262,96 @@ class GameplayTelemetryImporterTests(unittest.TestCase):
         self.assertEqual(event["session_id"], "api-session-2")
         self.assertEqual(event["player_session_id"], "player-session-1")
         self.assertEqual(event["event_type"], "new_event")
+
+    def test_import_file_tracks_raw_ingest_status_and_session(self) -> None:
+        payload = {
+            "ingest": {
+                "type": "gameplay_telemetry_ingest",
+                "id": "ingest-1",
+                "endpoint": "/logoff",
+                "event_type": "logoff",
+                "received_at": "2026-06-07T01:02:03",
+                "user_id": "user-1",
+                "session_id": "session-1",
+                "player_session_id": "player-session-1",
+                "player_id": "player-1",
+                "client_version": "unity-test",
+                "outbox_id": "outbox-1",
+                "payload_size_bytes": 1234,
+                "import_status": "pending",
+            },
+            "user_id": "user-1",
+            "player_id": "player-1",
+            "session_id": "session-1",
+            "player_session_id": "player-session-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "session-1",
+                    "player_session_id": "player-session-1",
+                    "real_time_started_iso": "2026-06-07T01:00:00",
+                    "game_duration_sec": 60,
+                    "money_end": 200,
+                },
+                "days": {"1": {"events": [{"event_type": "fish", "payload": {"earned_money": 20}}]}},
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "raw-ingest.json"
+            path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            source_file = str(path.resolve())
+
+            session_count, sample_count = import_file(self.conn, path)
+
+        self.assertEqual(session_count, 1)
+        self.assertEqual(sample_count, 1)
+        ingest = self.conn.execute(
+            "SELECT * FROM gameplay_telemetry_ingest WHERE source_file = ?",
+            (source_file,),
+        ).fetchone()
+        self.assertEqual(ingest["import_status"], "imported")
+        self.assertEqual(ingest["sample_count"], 1)
+        self.assertEqual(ingest["session_count"], 1)
+        self.assertEqual(ingest["player_session_id"], "player-session-1")
+        self.assertEqual(ingest["outbox_id"], "outbox-1")
+
+        session = self.conn.execute("SELECT * FROM gameplay_sessions").fetchone()
+        self.assertEqual(session["source_file"], source_file)
+        self.assertEqual(session["session_id"], "session-1")
+        self.assertEqual(session["player_session_id"], "player-session-1")
+        self.assertEqual(session["client_version"], "unity-test")
+        self.assertEqual(session["money_end"], 200)
+
+    def test_import_file_marks_raw_ingest_without_gameplay_as_skipped(self) -> None:
+        payload = {
+            "ingest": {
+                "type": "gameplay_telemetry_ingest",
+                "id": "ingest-empty",
+                "endpoint": "/logoff",
+                "event_type": "logoff",
+                "user_id": "user-1",
+                "session_id": "session-1",
+            },
+            "user_id": "user-1",
+            "session_id": "session-1",
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "raw-ingest-empty.json"
+            path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            source_file = str(path.resolve())
+
+            session_count, sample_count = import_file(self.conn, path)
+
+        self.assertEqual(session_count, 0)
+        self.assertEqual(sample_count, 0)
+        ingest = self.conn.execute(
+            "SELECT * FROM gameplay_telemetry_ingest WHERE source_file = ?",
+            (source_file,),
+        ).fetchone()
+        self.assertEqual(ingest["import_status"], "skipped")
+        self.assertIn("no gameplay telemetry", ingest["import_error"])
 
 
 if __name__ == "__main__":

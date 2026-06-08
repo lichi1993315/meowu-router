@@ -22,6 +22,7 @@ services:
       - .env
     environment:
       - DB_PATH=/app/data/conversations.db
+      - GAMEPLAY_TELEMETRY_DIR=/app/data/gameplay_telemetry
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_BASE_URL=${GEMINI_BASE_URL}
       - GEMINI_SDK_URL=${GEMINI_SDK_URL:-}

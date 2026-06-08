@@ -5,6 +5,9 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 OUTPUT_DIR = BASE_DIR / "output"
 ERROR_LOG_DIR = OUTPUT_DIR / "error_logs"
+GAMEPLAY_TELEMETRY_DIR = Path(
+    os.getenv("GAMEPLAY_TELEMETRY_DIR", str(BASE_DIR / "data" / "gameplay_telemetry"))
+)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gemini-3-flash-preview")

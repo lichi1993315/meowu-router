@@ -162,6 +162,13 @@ async def logoff(request: Request):
                 timestamp_iso=timestamp_iso,
                 raise_on_error=True,
             )
+            await sessions.save_gameplay_telemetry_ingest(
+                payload=payload,
+                headers=headers,
+                event_type="logoff",
+                timestamp_iso=timestamp_iso,
+                decrypted_body_bytes=len(raw_body),
+            )
         except Exception as exc:
             log(f"[ERROR] Failed to persist logoff telemetry before response: {exc}")
             raise HTTPException(status_code=503, detail="failed to persist logoff telemetry") from exc
