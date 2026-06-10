@@ -132,6 +132,122 @@ class PlaytimeStoreTests(unittest.TestCase):
         self.assertEqual(rollup["final_duration_sec"], 75)
         self.assertEqual(rollup["event_count"], 1)
 
+    def test_heartbeat_activity_fields_roll_up_and_outbox_update_is_idempotent(self) -> None:
+        headers_1 = {**self._headers(), "x-outbox-id": "outbox-1"}
+        headers_2 = {**self._headers(), "x-outbox-id": "outbox-2"}
+        heartbeat_1 = {
+            "session_id": "session-1",
+            "timestamp": "2026-06-07T01:01:00Z",
+            "sequence": 1,
+            "game_duration_sec": 60,
+            "activity_state": "active",
+            "current_activity": "moving",
+            "current_ui": "none",
+            "idle_duration_sec": 10,
+            "afk_duration_sec": 0,
+            "input_active_duration_sec": 20,
+            "movement_duration_sec": 15,
+            "gameplay_active_duration_sec": 12,
+            "ui_active_duration_sec": 1,
+            "last_input_at": "2026-06-07T01:00:59Z",
+            "last_player_action_at": "2026-06-07T01:00:58Z",
+            "last_movement_at": "2026-06-07T01:00:57Z",
+            "activity_window_sec": 30,
+            "activity_since_last_heartbeat": {
+                "input_event_count": 5,
+                "movement_start_count": 1,
+                "gameplay_event_count": 2,
+                "interact_count": 1,
+                "fishing_action_count": 0,
+                "ui_open_count": 1,
+                "ui_click_count": 2,
+            },
+            "activity_thresholds": {
+                "idle_threshold_sec": 15,
+                "afk_threshold_sec": 120,
+            },
+        }
+        heartbeat_2 = {
+            **heartbeat_1,
+            "timestamp": "2026-06-07T01:01:30Z",
+            "sequence": 2,
+            "game_duration_sec": 90,
+            "activity_state": "afk",
+            "current_activity": "afk",
+            "idle_duration_sec": 35,
+            "afk_duration_sec": 5,
+            "input_active_duration_sec": 20,
+            "movement_duration_sec": 15,
+            "gameplay_active_duration_sec": 12,
+            "ui_active_duration_sec": 1,
+            "activity_since_last_heartbeat": {
+                "input_event_count": 1,
+                "movement_start_count": 0,
+                "gameplay_event_count": 1,
+                "interact_count": 0,
+                "fishing_action_count": 1,
+                "ui_open_count": 0,
+                "ui_click_count": 0,
+            },
+        }
+
+        record_play_session_event(
+            self.conn,
+            payload=heartbeat_1,
+            headers=headers_1,
+            event_type="heartbeat",
+            received_at="2026-06-07T01:01:00+00:00",
+        )
+        # Same outbox record with a changed payload updates the event row instead of double-counting it.
+        heartbeat_1_retry = {
+            **heartbeat_1,
+            "activity_since_last_heartbeat": {
+                **heartbeat_1["activity_since_last_heartbeat"],
+                "input_event_count": 7,
+            },
+        }
+        record_play_session_event(
+            self.conn,
+            payload=heartbeat_1_retry,
+            headers=headers_1,
+            event_type="heartbeat",
+            received_at="2026-06-07T01:01:05+00:00",
+        )
+        rollup = record_play_session_event(
+            self.conn,
+            payload=heartbeat_2,
+            headers=headers_2,
+            event_type="heartbeat",
+            received_at="2026-06-07T01:01:30+00:00",
+        )
+
+        event_count = self.conn.execute("SELECT COUNT(*) FROM play_session_events").fetchone()[0]
+        first_event = self.conn.execute(
+            "SELECT * FROM play_session_events WHERE outbox_id = 'outbox-1'"
+        ).fetchone()
+
+        self.assertEqual(event_count, 2)
+        self.assertEqual(first_event["activity_input_event_count"], 7)
+        self.assertEqual(rollup["activity_state"], "afk")
+        self.assertEqual(rollup["current_activity"], "afk")
+        self.assertEqual(rollup["idle_duration_sec"], 35)
+        self.assertEqual(rollup["afk_duration_sec"], 5)
+        self.assertEqual(rollup["input_active_duration_sec"], 20)
+        self.assertEqual(rollup["movement_duration_sec"], 15)
+        self.assertEqual(rollup["gameplay_active_duration_sec"], 12)
+        self.assertEqual(rollup["ui_active_duration_sec"], 1)
+        self.assertEqual(rollup["last_input_at"], "2026-06-07T01:00:59Z")
+        self.assertEqual(rollup["activity_reported_window_sec"], 60)
+        self.assertEqual(rollup["activity_input_event_count"], 8)
+        self.assertEqual(rollup["activity_movement_start_count"], 1)
+        self.assertEqual(rollup["activity_gameplay_event_count"], 3)
+        self.assertEqual(rollup["activity_interact_count"], 1)
+        self.assertEqual(rollup["activity_fishing_action_count"], 1)
+        self.assertEqual(rollup["activity_ui_open_count"], 1)
+        self.assertEqual(rollup["activity_ui_click_count"], 2)
+        self.assertEqual(rollup["activity_threshold_idle_sec"], 15)
+        self.assertEqual(rollup["activity_threshold_afk_sec"], 120)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -85,7 +85,33 @@ X-Outbox-ID: <locally persistent event uuid>
   "foreground_duration_sec": 180,
   "active_duration_sec": 120,
   "app_state": "foreground",
-  "last_gameplay_event_at": "2026-06-10T12:02:58Z"
+  "last_gameplay_event_at": "2026-06-10T12:02:58Z",
+  "activity_state": "active",
+  "current_activity": "fishing",
+  "current_ui": "none",
+  "idle_duration_sec": 30,
+  "afk_duration_sec": 0,
+  "input_active_duration_sec": 90,
+  "movement_duration_sec": 40,
+  "gameplay_active_duration_sec": 80,
+  "ui_active_duration_sec": 5,
+  "last_input_at": "2026-06-10T12:02:59Z",
+  "last_player_action_at": "2026-06-10T12:02:58Z",
+  "last_movement_at": "2026-06-10T12:02:30Z",
+  "activity_window_sec": 30,
+  "activity_since_last_heartbeat": {
+    "input_event_count": 12,
+    "movement_start_count": 2,
+    "gameplay_event_count": 3,
+    "interact_count": 1,
+    "fishing_action_count": 2,
+    "ui_open_count": 1,
+    "ui_click_count": 4
+  },
+  "activity_thresholds": {
+    "idle_threshold_sec": 15,
+    "afk_threshold_sec": 120
+  }
 }
 ```
 
@@ -96,6 +122,16 @@ X-Outbox-ID: <locally persistent event uuid>
 - `foreground_duration_sec`: App 在前台的累计秒数。
 - `active_duration_sec`: 玩家有输入或游戏内有效活动的累计秒数，可选但建议上报。
 - `app_state`: `foreground` / `background` / `paused` / `quitting`。
+- `activity_state`: 玩家行为状态，取值 `active` / `idle` / `afk` / `background` / `unknown`。
+- `current_activity`: 粗粒度当前行为，例如 `moving`、`fishing`、`farming`、`building`、`shop`、`cat_interaction`、`restaurant`、`ui`、`idle`、`afk`、`background`。
+- `current_ui`: 第一版只记录 `ui` 或 `none`，不上传具体 UI 名称。
+- `idle_duration_sec`: session 内累计无输入、无移动、无玩法动作超过 15 秒后的前台时间；AFK 时间包含在 idle 内。
+- `afk_duration_sec`: session 内累计无输入、无移动、无玩法动作超过 120 秒后的前台时间。
+- `input_active_duration_sec` / `movement_duration_sec` / `gameplay_active_duration_sec` / `ui_active_duration_sec`: session 内累计输入活跃、移动、玩法动作、UI 操作时长。
+- `last_input_at` / `last_player_action_at` / `last_movement_at`: 最近输入、玩法动作、移动的客户端时间。
+- `activity_window_sec`: 本次 heartbeat 覆盖的客户端活动聚合窗口秒数。
+- `activity_since_last_heartbeat`: 自上次 heartbeat 后的窗口计数，服务端按幂等后的 heartbeat 记录求和。
+- `activity_thresholds`: 客户端用于判定 idle/afk 的阈值，当前为 15 秒和 120 秒。
 
 服务端成功响应示例：
 

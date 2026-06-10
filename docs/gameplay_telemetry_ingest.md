@@ -11,6 +11,13 @@
 `play_session_rollups`. Heartbeats are the fallback source for sessions that
 never reach `/logoff`.
 
+Heartbeat activity fields are stored in both the raw event row and the session
+rollup. Cumulative durations such as `idle_duration_sec`,
+`afk_duration_sec`, `movement_duration_sec`, and `gameplay_active_duration_sec`
+use the latest maximum value for the session; window counters such as
+`activity_fishing_action_count` and `activity_input_event_count` are summed from
+deduplicated heartbeat rows.
+
 The raw ingest file keeps `gameplay_telemetry` at the top level, plus an `ingest`
 metadata block. `import_gameplay_telemetry.py` scans these files, imports gameplay
 tables idempotently by `player_session_id`, and records each raw file in

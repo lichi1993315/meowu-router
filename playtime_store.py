@@ -36,6 +36,28 @@ CREATE TABLE IF NOT EXISTS play_session_events (
     active_duration_sec REAL,
     app_state TEXT,
     last_gameplay_event_at TEXT,
+    activity_state TEXT,
+    current_activity TEXT,
+    current_ui TEXT,
+    idle_duration_sec REAL,
+    afk_duration_sec REAL,
+    input_active_duration_sec REAL,
+    movement_duration_sec REAL,
+    gameplay_active_duration_sec REAL,
+    ui_active_duration_sec REAL,
+    last_input_at TEXT,
+    last_player_action_at TEXT,
+    last_movement_at TEXT,
+    activity_window_sec REAL,
+    activity_input_event_count INTEGER DEFAULT 0,
+    activity_movement_start_count INTEGER DEFAULT 0,
+    activity_gameplay_event_count INTEGER DEFAULT 0,
+    activity_interact_count INTEGER DEFAULT 0,
+    activity_fishing_action_count INTEGER DEFAULT 0,
+    activity_ui_open_count INTEGER DEFAULT 0,
+    activity_ui_click_count INTEGER DEFAULT 0,
+    activity_threshold_idle_sec REAL,
+    activity_threshold_afk_sec REAL,
     outbox_id TEXT,
     payload_size_bytes INTEGER DEFAULT 0,
     payload_json TEXT,
@@ -81,6 +103,28 @@ CREATE TABLE IF NOT EXISTS play_session_rollups (
     end_reason TEXT,
     app_state TEXT,
     last_gameplay_event_at TEXT,
+    activity_state TEXT,
+    current_activity TEXT,
+    current_ui TEXT,
+    idle_duration_sec REAL DEFAULT 0,
+    afk_duration_sec REAL DEFAULT 0,
+    input_active_duration_sec REAL DEFAULT 0,
+    movement_duration_sec REAL DEFAULT 0,
+    gameplay_active_duration_sec REAL DEFAULT 0,
+    ui_active_duration_sec REAL DEFAULT 0,
+    last_input_at TEXT,
+    last_player_action_at TEXT,
+    last_movement_at TEXT,
+    activity_reported_window_sec REAL DEFAULT 0,
+    activity_input_event_count INTEGER DEFAULT 0,
+    activity_movement_start_count INTEGER DEFAULT 0,
+    activity_gameplay_event_count INTEGER DEFAULT 0,
+    activity_interact_count INTEGER DEFAULT 0,
+    activity_fishing_action_count INTEGER DEFAULT 0,
+    activity_ui_open_count INTEGER DEFAULT 0,
+    activity_ui_click_count INTEGER DEFAULT 0,
+    activity_threshold_idle_sec REAL,
+    activity_threshold_afk_sec REAL,
     last_event_type TEXT,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (user_id, session_id)
@@ -96,6 +140,10 @@ CREATE INDEX IF NOT EXISTS idx_play_session_rollups_duration_source
     ON play_session_rollups(duration_source);
 CREATE INDEX IF NOT EXISTS idx_play_session_rollups_release_version
     ON play_session_rollups(release_version);
+CREATE INDEX IF NOT EXISTS idx_play_session_rollups_activity_state
+    ON play_session_rollups(activity_state);
+CREATE INDEX IF NOT EXISTS idx_play_session_rollups_current_activity
+    ON play_session_rollups(current_activity);
 """
 
 
@@ -158,10 +206,54 @@ def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "play_session_events", "active_duration_sec", "REAL")
     ensure_column(conn, "play_session_events", "app_state", "TEXT")
     ensure_column(conn, "play_session_events", "last_gameplay_event_at", "TEXT")
+    ensure_column(conn, "play_session_events", "activity_state", "TEXT")
+    ensure_column(conn, "play_session_events", "current_activity", "TEXT")
+    ensure_column(conn, "play_session_events", "current_ui", "TEXT")
+    ensure_column(conn, "play_session_events", "idle_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "afk_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "input_active_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "movement_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "gameplay_active_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "ui_active_duration_sec", "REAL")
+    ensure_column(conn, "play_session_events", "last_input_at", "TEXT")
+    ensure_column(conn, "play_session_events", "last_player_action_at", "TEXT")
+    ensure_column(conn, "play_session_events", "last_movement_at", "TEXT")
+    ensure_column(conn, "play_session_events", "activity_window_sec", "REAL")
+    ensure_column(conn, "play_session_events", "activity_input_event_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_movement_start_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_gameplay_event_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_interact_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_fishing_action_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_ui_open_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_ui_click_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_events", "activity_threshold_idle_sec", "REAL")
+    ensure_column(conn, "play_session_events", "activity_threshold_afk_sec", "REAL")
     ensure_column(conn, "play_session_events", "payload_size_bytes", "INTEGER DEFAULT 0")
     ensure_column(conn, "play_session_events", "payload_json", "TEXT")
     ensure_column(conn, "play_session_rollups", "release_version", "TEXT")
     ensure_column(conn, "play_session_rollups", "estimated_tail_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_state", "TEXT")
+    ensure_column(conn, "play_session_rollups", "current_activity", "TEXT")
+    ensure_column(conn, "play_session_rollups", "current_ui", "TEXT")
+    ensure_column(conn, "play_session_rollups", "idle_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "afk_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "input_active_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "movement_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "gameplay_active_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "ui_active_duration_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "last_input_at", "TEXT")
+    ensure_column(conn, "play_session_rollups", "last_player_action_at", "TEXT")
+    ensure_column(conn, "play_session_rollups", "last_movement_at", "TEXT")
+    ensure_column(conn, "play_session_rollups", "activity_reported_window_sec", "REAL DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_input_event_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_movement_start_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_gameplay_event_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_interact_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_fishing_action_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_ui_open_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_ui_click_count", "INTEGER DEFAULT 0")
+    ensure_column(conn, "play_session_rollups", "activity_threshold_idle_sec", "REAL")
+    ensure_column(conn, "play_session_rollups", "activity_threshold_afk_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "last_event_type", "TEXT")
     conn.executescript(PLAYTIME_VIEW_SQL)
 
@@ -219,6 +311,20 @@ def _as_float(value: Any) -> float | None:
         return None
 
 
+def _as_nonnegative_float(value: Any) -> float | None:
+    parsed = _as_float(value)
+    if parsed is None:
+        return None
+    return parsed if parsed >= 0 else None
+
+
+def _as_nonnegative_int(value: Any) -> int:
+    parsed = _as_int(value)
+    if parsed is None or parsed < 0:
+        return 0
+    return parsed
+
+
 def _json_dumps(value: Any) -> str:
     return json.dumps(value or {}, ensure_ascii=False, sort_keys=True)
 
@@ -263,6 +369,21 @@ def _duration_value(payload: dict[str, Any], meta: dict[str, Any], *keys: str) -
         if value is not None:
             return value
     return None
+
+
+def _nested_dict(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    value = payload.get(key)
+    return value if isinstance(value, dict) else {}
+
+
+def _activity_count(payload: dict[str, Any], key: str) -> int:
+    window = _nested_dict(payload, "activity_since_last_heartbeat")
+    return _as_nonnegative_int(window.get(key))
+
+
+def _activity_threshold(payload: dict[str, Any], key: str) -> float | None:
+    thresholds = _nested_dict(payload, "activity_thresholds")
+    return _as_nonnegative_float(thresholds.get(key))
 
 
 def _build_event(
@@ -348,6 +469,21 @@ def _build_event(
         payload.get("last_gameplay_event_at"),
         meta.get("last_gameplay_event_at"),
     )
+    activity_state = _first_nonempty(payload.get("activity_state"))
+    current_activity = _first_nonempty(payload.get("current_activity"))
+    current_ui = _first_nonempty(payload.get("current_ui"))
+    idle_duration_sec = _as_nonnegative_float(payload.get("idle_duration_sec"))
+    afk_duration_sec = _as_nonnegative_float(payload.get("afk_duration_sec"))
+    input_active_duration_sec = _as_nonnegative_float(payload.get("input_active_duration_sec"))
+    movement_duration_sec = _as_nonnegative_float(payload.get("movement_duration_sec"))
+    gameplay_active_duration_sec = _as_nonnegative_float(payload.get("gameplay_active_duration_sec"))
+    ui_active_duration_sec = _as_nonnegative_float(payload.get("ui_active_duration_sec"))
+    last_input_at = _first_nonempty(payload.get("last_input_at"))
+    last_player_action_at = _first_nonempty(payload.get("last_player_action_at"))
+    last_movement_at = _first_nonempty(payload.get("last_movement_at"))
+    activity_window_sec = _as_nonnegative_float(payload.get("activity_window_sec"))
+    activity_threshold_idle_sec = _activity_threshold(payload, "idle_threshold_sec")
+    activity_threshold_afk_sec = _activity_threshold(payload, "afk_threshold_sec")
 
     if outbox_id:
         dedupe_key = f"outbox:{event_type}:{user_id}:{session_id}:{outbox_id}"
@@ -376,6 +512,28 @@ def _build_event(
         "active_duration_sec": active_duration_sec,
         "app_state": app_state,
         "last_gameplay_event_at": last_gameplay_event_at,
+        "activity_state": activity_state,
+        "current_activity": current_activity,
+        "current_ui": current_ui,
+        "idle_duration_sec": idle_duration_sec,
+        "afk_duration_sec": afk_duration_sec,
+        "input_active_duration_sec": input_active_duration_sec,
+        "movement_duration_sec": movement_duration_sec,
+        "gameplay_active_duration_sec": gameplay_active_duration_sec,
+        "ui_active_duration_sec": ui_active_duration_sec,
+        "last_input_at": last_input_at,
+        "last_player_action_at": last_player_action_at,
+        "last_movement_at": last_movement_at,
+        "activity_window_sec": activity_window_sec,
+        "activity_input_event_count": _activity_count(payload, "input_event_count"),
+        "activity_movement_start_count": _activity_count(payload, "movement_start_count"),
+        "activity_gameplay_event_count": _activity_count(payload, "gameplay_event_count"),
+        "activity_interact_count": _activity_count(payload, "interact_count"),
+        "activity_fishing_action_count": _activity_count(payload, "fishing_action_count"),
+        "activity_ui_open_count": _activity_count(payload, "ui_open_count"),
+        "activity_ui_click_count": _activity_count(payload, "ui_click_count"),
+        "activity_threshold_idle_sec": activity_threshold_idle_sec,
+        "activity_threshold_afk_sec": activity_threshold_afk_sec,
         "outbox_id": outbox_id,
         "payload_size_bytes": payload_size_bytes,
         "payload_json": _json_dumps(payload),
@@ -391,6 +549,29 @@ def _duration_candidates(rows: list[sqlite3.Row], keys: tuple[str, ...]) -> list
                 values.append(value)
                 break
     return values
+
+
+def _max_nonnegative(rows: list[sqlite3.Row], key: str) -> float:
+    values = [_as_float(row[key]) for row in rows]
+    return max((value for value in values if value is not None and value >= 0), default=0.0)
+
+
+def _sum_nonnegative(rows: list[sqlite3.Row], key: str) -> float:
+    total = 0.0
+    for row in rows:
+        value = _as_float(row[key])
+        if value is not None and value >= 0:
+            total += value
+    return total
+
+
+def _sum_nonnegative_int(rows: list[sqlite3.Row], key: str) -> int:
+    total = 0
+    for row in rows:
+        value = _as_int(row[key])
+        if value is not None and value >= 0:
+            total += value
+    return total
 
 
 def _latest_nonempty(rows: list[sqlite3.Row], key: str) -> Any:
@@ -511,6 +692,28 @@ def recompute_play_session_rollup(
         "end_reason": end_reason,
         "app_state": _latest_nonempty(rows, "app_state"),
         "last_gameplay_event_at": _latest_nonempty(rows, "last_gameplay_event_at"),
+        "activity_state": _latest_nonempty(rows, "activity_state"),
+        "current_activity": _latest_nonempty(rows, "current_activity"),
+        "current_ui": _latest_nonempty(rows, "current_ui"),
+        "idle_duration_sec": _max_nonnegative(rows, "idle_duration_sec"),
+        "afk_duration_sec": _max_nonnegative(rows, "afk_duration_sec"),
+        "input_active_duration_sec": _max_nonnegative(rows, "input_active_duration_sec"),
+        "movement_duration_sec": _max_nonnegative(rows, "movement_duration_sec"),
+        "gameplay_active_duration_sec": _max_nonnegative(rows, "gameplay_active_duration_sec"),
+        "ui_active_duration_sec": _max_nonnegative(rows, "ui_active_duration_sec"),
+        "last_input_at": _latest_nonempty(rows, "last_input_at"),
+        "last_player_action_at": _latest_nonempty(rows, "last_player_action_at"),
+        "last_movement_at": _latest_nonempty(rows, "last_movement_at"),
+        "activity_reported_window_sec": _sum_nonnegative(rows, "activity_window_sec"),
+        "activity_input_event_count": _sum_nonnegative_int(rows, "activity_input_event_count"),
+        "activity_movement_start_count": _sum_nonnegative_int(rows, "activity_movement_start_count"),
+        "activity_gameplay_event_count": _sum_nonnegative_int(rows, "activity_gameplay_event_count"),
+        "activity_interact_count": _sum_nonnegative_int(rows, "activity_interact_count"),
+        "activity_fishing_action_count": _sum_nonnegative_int(rows, "activity_fishing_action_count"),
+        "activity_ui_open_count": _sum_nonnegative_int(rows, "activity_ui_open_count"),
+        "activity_ui_click_count": _sum_nonnegative_int(rows, "activity_ui_click_count"),
+        "activity_threshold_idle_sec": _latest_nonempty(rows, "activity_threshold_idle_sec"),
+        "activity_threshold_afk_sec": _latest_nonempty(rows, "activity_threshold_afk_sec"),
         "last_event_type": rows[-1]["event_type"],
         "updated_at": updated_at,
     }
@@ -523,7 +726,16 @@ def recompute_play_session_rollup(
             max_sequence, logoff_duration_sec, heartbeat_duration_sec,
             server_span_sec, estimated_tail_sec, final_duration_sec,
             duration_source, status, confidence, end_reason, app_state,
-            last_gameplay_event_at, last_event_type, updated_at
+            last_gameplay_event_at, activity_state, current_activity, current_ui,
+            idle_duration_sec, afk_duration_sec, input_active_duration_sec,
+            movement_duration_sec, gameplay_active_duration_sec, ui_active_duration_sec,
+            last_input_at, last_player_action_at, last_movement_at,
+            activity_reported_window_sec, activity_input_event_count,
+            activity_movement_start_count, activity_gameplay_event_count,
+            activity_interact_count, activity_fishing_action_count,
+            activity_ui_open_count, activity_ui_click_count,
+            activity_threshold_idle_sec, activity_threshold_afk_sec,
+            last_event_type, updated_at
         ) VALUES (
             :user_id, :session_id, :player_session_id, :player_id, :client_version,
             :release_version, :country, :first_seen_at, :last_seen_at, :login_at,
@@ -531,7 +743,16 @@ def recompute_play_session_rollup(
             :max_sequence, :logoff_duration_sec, :heartbeat_duration_sec,
             :server_span_sec, :estimated_tail_sec, :final_duration_sec,
             :duration_source, :status, :confidence, :end_reason, :app_state,
-            :last_gameplay_event_at, :last_event_type, :updated_at
+            :last_gameplay_event_at, :activity_state, :current_activity, :current_ui,
+            :idle_duration_sec, :afk_duration_sec, :input_active_duration_sec,
+            :movement_duration_sec, :gameplay_active_duration_sec, :ui_active_duration_sec,
+            :last_input_at, :last_player_action_at, :last_movement_at,
+            :activity_reported_window_sec, :activity_input_event_count,
+            :activity_movement_start_count, :activity_gameplay_event_count,
+            :activity_interact_count, :activity_fishing_action_count,
+            :activity_ui_open_count, :activity_ui_click_count,
+            :activity_threshold_idle_sec, :activity_threshold_afk_sec,
+            :last_event_type, :updated_at
         )
         ON CONFLICT(user_id, session_id) DO UPDATE SET
             player_session_id = excluded.player_session_id,
@@ -558,6 +779,28 @@ def recompute_play_session_rollup(
             end_reason = excluded.end_reason,
             app_state = excluded.app_state,
             last_gameplay_event_at = excluded.last_gameplay_event_at,
+            activity_state = excluded.activity_state,
+            current_activity = excluded.current_activity,
+            current_ui = excluded.current_ui,
+            idle_duration_sec = excluded.idle_duration_sec,
+            afk_duration_sec = excluded.afk_duration_sec,
+            input_active_duration_sec = excluded.input_active_duration_sec,
+            movement_duration_sec = excluded.movement_duration_sec,
+            gameplay_active_duration_sec = excluded.gameplay_active_duration_sec,
+            ui_active_duration_sec = excluded.ui_active_duration_sec,
+            last_input_at = excluded.last_input_at,
+            last_player_action_at = excluded.last_player_action_at,
+            last_movement_at = excluded.last_movement_at,
+            activity_reported_window_sec = excluded.activity_reported_window_sec,
+            activity_input_event_count = excluded.activity_input_event_count,
+            activity_movement_start_count = excluded.activity_movement_start_count,
+            activity_gameplay_event_count = excluded.activity_gameplay_event_count,
+            activity_interact_count = excluded.activity_interact_count,
+            activity_fishing_action_count = excluded.activity_fishing_action_count,
+            activity_ui_open_count = excluded.activity_ui_open_count,
+            activity_ui_click_count = excluded.activity_ui_click_count,
+            activity_threshold_idle_sec = excluded.activity_threshold_idle_sec,
+            activity_threshold_afk_sec = excluded.activity_threshold_afk_sec,
             last_event_type = excluded.last_event_type,
             updated_at = excluded.updated_at
         """,
@@ -592,12 +835,30 @@ def record_play_session_event(
             player_session_id, player_id, client_version, release_version, country,
             client_sent_at, sequence, game_duration_sec, foreground_duration_sec,
             active_duration_sec, app_state, last_gameplay_event_at, outbox_id,
+            activity_state, current_activity, current_ui, idle_duration_sec,
+            afk_duration_sec, input_active_duration_sec, movement_duration_sec,
+            gameplay_active_duration_sec, ui_active_duration_sec, last_input_at,
+            last_player_action_at, last_movement_at, activity_window_sec,
+            activity_input_event_count, activity_movement_start_count,
+            activity_gameplay_event_count, activity_interact_count,
+            activity_fishing_action_count, activity_ui_open_count,
+            activity_ui_click_count, activity_threshold_idle_sec,
+            activity_threshold_afk_sec,
             payload_size_bytes, payload_json, updated_at
         ) VALUES (
             :dedupe_key, :event_type, :received_at, :user_id, :session_id,
             :player_session_id, :player_id, :client_version, :release_version, :country,
             :client_sent_at, :sequence, :game_duration_sec, :foreground_duration_sec,
             :active_duration_sec, :app_state, :last_gameplay_event_at, :outbox_id,
+            :activity_state, :current_activity, :current_ui, :idle_duration_sec,
+            :afk_duration_sec, :input_active_duration_sec, :movement_duration_sec,
+            :gameplay_active_duration_sec, :ui_active_duration_sec, :last_input_at,
+            :last_player_action_at, :last_movement_at, :activity_window_sec,
+            :activity_input_event_count, :activity_movement_start_count,
+            :activity_gameplay_event_count, :activity_interact_count,
+            :activity_fishing_action_count, :activity_ui_open_count,
+            :activity_ui_click_count, :activity_threshold_idle_sec,
+            :activity_threshold_afk_sec,
             :payload_size_bytes, :payload_json, CURRENT_TIMESTAMP
         )
         ON CONFLICT(dedupe_key) DO UPDATE SET
@@ -614,6 +875,28 @@ def record_play_session_event(
             active_duration_sec = excluded.active_duration_sec,
             app_state = excluded.app_state,
             last_gameplay_event_at = excluded.last_gameplay_event_at,
+            activity_state = excluded.activity_state,
+            current_activity = excluded.current_activity,
+            current_ui = excluded.current_ui,
+            idle_duration_sec = excluded.idle_duration_sec,
+            afk_duration_sec = excluded.afk_duration_sec,
+            input_active_duration_sec = excluded.input_active_duration_sec,
+            movement_duration_sec = excluded.movement_duration_sec,
+            gameplay_active_duration_sec = excluded.gameplay_active_duration_sec,
+            ui_active_duration_sec = excluded.ui_active_duration_sec,
+            last_input_at = excluded.last_input_at,
+            last_player_action_at = excluded.last_player_action_at,
+            last_movement_at = excluded.last_movement_at,
+            activity_window_sec = excluded.activity_window_sec,
+            activity_input_event_count = excluded.activity_input_event_count,
+            activity_movement_start_count = excluded.activity_movement_start_count,
+            activity_gameplay_event_count = excluded.activity_gameplay_event_count,
+            activity_interact_count = excluded.activity_interact_count,
+            activity_fishing_action_count = excluded.activity_fishing_action_count,
+            activity_ui_open_count = excluded.activity_ui_open_count,
+            activity_ui_click_count = excluded.activity_ui_click_count,
+            activity_threshold_idle_sec = excluded.activity_threshold_idle_sec,
+            activity_threshold_afk_sec = excluded.activity_threshold_afk_sec,
             payload_size_bytes = excluded.payload_size_bytes,
             payload_json = excluded.payload_json,
             updated_at = CURRENT_TIMESTAMP

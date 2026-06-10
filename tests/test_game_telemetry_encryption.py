@@ -149,6 +149,83 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(response.json()["session_status"], "open")
         self.assertEqual(response.json()["confidence"], "high")
 
+    def test_v1_encrypted_session_heartbeat_persists_activity_to_sqlite(self) -> None:
+        payload = {
+            "session_id": "session-1",
+            "player_session_id": "player-session-1",
+            "timestamp": "2026-06-07T01:03:00Z",
+            "sequence": 3,
+            "game_duration_sec": 90,
+            "foreground_duration_sec": 90,
+            "active_duration_sec": 60,
+            "app_state": "foreground",
+            "activity_state": "active",
+            "current_activity": "fishing",
+            "current_ui": "none",
+            "idle_duration_sec": 12,
+            "afk_duration_sec": 0,
+            "input_active_duration_sec": 35,
+            "movement_duration_sec": 8,
+            "gameplay_active_duration_sec": 30,
+            "ui_active_duration_sec": 3,
+            "last_input_at": "2026-06-07T01:02:59Z",
+            "last_player_action_at": "2026-06-07T01:02:58Z",
+            "last_movement_at": "2026-06-07T01:02:30Z",
+            "activity_window_sec": 30,
+            "activity_since_last_heartbeat": {
+                "input_event_count": 4,
+                "movement_start_count": 1,
+                "gameplay_event_count": 2,
+                "interact_count": 1,
+                "fishing_action_count": 2,
+                "ui_open_count": 1,
+                "ui_click_count": 1,
+            },
+            "activity_thresholds": {
+                "idle_threshold_sec": 15,
+                "afk_threshold_sec": 120,
+            },
+        }
+
+        async def fake_update_session_event_log(**kwargs):
+            return object()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "telemetry.db")
+            with (
+                patch.dict(os.environ, {"DB_PATH": db_path}),
+                patch(
+                    "app.api.routes.system.sessions.update_session_event_log",
+                    fake_update_session_event_log,
+                ),
+            ):
+                response = self.client.post(
+                    "/v1/session_heartbeat",
+                    content=self._encrypt(payload),
+                    headers={**self._headers(), "X-Outbox-ID": "outbox-heartbeat-1"},
+                )
+
+            with sqlite3.connect(db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                event = conn.execute("SELECT * FROM play_session_events").fetchone()
+                rollup = conn.execute("SELECT * FROM play_session_rollups").fetchone()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["duration_source"], "heartbeat_client")
+        self.assertEqual(event["event_type"], "heartbeat")
+        self.assertEqual(event["activity_state"], "active")
+        self.assertEqual(event["current_activity"], "fishing")
+        self.assertEqual(event["activity_fishing_action_count"], 2)
+        self.assertEqual(rollup["final_duration_sec"], 90)
+        self.assertEqual(rollup["activity_state"], "active")
+        self.assertEqual(rollup["current_activity"], "fishing")
+        self.assertEqual(rollup["idle_duration_sec"], 12)
+        self.assertEqual(rollup["input_active_duration_sec"], 35)
+        self.assertEqual(rollup["gameplay_active_duration_sec"], 30)
+        self.assertEqual(rollup["activity_reported_window_sec"], 30)
+        self.assertEqual(rollup["activity_input_event_count"], 4)
+        self.assertEqual(rollup["activity_fishing_action_count"], 2)
+
     def test_encrypted_logoff_preserves_root_gameplay_telemetry(self) -> None:
         captured = {}
         reports = {}
