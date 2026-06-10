@@ -1,9 +1,15 @@
 # Gameplay Telemetry Ingest
 
-`/logoff` now performs two durable writes before returning `200`:
+`/logoff` performs these durable writes before returning `200`:
 
 1. Update `output/<user>/session-<session_id>.jsonl` for the full session event log.
 2. Write a raw JSON ingest file under `GAMEPLAY_TELEMETRY_DIR` for gameplay importer recovery.
+3. Upsert `play_session_events` / `play_session_rollups` so playtime survives
+   even when later gameplay import is delayed.
+
+`/login` and `/session_heartbeat` also write `play_session_events` and update
+`play_session_rollups`. Heartbeats are the fallback source for sessions that
+never reach `/logoff`.
 
 The raw ingest file keeps `gameplay_telemetry` at the top level, plus an `ingest`
 metadata block. `import_gameplay_telemetry.py` scans these files, imports gameplay

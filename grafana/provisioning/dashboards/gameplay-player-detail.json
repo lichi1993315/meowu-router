@@ -96,9 +96,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(ROUND(SUM(COALESCE(game_duration_sec, 0)), 2), 0) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -156,9 +156,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(game_days_total, game_day_end, 0)), 0) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -216,9 +216,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(MAX(COALESCE(island_level_max, 0)), 0) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -276,9 +276,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT COALESCE(money_end, money_start + COALESCE(money_total_earned, 0) - COALESCE(money_total_spent, 0), money_start, 0) AS total_money, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT total_money FROM latest_session WHERE rn = 1), 0) AS value",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT COALESCE(money_end, money_start + COALESCE(money_total_earned, 0) - COALESCE(money_total_spent, 0), money_start, 0) AS total_money, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT total_money FROM latest_session WHERE rn = 1), 0) AS value",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT COALESCE(money_end, money_start + COALESCE(money_total_earned, 0) - COALESCE(money_total_spent, 0), money_start, 0) AS total_money, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT total_money FROM latest_session WHERE rn = 1), 0) AS value",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), latest_session AS (SELECT COALESCE(money_end, money_start + COALESCE(money_total_earned, 0) - COALESCE(money_total_spent, 0), money_start, 0) AS total_money, ROW_NUMBER() OVER (ORDER BY CASE WHEN real_time_started_iso IS NULL THEN 1 ELSE 0 END, real_time_started_iso DESC, imported_at DESC) AS rn FROM selected_sessions) SELECT COALESCE((SELECT total_money FROM latest_session WHERE rn = 1), 0) AS value",
           "refId": "A"
         }
       ],
@@ -336,9 +336,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), selected_events AS (SELECT ge.* FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id), event_cats AS (SELECT COUNT(DISTINCT COALESCE(NULLIF(json_extract(payload_json, '$.cat_id'), ''), NULLIF(actor_id, ''))) AS cats_count FROM selected_events WHERE event_type = 'cat_tool_completed' OR json_extract(payload_json, '$.cat_id') IS NOT NULL OR json_extract(payload_json, '$.cat_name') IS NOT NULL) SELECT COALESCE(NULLIF((SELECT cats_count FROM latest_day WHERE rn = 1), 0), (SELECT cats_count FROM event_cats), 0) AS value",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), selected_events AS (SELECT ge.* FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id), event_cats AS (SELECT COUNT(DISTINCT COALESCE(NULLIF(json_extract(payload_json, '$.cat_id'), ''), NULLIF(actor_id, ''))) AS cats_count FROM selected_events WHERE event_type = 'cat_tool_completed' OR json_extract(payload_json, '$.cat_id') IS NOT NULL OR json_extract(payload_json, '$.cat_name') IS NOT NULL) SELECT COALESCE(NULLIF((SELECT cats_count FROM latest_day WHERE rn = 1), 0), (SELECT cats_count FROM event_cats), 0) AS value",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), selected_events AS (SELECT ge.* FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id), event_cats AS (SELECT COUNT(DISTINCT COALESCE(NULLIF(json_extract(payload_json, '$.cat_id'), ''), NULLIF(actor_id, ''))) AS cats_count FROM selected_events WHERE event_type = 'cat_tool_completed' OR json_extract(payload_json, '$.cat_id') IS NOT NULL OR json_extract(payload_json, '$.cat_name') IS NOT NULL) SELECT COALESCE(NULLIF((SELECT cats_count FROM latest_day WHERE rn = 1), 0), (SELECT cats_count FROM event_cats), 0) AS value",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))), selected_events AS (SELECT ge.* FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%'))), latest_day AS (SELECT d.cats_count, ROW_NUMBER() OVER (ORDER BY d.game_day DESC, d.imported_at DESC) AS rn FROM gameplay_days d JOIN selected_sessions s ON s.source_file = d.source_file AND s.user_id = d.user_id AND s.session_id = d.session_id), event_cats AS (SELECT COUNT(DISTINCT COALESCE(NULLIF(json_extract(payload_json, '$.cat_id'), ''), NULLIF(actor_id, ''))) AS cats_count FROM selected_events WHERE event_type = 'cat_tool_completed' OR json_extract(payload_json, '$.cat_id') IS NOT NULL OR json_extract(payload_json, '$.cat_name') IS NOT NULL) SELECT COALESCE(NULLIF((SELECT cats_count FROM latest_day WHERE rn = 1), 0), (SELECT cats_count FROM event_cats), 0) AS value",
           "refId": "A"
         }
       ],
@@ -396,9 +396,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MIN(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MIN(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MIN(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MIN(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -456,9 +456,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MAX(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MAX(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MAX(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CAST(strftime('%s', MAX(real_time_started_iso)) AS INTEGER) * 1000 AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -516,9 +516,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT CAST(strftime('%s', COALESCE((SELECT MAX(c.timestamp) FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND c.message_type = 'login' AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(c.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))), (SELECT us.last_seen FROM user_sessions us WHERE us.user_id = ${user_id:sqlstring}))) AS INTEGER) * 1000 AS value",
+          "queryText": "SELECT CAST(strftime('%s', COALESCE((SELECT MAX(c.timestamp) FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND c.message_type = 'login' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))), (SELECT us.last_seen FROM user_sessions us WHERE us.user_id = ${user_id:sqlstring}))) AS INTEGER) * 1000 AS value",
           "queryType": "table",
-          "rawQueryText": "SELECT CAST(strftime('%s', COALESCE((SELECT MAX(c.timestamp) FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND c.message_type = 'login' AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(c.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))), (SELECT us.last_seen FROM user_sessions us WHERE us.user_id = ${user_id:sqlstring}))) AS INTEGER) * 1000 AS value",
+          "rawQueryText": "SELECT CAST(strftime('%s', COALESCE((SELECT MAX(c.timestamp) FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND c.message_type = 'login' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))), (SELECT us.last_seen FROM user_sessions us WHERE us.user_id = ${user_id:sqlstring}))) AS INTEGER) * 1000 AS value",
           "refId": "A"
         }
       ],
@@ -559,10 +559,72 @@
         "overrides": []
       },
       "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 24,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "主动聊天次数"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH selected_user AS (SELECT ${user_id:sqlstring} AS user_id), active_chat AS (SELECT c.user_id, COUNT(*) AS active_chat_count FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND COALESCE(NULLIF(c.message_type, ''), 'chat') = 'chat' AND COALESCE(c.user_query, '') != '' AND COALESCE(c.is_preset, 0) = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%')) GROUP BY c.user_id) SELECT COALESCE(ac.active_chat_count, 0) AS '主动聊天次数', CAST(COALESCE(us.tasks_completed, 0) AS TEXT) || '/' || CAST(COALESCE(us.tasks_total, 0) AS TEXT) AS '任务进度', COALESCE(NULLIF(us.current_task_title, ''), '-') AS '当前任务', COALESCE(NULLIF(us.current_task_status, ''), '-') AS '任务状态' FROM selected_user su LEFT JOIN user_sessions us ON us.user_id = su.user_id LEFT JOIN active_chat ac ON ac.user_id = su.user_id",
+          "queryType": "table",
+          "rawQueryText": "WITH selected_user AS (SELECT ${user_id:sqlstring} AS user_id), active_chat AS (SELECT c.user_id, COUNT(*) AS active_chat_count FROM conversations c WHERE c.user_id = ${user_id:sqlstring} AND COALESCE(NULLIF(c.message_type, ''), 'chat') = 'chat' AND COALESCE(c.user_query, '') != '' AND COALESCE(c.is_preset, 0) = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%')) GROUP BY c.user_id) SELECT COALESCE(ac.active_chat_count, 0) AS '主动聊天次数', CAST(COALESCE(us.tasks_completed, 0) AS TEXT) || '/' || CAST(COALESCE(us.tasks_total, 0) AS TEXT) AS '任务进度', COALESCE(NULLIF(us.current_task_title, ''), '-') AS '当前任务', COALESCE(NULLIF(us.current_task_status, ''), '-') AS '任务状态' FROM selected_user su LEFT JOIN user_sessions us ON us.user_id = su.user_id LEFT JOIN active_chat ac ON ac.user_id = su.user_id",
+          "refId": "A"
+        }
+      ],
+      "title": "任务与主动聊天",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 5
+        "y": 9
       },
       "id": 7,
       "options": {
@@ -578,9 +640,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(item_name, ''), item_id, 'unknown') AS 商品, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'shop_purchase' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -624,7 +686,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 5
+        "y": 9
       },
       "id": 8,
       "options": {
@@ -640,9 +702,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -686,7 +748,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 5
+        "y": 9
       },
       "id": 9,
       "options": {
@@ -702,9 +764,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(seed_name, ''), seed_id, 'unknown') AS 种子, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type = 'farming_plant' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -748,7 +810,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 13
+        "y": 17
       },
       "id": 10,
       "options": {
@@ -764,9 +826,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(recipe_name, ''), NULLIF(json_extract(payload_json, '$.recipe_name'), ''), NULLIF(json_extract(payload_json, '$.dish_name'), ''), recipe_id, 'unknown') AS 菜谱, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('restaurant_serve', 'cooking_complete', 'cooking_completed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -810,7 +872,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 13
+        "y": 17
       },
       "id": 11,
       "options": {
@@ -826,9 +888,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(event_type, ''), 'unknown') AS 行为, ROUND(SUM(COALESCE(energy_cost, 0)), 2) AS 体力 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -872,7 +934,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 13
+        "y": 17
       },
       "id": 12,
       "options": {
@@ -888,9 +950,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "queryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "queryType": "table",
-          "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+          "rawQueryText": "SELECT COALESCE(NULLIF(building_name, ''), NULLIF(json_extract(payload_json, '$.building_name'), ''), building_id, json_extract(payload_json, '$.building_id'), 'unknown') AS 建筑, COUNT(*) AS 次数 FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) AND event_type IN ('building_construct', 'building_upgrade', 'building_place', 'building_placed') GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
           "refId": "A"
         }
       ],
@@ -903,7 +965,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 25
       },
       "id": 103,
       "panels": [],
@@ -938,7 +1000,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 22
+        "y": 26
       },
       "id": 17,
       "options": {
@@ -961,9 +1023,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_response_count, 0)), 0) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_response_count, 0)), 0) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_response_count, 0)), 0) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_response_count, 0)), 0) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -998,7 +1060,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 22
+        "y": 26
       },
       "id": 18,
       "options": {
@@ -1021,9 +1083,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_total_tokens, 0)), 0) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_total_tokens, 0)), 0) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_total_tokens, 0)), 0) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT COALESCE(SUM(COALESCE(ai_total_tokens, 0)), 0) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -1058,7 +1120,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 22
+        "y": 26
       },
       "id": 19,
       "options": {
@@ -1081,9 +1143,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT ROUND(COALESCE(SUM(COALESCE(ai_estimated_cost_usd, 0)), 0), 6) AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT ROUND(COALESCE(SUM(COALESCE(ai_estimated_cost_usd, 0)), 0), 6) AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT ROUND(COALESCE(SUM(COALESCE(ai_estimated_cost_usd, 0)), 0), 6) AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT ROUND(COALESCE(SUM(COALESCE(ai_estimated_cost_usd, 0)), 0), 6) AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -1118,7 +1180,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 22
+        "y": 26
       },
       "id": 20,
       "options": {
@@ -1141,9 +1203,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CASE WHEN SUM(COALESCE(ai_input_tokens, 0)) > 0 THEN ROUND(CAST(SUM(COALESCE(ai_cached_input_tokens, 0)) AS REAL) / SUM(COALESCE(ai_input_tokens, 0)) * 100, 2) ELSE 0 END AS value FROM selected_sessions",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CASE WHEN SUM(COALESCE(ai_input_tokens, 0)) > 0 THEN ROUND(CAST(SUM(COALESCE(ai_cached_input_tokens, 0)) AS REAL) / SUM(COALESCE(ai_input_tokens, 0)) * 100, 2) ELSE 0 END AS value FROM selected_sessions",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CASE WHEN SUM(COALESCE(ai_input_tokens, 0)) > 0 THEN ROUND(CAST(SUM(COALESCE(ai_cached_input_tokens, 0)) AS REAL) / SUM(COALESCE(ai_input_tokens, 0)) * 100, 2) ELSE 0 END AS value FROM selected_sessions",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT CASE WHEN SUM(COALESCE(ai_input_tokens, 0)) > 0 THEN ROUND(CAST(SUM(COALESCE(ai_cached_input_tokens, 0)) AS REAL) / SUM(COALESCE(ai_input_tokens, 0)) * 100, 2) ELSE 0 END AS value FROM selected_sessions",
           "refId": "A"
         }
       ],
@@ -1187,7 +1249,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 30
       },
       "id": 21,
       "options": {
@@ -1203,9 +1265,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(real_time_started_iso, '+8 hours') AS '开始时间(北京)', session_id, client_version AS 版本, COALESCE(game_day_start, '') || ' -> ' || COALESCE(game_day_end, '') AS game_day, ai_usage_source AS 来源, ai_response_count AS AI调用, ai_token_record_count AS 明细数, ai_total_tokens AS TotalTokens, ai_input_tokens AS InputTokens, ai_output_tokens AS OutputTokens, ai_cached_input_tokens AS CachedInput, ROUND(COALESCE(ai_cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(ai_estimated_cost_usd, 0), 6) AS CostUSD, ai_archive_total_consumed_tokens AS ArchiveTotal, ai_models AS Models FROM selected_sessions WHERE COALESCE(ai_total_tokens, 0) > 0 OR COALESCE(ai_response_count, 0) > 0 ORDER BY real_time_started_iso DESC, imported_at DESC",
+          "queryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(real_time_started_iso, '+8 hours') AS '开始时间(北京)', session_id, client_version AS 版本, COALESCE(game_day_start, '') || ' -> ' || COALESCE(game_day_end, '') AS game_day, ai_usage_source AS 来源, ai_response_count AS AI调用, ai_token_record_count AS 明细数, ai_total_tokens AS TotalTokens, ai_input_tokens AS InputTokens, ai_output_tokens AS OutputTokens, ai_cached_input_tokens AS CachedInput, ROUND(COALESCE(ai_cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(ai_estimated_cost_usd, 0), 6) AS CostUSD, ai_archive_total_consumed_tokens AS ArchiveTotal, ai_models AS Models FROM selected_sessions WHERE COALESCE(ai_total_tokens, 0) > 0 OR COALESCE(ai_response_count, 0) > 0 ORDER BY real_time_started_iso DESC, imported_at DESC",
           "queryType": "table",
-          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(s.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(real_time_started_iso, '+8 hours') AS '开始时间(北京)', session_id, client_version AS 版本, COALESCE(game_day_start, '') || ' -> ' || COALESCE(game_day_end, '') AS game_day, ai_usage_source AS 来源, ai_response_count AS AI调用, ai_token_record_count AS 明细数, ai_total_tokens AS TotalTokens, ai_input_tokens AS InputTokens, ai_output_tokens AS OutputTokens, ai_cached_input_tokens AS CachedInput, ROUND(COALESCE(ai_cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(ai_estimated_cost_usd, 0), 6) AS CostUSD, ai_archive_total_consumed_tokens AS ArchiveTotal, ai_models AS Models FROM selected_sessions WHERE COALESCE(ai_total_tokens, 0) > 0 OR COALESCE(ai_response_count, 0) > 0 ORDER BY real_time_started_iso DESC, imported_at DESC",
+          "rawQueryText": "WITH selected_sessions AS (SELECT s.* FROM gameplay_sessions s WHERE s.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(s.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(s.client_version, '')) LIKE 'unity%' AND lower(COALESCE(s.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(real_time_started_iso, '+8 hours') AS '开始时间(北京)', session_id, client_version AS 版本, COALESCE(game_day_start, '') || ' -> ' || COALESCE(game_day_end, '') AS game_day, ai_usage_source AS 来源, ai_response_count AS AI调用, ai_token_record_count AS 明细数, ai_total_tokens AS TotalTokens, ai_input_tokens AS InputTokens, ai_output_tokens AS OutputTokens, ai_cached_input_tokens AS CachedInput, ROUND(COALESCE(ai_cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(ai_estimated_cost_usd, 0), 6) AS CostUSD, ai_archive_total_consumed_tokens AS ArchiveTotal, ai_models AS Models FROM selected_sessions WHERE COALESCE(ai_total_tokens, 0) > 0 OR COALESCE(ai_response_count, 0) > 0 ORDER BY real_time_started_iso DESC, imported_at DESC",
           "refId": "A"
         }
       ],
@@ -1249,7 +1311,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 38
       },
       "id": 22,
       "options": {
@@ -1265,9 +1327,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH selected_calls AS (SELECT c.* FROM gameplay_ai_calls c WHERE c.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(c.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(event_real_time_iso, '+8 hours') AS '时间(北京)', session_id, game_day AS 日期, event_index AS '#', COALESCE(NULLIF(actor_name, ''), actor_id, '-') AS 角色, COALESCE(NULLIF(model, ''), 'unknown') AS Model, mode, tag, total_tokens AS TotalTokens, input_tokens AS InputTokens, output_tokens AS OutputTokens, cached_input_tokens AS CachedInput, ROUND(COALESCE(cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(estimated_cost_usd, 0), 6) AS CostUSD, request_message_count AS Messages, message_content_chars AS PromptChars, tool_count AS Tools FROM selected_calls ORDER BY COALESCE(event_real_time_iso, imported_at) DESC, event_index DESC LIMIT 200",
+          "queryText": "WITH selected_calls AS (SELECT c.* FROM gameplay_ai_calls c WHERE c.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(event_real_time_iso, '+8 hours') AS '时间(北京)', session_id, game_day AS 日期, event_index AS '#', COALESCE(NULLIF(actor_name, ''), actor_id, '-') AS 角色, COALESCE(NULLIF(model, ''), 'unknown') AS Model, mode, tag, total_tokens AS TotalTokens, input_tokens AS InputTokens, output_tokens AS OutputTokens, cached_input_tokens AS CachedInput, ROUND(COALESCE(cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(estimated_cost_usd, 0), 6) AS CostUSD, request_message_count AS Messages, message_content_chars AS PromptChars, tool_count AS Tools FROM selected_calls ORDER BY COALESCE(event_real_time_iso, imported_at) DESC, event_index DESC LIMIT 200",
           "queryType": "table",
-          "rawQueryText": "WITH selected_calls AS (SELECT c.* FROM gameplay_ai_calls c WHERE c.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(c.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(event_real_time_iso, '+8 hours') AS '时间(北京)', session_id, game_day AS 日期, event_index AS '#', COALESCE(NULLIF(actor_name, ''), actor_id, '-') AS 角色, COALESCE(NULLIF(model, ''), 'unknown') AS Model, mode, tag, total_tokens AS TotalTokens, input_tokens AS InputTokens, output_tokens AS OutputTokens, cached_input_tokens AS CachedInput, ROUND(COALESCE(cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(estimated_cost_usd, 0), 6) AS CostUSD, request_message_count AS Messages, message_content_chars AS PromptChars, tool_count AS Tools FROM selected_calls ORDER BY COALESCE(event_real_time_iso, imported_at) DESC, event_index DESC LIMIT 200",
+          "rawQueryText": "WITH selected_calls AS (SELECT c.* FROM gameplay_ai_calls c WHERE c.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(c.client_version, '')) LIKE 'unity%' AND lower(COALESCE(c.client_version, '')) NOT LIKE '%dev%'))) SELECT datetime(event_real_time_iso, '+8 hours') AS '时间(北京)', session_id, game_day AS 日期, event_index AS '#', COALESCE(NULLIF(actor_name, ''), actor_id, '-') AS 角色, COALESCE(NULLIF(model, ''), 'unknown') AS Model, mode, tag, total_tokens AS TotalTokens, input_tokens AS InputTokens, output_tokens AS OutputTokens, cached_input_tokens AS CachedInput, ROUND(COALESCE(cache_hit_ratio, 0) * 100, 2) AS 缓存命中率, ROUND(COALESCE(estimated_cost_usd, 0), 6) AS CostUSD, request_message_count AS Messages, message_content_chars AS PromptChars, tool_count AS Tools FROM selected_calls ORDER BY COALESCE(event_real_time_iso, imported_at) DESC, event_index DESC LIMIT 200",
           "refId": "A"
         }
       ],
@@ -1280,7 +1342,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 48
       },
       "id": 101,
       "panels": [],
@@ -1324,7 +1386,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 49
       },
       "id": 13,
       "options": {
@@ -1340,9 +1402,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(gd.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "queryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(gd.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
           "queryType": "table",
-          "rawQueryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(gd.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
+          "rawQueryText": "WITH ranked_days AS (SELECT gd.game_day, gd.day_meta_json, ROW_NUMBER() OVER (PARTITION BY gd.game_day ORDER BY gd.imported_at DESC) AS rn FROM gameplay_days gd WHERE gd.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(gd.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(gd.client_version, '')) LIKE 'unity%' AND lower(COALESCE(gd.client_version, '')) NOT LIKE '%dev%'))), event_types AS (SELECT game_day, group_concat(event_type, '、') AS event_types FROM (SELECT DISTINCT ge.game_day, ge.event_type FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY ge.event_type) GROUP BY game_day) SELECT rd.game_day AS 日期, rd.day_meta_json AS metadata, COALESCE(et.event_types, '-') AS event_type FROM ranked_days rd LEFT JOIN event_types et ON et.game_day = rd.game_day WHERE rd.rn = 1 ORDER BY rd.game_day ASC",
           "refId": "A"
         }
       ],
@@ -1355,7 +1417,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 59
       },
       "id": 102,
       "panels": [],
@@ -1399,7 +1461,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 60
       },
       "id": 14,
       "options": {
@@ -1415,9 +1477,9 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
+          "queryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${client_version:sqlstring}) OR COALESCE(NULLIF(ge.client_version, ''), '__empty__') IN (${client_version:sqlstring}) OR ('unity-all' IN (${client_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
+          "rawQueryText": "SELECT event_index AS '#', game_day AS 日期, event_type, meta_json AS metadata, payload_json AS payload FROM gameplay_events ge WHERE ge.user_id = ${user_id:sqlstring} AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(ge.release_version, ''), '__empty__') IN (${release_version:sqlstring}) OR ('unity-all' IN (${release_version:sqlstring}) AND lower(COALESCE(ge.client_version, '')) LIKE 'unity%' AND lower(COALESCE(ge.client_version, '')) NOT LIKE '%dev%')) ORDER BY game_day DESC, event_index DESC",
           "refId": "A"
         }
       ],
@@ -1430,7 +1492,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 74
       },
       "id": 104,
       "panels": [],
@@ -1533,7 +1595,7 @@
         "h": 15,
         "w": 24,
         "x": 0,
-        "y": 71
+        "y": 75
       },
       "id": 23,
       "options": {
@@ -1593,14 +1655,14 @@
           "type": "frser-sqlite-datasource",
           "uid": "${DS_SQLITE}"
         },
-        "definition": "WITH version_stats AS (SELECT 'unity-all' AS version_label, 'unity-all' AS value, NULL AS latest_seen UNION SELECT COALESCE(NULLIF(client_version, ''), '(empty)') AS version_label, COALESCE(NULLIF(client_version, ''), '__empty__') AS value, MAX(COALESCE(real_time_started_iso, imported_at)) AS latest_seen FROM gameplay_sessions GROUP BY client_version) SELECT CASE WHEN lower(value) LIKE 'unity%' AND value <> 'unity-all' AND latest_seen IS NOT NULL THEN version_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE version_label END AS __text, value AS __value FROM version_stats ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN lower(value) LIKE 'unity%' THEN 2 WHEN value = '__empty__' THEN 4 ELSE 3 END, CASE WHEN lower(value) LIKE 'unity%' THEN latest_seen END DESC, value",
+        "definition": "WITH release_stats AS (SELECT 'unity-all' AS release_label, 'unity-all' AS value, NULL AS latest_seen UNION SELECT COALESCE(NULLIF(release_version, ''), '(empty)') AS release_label, COALESCE(NULLIF(release_version, ''), '__empty__') AS value, MAX(COALESCE(real_time_started_iso, imported_at)) AS latest_seen FROM gameplay_sessions GROUP BY release_version) SELECT CASE WHEN value NOT IN ('unity-all', '__empty__') AND latest_seen IS NOT NULL THEN release_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE release_label END AS __text, value AS __value FROM release_stats ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN value = '__empty__' THEN 4 ELSE 2 END, latest_seen DESC, value",
         "hide": 0,
         "includeAll": true,
-        "label": "客户端版本",
+        "label": "Release Version",
         "multi": true,
-        "name": "client_version",
+        "name": "release_version",
         "options": [],
-        "query": "WITH version_stats AS (SELECT 'unity-all' AS version_label, 'unity-all' AS value, NULL AS latest_seen UNION SELECT COALESCE(NULLIF(client_version, ''), '(empty)') AS version_label, COALESCE(NULLIF(client_version, ''), '__empty__') AS value, MAX(COALESCE(real_time_started_iso, imported_at)) AS latest_seen FROM gameplay_sessions GROUP BY client_version) SELECT CASE WHEN lower(value) LIKE 'unity%' AND value <> 'unity-all' AND latest_seen IS NOT NULL THEN version_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE version_label END AS __text, value AS __value FROM version_stats ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN lower(value) LIKE 'unity%' THEN 2 WHEN value = '__empty__' THEN 4 ELSE 3 END, CASE WHEN lower(value) LIKE 'unity%' THEN latest_seen END DESC, value",
+        "query": "WITH release_stats AS (SELECT 'unity-all' AS release_label, 'unity-all' AS value, NULL AS latest_seen UNION SELECT COALESCE(NULLIF(release_version, ''), '(empty)') AS release_label, COALESCE(NULLIF(release_version, ''), '__empty__') AS value, MAX(COALESCE(real_time_started_iso, imported_at)) AS latest_seen FROM gameplay_sessions GROUP BY release_version) SELECT CASE WHEN value NOT IN ('unity-all', '__empty__') AND latest_seen IS NOT NULL THEN release_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE release_label END AS __text, value AS __value FROM release_stats ORDER BY CASE WHEN value = 'unity-all' THEN 0 WHEN value = 'unity-dev' THEN 1 WHEN value = '__empty__' THEN 4 ELSE 2 END, latest_seen DESC, value",
         "refresh": 1,
         "regex": "",
         "sort": 0,

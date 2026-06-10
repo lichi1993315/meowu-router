@@ -27,6 +27,9 @@ from prometheus_client import (
     start_http_server, REGISTRY
 )
 
+from playtime_store import ensure_playtime_schema
+from version_utils import release_version_from_client_version
+
 # ============ 配置 ============
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "./output"))
 DATA_DIR = Path(os.getenv("DATA_DIR", "./data"))
@@ -235,6 +238,7 @@ class MetricsState:
                 message_type TEXT DEFAULT "chat",
                 session_id TEXT,
                 client_version TEXT,
+                release_version TEXT,
                 session_duration_sec REAL
             )
         ''')
@@ -288,6 +292,7 @@ class MetricsState:
             ("message_type", 'TEXT DEFAULT "chat"'),
             ("session_id", "TEXT"),
             ("client_version", "TEXT"),
+            ("release_version", "TEXT"),
             ("session_duration_sec", "REAL"),
         ]
         for column, definition in conversation_columns:
@@ -299,11 +304,28 @@ class MetricsState:
                 phrase TEXT UNIQUE
             )
         ''')
+        ensure_playtime_schema(conn)
         
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_time ON conversations(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_country ON conversations(country)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_session ON conversations(session_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_release_version ON conversations(release_version)')
+        cursor.execute(
+            'SELECT id, client_version, release_version FROM conversations '
+            'WHERE client_version IS NOT NULL'
+        )
+        release_updates = [
+            (computed, row_id)
+            for row_id, client_version, current_release_version in cursor.fetchall()
+            for computed in (release_version_from_client_version(client_version),)
+            if (current_release_version or "") != computed
+        ]
+        if release_updates:
+            cursor.executemany(
+                'UPDATE conversations SET release_version = ? WHERE id = ?',
+                release_updates,
+            )
         
         conn.commit()
         conn.close()
@@ -414,6 +436,8 @@ class MetricsState:
             timestamp = record.get("timestamp") or datetime.now().isoformat()
             user_query = record.get("user_query", "")
             is_preset = 1 if user_query in self.preset_phrases else 0
+            client_version = record.get("client_version")
+            release_version = release_version_from_client_version(client_version)
             existing = cursor.execute(
                 "SELECT 1 FROM conversations WHERE file_path = ?",
                 (file_path,),
@@ -424,8 +448,8 @@ class MetricsState:
                 INSERT INTO conversations
                 (timestamp, user_id, country, user_query, ai_response, ai_action, 
                  duration_ms, prompt_tokens, completion_tokens, cached_tokens, file_path, 
-                 message_type, session_id, client_version, session_duration_sec, is_preset)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 message_type, session_id, client_version, release_version, session_duration_sec, is_preset)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(file_path) DO UPDATE SET
                     timestamp = excluded.timestamp,
                     user_id = excluded.user_id,
@@ -440,6 +464,7 @@ class MetricsState:
                     message_type = excluded.message_type,
                     session_id = excluded.session_id,
                     client_version = excluded.client_version,
+                    release_version = excluded.release_version,
                     session_duration_sec = excluded.session_duration_sec,
                     is_preset = excluded.is_preset
             ''', (
@@ -456,7 +481,8 @@ class MetricsState:
                 record.get("file_path"),
                 record.get("message_type", "chat"),
                 record.get("session_id"),
-                record.get("client_version"),
+                client_version,
+                release_version,
                 record.get("session_duration_sec"),
                 is_preset,
             ))
@@ -533,12 +559,39 @@ class MetricsState:
             cursor = conn.cursor()
 
             cursor.execute('SELECT DISTINCT user_id FROM conversations WHERE user_id IS NOT NULL AND user_id != ""')
-            all_users = [row[0] for row in cursor.fetchall()]
+            all_users = {row[0] for row in cursor.fetchall()}
+            cursor.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'play_session_rollups'"
+            )
+            has_playtime_rollups = cursor.fetchone() is not None
+            if has_playtime_rollups:
+                cursor.execute(
+                    "SELECT DISTINCT user_id FROM play_session_rollups WHERE user_id IS NOT NULL AND user_id != ''"
+                )
+                all_users.update(row[0] for row in cursor.fetchall())
             user_stats = {}
 
             for user_id in all_users:
                 total_play_seconds = 0
                 total_sessions = 0
+                playtime_session_ids = set()
+
+                if has_playtime_rollups:
+                    cursor.execute(
+                        """
+                        SELECT session_id, final_duration_sec
+                        FROM play_session_rollups
+                        WHERE user_id = ?
+                          AND session_id IS NOT NULL
+                          AND session_id != ''
+                          AND final_duration_sec IS NOT NULL
+                        """,
+                        (user_id,),
+                    )
+                    for session_id, duration in cursor.fetchall():
+                        playtime_session_ids.add(session_id)
+                        total_play_seconds += int(duration or 0)
+                        total_sessions += 1
 
                 cursor.execute('''
                     SELECT session_id, session_duration_sec
@@ -550,6 +603,8 @@ class MetricsState:
                 ''', (user_id,))
                 logoff_sessions = {}
                 for session_id, duration in cursor.fetchall():
+                    if session_id in playtime_session_ids:
+                        continue
                     logoff_sessions[session_id] = duration
                     total_play_seconds += int(duration or 0)
                     total_sessions += 1
@@ -561,7 +616,12 @@ class MetricsState:
                     GROUP BY session_id
                 ''', (user_id,))
                 for session_id, start_ts, end_ts in cursor.fetchall():
-                    if session_id in logoff_sessions or not start_ts or not end_ts:
+                    if (
+                        session_id in playtime_session_ids
+                        or session_id in logoff_sessions
+                        or not start_ts
+                        or not end_ts
+                    ):
                         continue
                     cursor.execute(
                         'SELECT (julianday(?) - julianday(?)) * 86400',

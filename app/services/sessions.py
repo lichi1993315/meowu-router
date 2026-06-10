@@ -8,8 +8,10 @@ from pathlib import Path
 
 import aiofiles
 
+from app.core.config import DB_PATH as DEFAULT_DB_PATH
 from app.core.config import ERROR_LOG_DIR, GAMEPLAY_TELEMETRY_DIR, OUTPUT_DIR
 from app.core.logging import log
+from playtime_store import record_play_session_event_to_db
 
 SENSITIVE_HEADERS = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
 SENSITIVE_BODY_KEYS = {
@@ -286,6 +288,40 @@ async def save_gameplay_telemetry_ingest(
     filepath = GAMEPLAY_TELEMETRY_DIR / user_part / session_part / filename
     await asyncio.to_thread(_write_session_record_atomic, filepath, record)
     return filepath
+
+
+def _configured_db_path() -> str | None:
+    db_path = os.getenv("DB_PATH")
+    if db_path is None:
+        db_path = DEFAULT_DB_PATH
+    db_path = str(db_path).strip()
+    return db_path or None
+
+
+async def save_play_session_event(
+    *,
+    payload: dict,
+    headers: dict,
+    event_type: str,
+    timestamp_iso: str,
+    decrypted_body_bytes: int,
+) -> dict | None:
+    db_path = _configured_db_path()
+    if not db_path:
+        log("[WARNING] DB_PATH is empty; skipped play session event persistence")
+        return None
+
+    safe_payload = _safe_body(payload)
+    safe_headers = _safe_headers(headers)
+    return await asyncio.to_thread(
+        record_play_session_event_to_db,
+        db_path=db_path,
+        payload=safe_payload,
+        headers=safe_headers,
+        event_type=event_type,
+        received_at=timestamp_iso,
+        payload_size_bytes=decrypted_body_bytes,
+    )
 
 
 async def save_request_to_file(

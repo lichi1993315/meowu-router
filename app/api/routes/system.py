@@ -129,17 +129,72 @@ async def login(request: Request):
     try:
         payload = await read_encrypted_game_telemetry_payload(request)
         raw_body = _payload_to_body(payload)
+        headers = dict(request.headers)
         timestamp_iso = datetime.now().isoformat()
-        asyncio.create_task(
-            sessions.update_session_event_log(
+        try:
+            await sessions.update_session_event_log(
                 raw_body=raw_body,
-                headers=dict(request.headers),
+                headers=headers,
                 event_type="login",
                 timestamp_iso=timestamp_iso,
+                raise_on_error=True,
             )
-        )
+            await sessions.save_play_session_event(
+                payload=payload,
+                headers=headers,
+                event_type="login",
+                timestamp_iso=timestamp_iso,
+                decrypted_body_bytes=len(raw_body),
+            )
+        except Exception as exc:
+            log(f"[ERROR] Failed to persist login telemetry before response: {exc}")
+            raise HTTPException(status_code=503, detail="failed to persist login telemetry") from exc
 
         return JSONResponse(content={"status": "ok"}, status_code=200)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/session_heartbeat")
+@router.post("/v1/session_heartbeat")
+async def session_heartbeat(request: Request):
+    try:
+        payload = await read_encrypted_game_telemetry_payload(request)
+        raw_body = _payload_to_body(payload)
+        headers = dict(request.headers)
+        timestamp_iso = datetime.now().isoformat()
+        try:
+            await sessions.update_session_event_log(
+                raw_body=raw_body,
+                headers=headers,
+                event_type="heartbeat",
+                timestamp_iso=timestamp_iso,
+                raise_on_error=True,
+            )
+            rollup = await sessions.save_play_session_event(
+                payload=payload,
+                headers=headers,
+                event_type="heartbeat",
+                timestamp_iso=timestamp_iso,
+                decrypted_body_bytes=len(raw_body),
+            )
+        except Exception as exc:
+            log(f"[ERROR] Failed to persist session heartbeat before response: {exc}")
+            raise HTTPException(status_code=503, detail="failed to persist session heartbeat") from exc
+
+        content: dict[str, Any] = {"status": "ok"}
+        if rollup:
+            content.update(
+                {
+                    "duration_source": rollup.get("duration_source"),
+                    "final_duration_sec": rollup.get("final_duration_sec"),
+                    "session_status": rollup.get("status"),
+                    "confidence": rollup.get("confidence"),
+                }
+            )
+        return JSONResponse(content=content, status_code=200)
     except HTTPException:
         raise
     except Exception as exc:
@@ -161,6 +216,13 @@ async def logoff(request: Request):
                 event_type="logoff",
                 timestamp_iso=timestamp_iso,
                 raise_on_error=True,
+            )
+            await sessions.save_play_session_event(
+                payload=payload,
+                headers=headers,
+                event_type="logoff",
+                timestamp_iso=timestamp_iso,
+                decrypted_body_bytes=len(raw_body),
             )
             await sessions.save_gameplay_telemetry_ingest(
                 payload=payload,

@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir --index-url https://pypi.org/simple -r /app/requi
 
 COPY app /app/app
 COPY encrypted_saver.py /app/encrypted_saver.py
+COPY playtime_store.py /app/playtime_store.py
+COPY version_utils.py /app/version_utils.py
 
 ENV PORT=8000
 

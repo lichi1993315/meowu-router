@@ -24,6 +24,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from playtime_store import ensure_playtime_schema
+from version_utils import release_version_from_client_version
+
 
 DB_PATH = Path(os.getenv("DB_PATH", "/app/data/conversations.db"))
 TELEMETRY_DIR = Path(os.getenv("GAMEPLAY_TELEMETRY_DIR", "/app/data/gameplay_telemetry"))
@@ -48,6 +51,7 @@ CREATE TABLE IF NOT EXISTS gameplay_sessions (
     player_session_id TEXT,
     is_dev INTEGER DEFAULT 0,
     client_version TEXT,
+    release_version TEXT,
     nickname TEXT,
     country TEXT,
     real_time_started_iso TEXT,
@@ -101,6 +105,7 @@ CREATE TABLE IF NOT EXISTS gameplay_telemetry_ingest (
     player_session_id TEXT,
     player_id TEXT,
     client_version TEXT,
+    release_version TEXT,
     outbox_id TEXT,
     payload_size_bytes INTEGER DEFAULT 0,
     import_status TEXT NOT NULL DEFAULT 'pending',
@@ -125,6 +130,7 @@ CREATE TABLE IF NOT EXISTS gameplay_days (
     player_session_id TEXT,
     is_dev INTEGER DEFAULT 0,
     client_version TEXT,
+    release_version TEXT,
     game_day INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
     day_end_completed INTEGER,
@@ -145,6 +151,7 @@ CREATE TABLE IF NOT EXISTS gameplay_events (
     player_session_id TEXT,
     is_dev INTEGER DEFAULT 0,
     client_version TEXT,
+    release_version TEXT,
     game_day INTEGER,
     event_index INTEGER NOT NULL,
     imported_at TEXT NOT NULL,
@@ -207,6 +214,7 @@ CREATE TABLE IF NOT EXISTS gameplay_ai_calls (
     event_index INTEGER NOT NULL,
     is_dev INTEGER DEFAULT 0,
     client_version TEXT,
+    release_version TEXT,
     game_day INTEGER,
     event_game_minutes INTEGER,
     event_real_time_iso TEXT,
@@ -260,6 +268,7 @@ WITH player_sessions AS (
         MAX(date(s.real_time_started_iso)) AS latest_login_date,
         MAX(s.real_time_started_iso) AS latest_login_iso,
         MAX(s.real_time_started_iso) AS latest_session_started_iso,
+        GROUP_CONCAT(DISTINCT COALESCE(NULLIF(s.release_version, ''), '(empty)')) AS release_versions,
         GROUP_CONCAT(DISTINCT COALESCE(NULLIF(s.client_version, ''), '(empty)')) AS client_versions,
         SUM(COALESCE(s.game_duration_sec, 0)) AS total_play_duration_sec,
         MAX(COALESCE(s.game_days_total, s.game_day_end, 0)) AS play_days_total,
@@ -330,6 +339,7 @@ SELECT
     ps.latest_login_date,
     ps.latest_login_iso,
     ps.latest_session_started_iso,
+    ps.release_versions,
     ps.client_versions,
     ROUND(ps.total_play_duration_sec, 2) AS total_play_duration_sec,
     ps.play_days_total,
@@ -360,6 +370,7 @@ SELECT
         MAX(NULLIF(s.nickname, '')),
         s.user_id
     ) AS nickname,
+    GROUP_CONCAT(DISTINCT COALESCE(NULLIF(s.release_version, ''), '(empty)')) AS release_versions,
     GROUP_CONCAT(DISTINCT COALESCE(NULLIF(s.client_version, ''), '(empty)')) AS client_versions,
     COUNT(*) AS ai_session_count,
     SUM(COALESCE(s.ai_request_count, 0)) AS ai_request_count,
@@ -756,15 +767,19 @@ def upsert_ingest_record(
     ingest = payload.get("ingest") if isinstance(payload, dict) else {}
     if not isinstance(ingest, dict):
         ingest = {}
+    client_version = as_nonempty_str(
+        ingest.get("client_version") or (payload or {}).get("client_version")
+    )
+    release_version = release_version_from_client_version(client_version)
 
     conn.execute(
         """
         INSERT OR REPLACE INTO gameplay_telemetry_ingest (
             source_file, ingest_id, endpoint, event_type, received_at,
-            user_id, session_id, player_session_id, player_id, client_version,
+            user_id, session_id, player_session_id, player_id, client_version, release_version,
             outbox_id, payload_size_bytes, import_status, import_error,
             sample_count, session_count, imported_at, raw_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_file,
@@ -778,7 +793,8 @@ def upsert_ingest_record(
                 ingest.get("player_session_id") or (payload or {}).get("player_session_id")
             ),
             as_nonempty_str(ingest.get("player_id") or (payload or {}).get("player_id")),
-            as_nonempty_str(ingest.get("client_version") or (payload or {}).get("client_version")),
+            client_version,
+            release_version,
             as_nonempty_str(ingest.get("outbox_id")),
             int0(ingest.get("payload_size_bytes")),
             import_status,
@@ -984,8 +1000,11 @@ def import_sample(
     is_dev = infer_is_dev(conn, user_id)
     country = infer_country(sample, session_meta)
     client_version = infer_client_version(sample, session_meta)
+    release_version = release_version_from_client_version(client_version)
     if client_version and not session_meta.get("client_version"):
         session_meta = {**session_meta, "client_version": client_version}
+    if release_version and not session_meta.get("release_version"):
+        session_meta = {**session_meta, "release_version": release_version}
     session_id = str(session_meta.get("session_id") or f"{user_id}:{source_file}")
     player_session_id = infer_player_session_id(sample, session_meta)
     if player_session_id and not session_meta.get("player_session_id"):
@@ -1029,6 +1048,7 @@ def import_sample(
                 player_session_id,
                 is_dev,
                 client_version,
+                release_version,
                 game_day,
                 imported_at,
                 as_int(day_meta.get("day_end_completed")),
@@ -1100,6 +1120,7 @@ def import_sample(
                         event_index,
                         is_dev,
                         client_version,
+                        release_version,
                         as_int(event.get("event_game_day")) or game_day,
                         as_int(event.get("event_game_minutes")),
                         event.get("timestamp"),
@@ -1141,6 +1162,7 @@ def import_sample(
                     player_session_id,
                     is_dev,
                     client_version,
+                    release_version,
                     as_int(event.get("event_game_day")) or game_day,
                     event_index,
                     imported_at,
@@ -1200,7 +1222,7 @@ def import_sample(
     conn.execute(
         """
         INSERT INTO gameplay_sessions (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, nickname, country,
+            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, nickname, country,
             real_time_started_iso, real_time_ended_iso, imported_at,
             game_duration_sec, game_day_start, game_day_end, game_days_total,
             island_level_max, money_start, money_end, money_total_earned,
@@ -1212,7 +1234,7 @@ def import_sample(
             ai_billable_uncached_input_tokens, ai_billable_cached_input_tokens,
             ai_cache_hit_ratio, ai_estimated_cost_usd, ai_archive_total_consumed_tokens,
             ai_models, ai_pricing_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_file,
@@ -1221,6 +1243,7 @@ def import_sample(
             player_session_id,
             is_dev,
             client_version,
+            release_version,
             nickname,
             country,
             session_meta.get("real_time_started_iso"),
@@ -1263,17 +1286,17 @@ def import_sample(
     conn.executemany(
         """
         INSERT INTO gameplay_days (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, game_day, imported_at,
+            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, imported_at,
             day_end_completed, energy_remaining_end, energy_total_end,
             cats_count, cats_json, day_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         day_rows,
     )
     conn.executemany(
         """
         INSERT INTO gameplay_events (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, game_day, event_index, imported_at,
+            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, event_index, imported_at,
             event_type, event_game_minutes, event_real_time_iso, actor_id, actor_name,
             actor_is_player, island_level, duration_minutes, energy_cost, meowu_output,
             mounted_cats_count, rod_id, rod_name, fish_id, fish_name, fish_rarity,
@@ -1282,14 +1305,14 @@ def import_sample(
             bug_price, recipe_id, recipe_name, building_id, building_name,
             building_sub_type, item_id, item_name, money_spent, earned_money,
             adopted_cat_id, adopted_cat_name, adopt_source, region, meta_json, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         event_rows,
     )
     conn.executemany(
         """
         INSERT INTO gameplay_ai_calls (
-            source_file, user_id, session_id, player_session_id, event_index, is_dev, client_version,
+            source_file, user_id, session_id, player_session_id, event_index, is_dev, client_version, release_version,
             game_day, event_game_minutes, event_real_time_iso, actor_id, actor_name,
             model, mode, tag, toolset_version, prompt_cache_key,
             input_tokens, output_tokens, total_tokens, cached_input_tokens,
@@ -1299,7 +1322,7 @@ def import_sample(
             cached_input_usd_per_million_tokens, estimated_cost_usd,
             request_message_count, message_content_chars, message_json_chars,
             tool_count, tool_schema_json_chars, payload_json, imported_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         ai_call_rows,
     )
@@ -1312,11 +1335,31 @@ def ensure_column(conn: sqlite3.Connection, table: str, column: str, definition:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
+def backfill_release_versions(conn: sqlite3.Connection, table: str) -> None:
+    rows = conn.execute(
+        f"SELECT rowid, client_version, release_version FROM {table} "
+        "WHERE client_version IS NOT NULL"
+    ).fetchall()
+    updates = [
+        (computed, row[0])
+        for row in rows
+        for computed in (release_version_from_client_version(row[1]),)
+        if (row[2] or "") != computed
+    ]
+    if updates:
+        conn.executemany(
+            f"UPDATE {table} SET release_version = ? WHERE rowid = ?",
+            updates,
+        )
+
+
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
+    ensure_playtime_schema(conn)
     ensure_column(conn, "gameplay_sessions", "player_session_id", "TEXT")
     ensure_column(conn, "gameplay_sessions", "is_dev", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_sessions", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_sessions", "release_version", "TEXT")
     ensure_column(conn, "gameplay_sessions", "ai_usage_source", "TEXT")
     ensure_column(conn, "gameplay_sessions", "ai_request_count", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_sessions", "ai_response_count", "INTEGER DEFAULT 0")
@@ -1337,10 +1380,13 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "gameplay_days", "player_session_id", "TEXT")
     ensure_column(conn, "gameplay_days", "is_dev", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_days", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_days", "release_version", "TEXT")
     ensure_column(conn, "gameplay_events", "player_session_id", "TEXT")
     ensure_column(conn, "gameplay_events", "is_dev", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_events", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_events", "release_version", "TEXT")
     ensure_column(conn, "gameplay_ai_calls", "player_session_id", "TEXT")
+    ensure_column(conn, "gameplay_ai_calls", "release_version", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "ingest_id", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "endpoint", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "event_type", "TEXT")
@@ -1350,6 +1396,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "gameplay_telemetry_ingest", "player_session_id", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "player_id", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "client_version", "TEXT")
+    ensure_column(conn, "gameplay_telemetry_ingest", "release_version", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "outbox_id", "TEXT")
     ensure_column(conn, "gameplay_telemetry_ingest", "payload_size_bytes", "INTEGER DEFAULT 0")
     ensure_column(conn, "gameplay_telemetry_ingest", "import_status", "TEXT DEFAULT 'pending'")
@@ -1483,8 +1530,19 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         WHERE player_session_id IS NULL OR player_session_id = ''
         """
     )
+    for table in (
+        "gameplay_sessions",
+        "gameplay_days",
+        "gameplay_events",
+        "gameplay_ai_calls",
+        "gameplay_telemetry_ingest",
+    ):
+        backfill_release_versions(conn, table)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_client_version ON gameplay_sessions(client_version)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_release_version ON gameplay_sessions(release_version)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_player_session ON gameplay_sessions(user_id, player_session_id)"
@@ -1493,7 +1551,16 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_gameplay_days_client_version ON gameplay_days(client_version)"
     )
     conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_days_release_version ON gameplay_days(release_version)"
+    )
+    conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_events_client_version ON gameplay_events(client_version)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_events_release_version ON gameplay_events(release_version)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_ai_calls_release_version ON gameplay_ai_calls(release_version)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_sessions_ai_total_tokens ON gameplay_sessions(ai_total_tokens)"
@@ -1509,6 +1576,9 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_received ON gameplay_telemetry_ingest(received_at)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_gameplay_telemetry_ingest_release_version ON gameplay_telemetry_ingest(release_version)"
     )
 
     conn.executescript(VIEW_SQL)

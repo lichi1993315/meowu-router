@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from import_gameplay_telemetry import ensure_schema, import_file, import_sample
+from version_utils import release_version_from_client_version
 
 
 class GameplayTelemetryImporterTests(unittest.TestCase):
@@ -28,6 +29,33 @@ class GameplayTelemetryImporterTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.conn.close()
+
+    def test_release_version_from_client_version(self) -> None:
+        self.assertEqual(
+            release_version_from_client_version("unity-taptap-0.1.26.6.1.8d0bdf6d"),
+            "taptap-0.1",
+        )
+        self.assertEqual(
+            release_version_from_client_version("unity-taptap-0.12.26.6.1.12345678"),
+            "taptap-0.12",
+        )
+        self.assertEqual(
+            release_version_from_client_version("unity-steam-0.123.26.6.1.8d0bdf6d"),
+            "steam-0.123",
+        )
+        self.assertEqual(
+            release_version_from_client_version("unity-steam-0.123.26.6.1"),
+            "steam-0.123",
+        )
+        self.assertEqual(
+            release_version_from_client_version("unity-26.6.1.f3919b28"),
+            "unity-26.6.1.f3919b28",
+        )
+        self.assertEqual(
+            release_version_from_client_version("unity-26.6.1.12345678"),
+            "unity-26.6.1.12345678",
+        )
+        self.assertEqual(release_version_from_client_version("unity-dev"), "unity-dev")
 
     def test_imports_session_ai_usage_and_call_detail(self) -> None:
         sample = {
@@ -127,6 +155,54 @@ class GameplayTelemetryImporterTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(user_summary["ai_total_tokens"], 1100)
         self.assertAlmostEqual(user_summary["ai_estimated_cost_usd"], 0.000355)
+
+    def test_imports_release_version_for_session_detail_tables(self) -> None:
+        client_version = "unity-taptap-0.1.26.6.1.8d0bdf6d"
+        sample = {
+            "user_id": "user-1",
+            "client_version": client_version,
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "session_id": "session-release",
+                    "real_time_started_iso": "2026-06-07T01:02:03",
+                },
+                "days": {
+                    "0": {
+                        "events": [
+                            {
+                                "event_type": "cat_agent_response",
+                                "payload": {
+                                    "model": "gemini-test",
+                                    "response_stats": {
+                                        "prompt_tokens": 10,
+                                        "completion_tokens": 2,
+                                        "total_tokens": 12,
+                                    },
+                                },
+                            },
+                        ]
+                    }
+                },
+            },
+        }
+
+        import_sample(
+            self.conn,
+            source_file="/tmp/release.json",
+            sample=sample,
+            imported_at="2026-06-07T01:10:00+00:00",
+        )
+
+        for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
+            row = self.conn.execute(f"SELECT client_version, release_version FROM {table}").fetchone()
+            self.assertEqual(row["client_version"], client_version)
+            self.assertEqual(row["release_version"], "taptap-0.1")
+
+        summary = self.conn.execute(
+            "SELECT release_versions, client_versions FROM gameplay_player_summary"
+        ).fetchone()
+        self.assertEqual(summary["release_versions"], "taptap-0.1")
+        self.assertEqual(summary["client_versions"], client_version)
 
     def test_aggregates_event_ai_usage_without_session_meta(self) -> None:
         sample = {
@@ -315,6 +391,7 @@ class GameplayTelemetryImporterTests(unittest.TestCase):
         self.assertEqual(ingest["session_count"], 1)
         self.assertEqual(ingest["player_session_id"], "player-session-1")
         self.assertEqual(ingest["outbox_id"], "outbox-1")
+        self.assertEqual(ingest["release_version"], "unity-test")
 
         session = self.conn.execute("SELECT * FROM gameplay_sessions").fetchone()
         self.assertEqual(session["source_file"], source_file)

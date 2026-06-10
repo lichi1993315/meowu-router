@@ -60,6 +60,40 @@ def _clean_text(value: Any, *, max_chars: int) -> str:
     return value[: max_chars - 20].rstrip() + "\n...[truncated]"
 
 
+def _session_meta_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    telemetry = payload.get("gameplay_telemetry")
+    if not isinstance(telemetry, dict):
+        return {}
+    session_meta = telemetry.get("session_meta")
+    return session_meta if isinstance(session_meta, dict) else {}
+
+
+def _header_value(headers: dict[str, str], name: str) -> str:
+    for key, value in headers.items():
+        if key.lower() == name:
+            return str(value).strip()
+    return ""
+
+
+def _client_version_values(payload: dict[str, Any], headers: dict[str, str]) -> list[str]:
+    session_meta = _session_meta_from_payload(payload)
+    values = (
+        _header_value(headers, "x-client-version"),
+        payload.get("client_version"),
+        session_meta.get("client_version"),
+    )
+    return [str(value).strip() for value in values if str(value).strip()]
+
+
+def _client_version_from_payload(payload: dict[str, Any], headers: dict[str, str]) -> str:
+    versions = _client_version_values(payload, headers)
+    return versions[0] if versions else ""
+
+
+def _is_unity_dev_payload(payload: dict[str, Any], headers: dict[str, str]) -> bool:
+    return any(version.lower() == "unity-dev" for version in _client_version_values(payload, headers))
+
+
 def _format_duration(seconds: Any) -> str:
     try:
         total = int(float(seconds))
@@ -654,7 +688,7 @@ def _build_error_log_alert_text(
 ) -> str:
     user_id = headers.get("x-user-id") or payload.get("user_id") or payload.get("player_id") or ""
     session_id = headers.get("x-session-id") or payload.get("session_id") or ""
-    client_version = headers.get("x-client-version") or payload.get("client_version") or ""
+    client_version = _client_version_from_payload(payload, headers)
     reason = payload.get("reason") or payload.get("error_reason") or ""
     message = payload.get("message") or payload.get("error") or payload.get("exception") or ""
     message = _clean_text(message, max_chars=2400)
@@ -796,6 +830,9 @@ async def send_error_log_alert(
     if not _is_enabled():
         return
 
+    if _is_unity_dev_payload(payload, headers):
+        return
+
     missing = _missing_config()
     if missing:
         log(f"[WARNING] Feishu error_log alert skipped; missing env: {', '.join(missing)}")
@@ -844,12 +881,7 @@ def _build_logoff_report_summary(
     username = payload.get("username")
     if not username and isinstance(user_profile, dict):
         username = user_profile.get("username") or user_profile.get("nickname")
-    client_version = (
-        headers.get("x-client-version")
-        or payload.get("client_version")
-        or session_meta.get("client_version")
-        or ""
-    )
+    client_version = _client_version_from_payload(payload, headers)
     duration = (
         payload.get("session_duration_sec")
         or session_meta.get("game_duration_sec")
@@ -1038,6 +1070,9 @@ async def send_logoff_telemetry_report(
     received_at: str,
 ) -> None:
     if not _is_logoff_report_enabled():
+        return
+
+    if _is_unity_dev_payload(payload, headers):
         return
 
     missing = _missing_logoff_report_config()

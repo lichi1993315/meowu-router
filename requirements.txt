@@ -1,9 +1,11 @@
 httpx
 dotenv
 aiofiles
+jieba
 fastapi
 uvicorn
 python-dotenv
+prometheus-client
 cryptography
 boto3
 python-multipart

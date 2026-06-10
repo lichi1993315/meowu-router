@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import sqlite3
@@ -16,6 +17,9 @@ from app.services.feishu_alerts import (
     _build_logoff_report_summary,
     _doc_url,
     _infer_member_type,
+    _is_unity_dev_payload,
+    send_error_log_alert,
+    send_logoff_telemetry_report,
 )
 
 
@@ -59,16 +63,25 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         def fake_create_task(value):
             return value
 
-        def fake_update_session_event_log(**kwargs):
+        async def fake_update_session_event_log(**kwargs):
             captured["event_type"] = kwargs["event_type"]
             captured["payload"] = json.loads(kwargs["raw_body"])
             return object()
+
+        async def fake_save_play_session_event(**kwargs):
+            captured["play_event_type"] = kwargs["event_type"]
+            captured["play_payload"] = kwargs["payload"]
+            return {"duration_source": "login_only", "final_duration_sec": 0}
 
         with (
             patch("app.api.routes.system.asyncio.create_task", fake_create_task),
             patch(
                 "app.api.routes.system.sessions.update_session_event_log",
                 fake_update_session_event_log,
+            ),
+            patch(
+                "app.api.routes.system.sessions.save_play_session_event",
+                fake_save_play_session_event,
             ),
         ):
             response = self.client.post(
@@ -80,6 +93,61 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(captured["event_type"], "login")
         self.assertEqual(captured["payload"], payload)
+        self.assertEqual(captured["play_event_type"], "login")
+        self.assertEqual(captured["play_payload"], payload)
+
+    def test_encrypted_session_heartbeat_persists_playtime(self) -> None:
+        captured = {}
+        payload = {
+            "session_id": "session-1",
+            "player_session_id": "player-session-1",
+            "timestamp": "2026-06-07T01:03:00Z",
+            "sequence": 3,
+            "game_duration_sec": 90,
+            "foreground_duration_sec": 90,
+            "active_duration_sec": 60,
+            "app_state": "foreground",
+        }
+
+        async def fake_update_session_event_log(**kwargs):
+            captured["event_type"] = kwargs["event_type"]
+            captured["payload"] = json.loads(kwargs["raw_body"])
+            return object()
+
+        async def fake_save_play_session_event(**kwargs):
+            captured["play_event_type"] = kwargs["event_type"]
+            captured["play_payload"] = kwargs["payload"]
+            return {
+                "duration_source": "heartbeat_client",
+                "final_duration_sec": 90,
+                "status": "open",
+                "confidence": "high",
+            }
+
+        with (
+            patch(
+                "app.api.routes.system.sessions.update_session_event_log",
+                fake_update_session_event_log,
+            ),
+            patch(
+                "app.api.routes.system.sessions.save_play_session_event",
+                fake_save_play_session_event,
+            ),
+        ):
+            response = self.client.post(
+                "/session_heartbeat",
+                content=self._encrypt(payload),
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured["event_type"], "heartbeat")
+        self.assertEqual(captured["payload"], payload)
+        self.assertEqual(captured["play_event_type"], "heartbeat")
+        self.assertEqual(response.json()["duration_source"], "heartbeat_client")
+        self.assertEqual(response.json()["final_duration_sec"], 90)
+        self.assertEqual(response.json()["session_status"], "open")
+        self.assertEqual(response.json()["confidence"], "high")
 
     def test_encrypted_logoff_preserves_root_gameplay_telemetry(self) -> None:
         captured = {}
@@ -119,6 +187,11 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
             captured["ingest_headers"] = kwargs["headers"]
             return object()
 
+        async def fake_save_play_session_event(**kwargs):
+            captured["play_event_type"] = kwargs["event_type"]
+            captured["play_payload"] = kwargs["payload"]
+            return {"duration_source": "logoff", "final_duration_sec": 125}
+
         def fake_send_logoff_telemetry_report(**kwargs):
             reports.update(kwargs)
             return object()
@@ -134,6 +207,10 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
                 fake_save_gameplay_telemetry_ingest,
             ),
             patch(
+                "app.api.routes.system.sessions.save_play_session_event",
+                fake_save_play_session_event,
+            ),
+            patch(
                 "app.api.routes.system.feishu_alerts.send_logoff_telemetry_report",
                 fake_send_logoff_telemetry_report,
             ),
@@ -147,6 +224,8 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(captured["event_type"], "logoff")
         self.assertEqual(captured["payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
+        self.assertEqual(captured["play_event_type"], "logoff")
+        self.assertEqual(captured["play_payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
         self.assertEqual(captured["ingest_payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
         self.assertEqual(captured["ingest_headers"]["x-player-session-id"], "player-session-1")
         self.assertEqual(reports["payload"]["gameplay_telemetry"], payload["gameplay_telemetry"])
@@ -262,6 +341,34 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"], "failed to persist logoff telemetry")
 
+    def test_encrypted_heartbeat_returns_503_when_persist_fails(self) -> None:
+        payload = {"session_id": "session-1", "sequence": 1, "game_duration_sec": 30}
+
+        async def fake_update_session_event_log(**kwargs):
+            return object()
+
+        async def fake_save_play_session_event(**kwargs):
+            raise OSError("disk full")
+
+        with (
+            patch(
+                "app.api.routes.system.sessions.update_session_event_log",
+                fake_update_session_event_log,
+            ),
+            patch(
+                "app.api.routes.system.sessions.save_play_session_event",
+                fake_save_play_session_event,
+            ),
+        ):
+            response = self.client.post(
+                "/session_heartbeat",
+                content=self._encrypt(payload),
+                headers=self._headers(),
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"], "failed to persist session heartbeat")
+
     def test_encrypted_error_log_stores_message_and_reason(self) -> None:
         captured = {}
         alerts = {}
@@ -361,6 +468,77 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertIn("NullReferenceException", text)
         self.assertNotIn("secret_debug_dump", text)
         self.assertNotIn("full payload should not be included", text)
+
+    def test_unity_dev_detection_checks_all_client_version_sources(self) -> None:
+        self.assertTrue(_is_unity_dev_payload({}, {"X-Client-Version": "UNITY-DEV"}))
+        self.assertTrue(_is_unity_dev_payload({"client_version": "unity-dev"}, {}))
+        self.assertTrue(
+            _is_unity_dev_payload(
+                {
+                    "gameplay_telemetry": {
+                        "session_meta": {
+                            "client_version": "unity-dev",
+                        }
+                    }
+                },
+                {"x-client-version": "1.2.3"},
+            )
+        )
+        self.assertFalse(
+            _is_unity_dev_payload(
+                {"client_version": "unity-test"},
+                {"x-client-version": "1.2.3"},
+            )
+        )
+
+    def test_unity_dev_feishu_senders_do_not_open_http_client(self) -> None:
+        env = {
+            "FEISHU_BOT_API_KEY": "app-id",
+            "FEISHU_BOT_API_SECRET": "app-secret",
+            "FEISHU_CHAT_ID": "chat-id",
+            "FEISHU_ADMIN_ID": "ou_admin",
+            "FEISHU_ERROR_LOG_ALERTS": "true",
+            "FEISHU_LOGOFF_REPORTS": "true",
+        }
+        payload = {
+            "user_id": "user-1",
+            "session_id": "session-1",
+            "message": "NullReferenceException",
+            "gameplay_telemetry": {
+                "session_meta": {
+                    "client_version": "unity-dev",
+                    "session_id": "session-1",
+                },
+                "days": {},
+            },
+        }
+        headers = {
+            "x-user-id": "user-1",
+            "x-session-id": "session-1",
+            "x-client-version": "1.2.3",
+        }
+
+        with (
+            patch.dict(os.environ, env),
+            patch("app.services.feishu_alerts.httpx.AsyncClient") as async_client,
+        ):
+            asyncio.run(
+                send_error_log_alert(
+                    payload=payload,
+                    headers=headers,
+                    received_at="2026-06-07T01:02:03",
+                    decrypted_body_bytes=2048,
+                )
+            )
+            asyncio.run(
+                send_logoff_telemetry_report(
+                    payload=payload,
+                    headers=headers,
+                    received_at="2026-06-07T01:02:03",
+                )
+            )
+
+        async_client.assert_not_called()
 
     def test_logoff_report_summary_and_document_text(self) -> None:
         payload = {
