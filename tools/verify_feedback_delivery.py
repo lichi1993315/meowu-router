@@ -51,6 +51,13 @@ async def main():
                 headers={"Authorization": "Bearer " + remote.token}, follow_redirects=True)
             response.raise_for_status()
             assert response.content == screenshot, "Attachment bytes differ"
+        if "--notify" in sys.argv[2:]:
+            await feedback.notify_one()
+            with feedback.connect(feedback.database()) as db:
+                notification = dict(db.execute("SELECT * FROM feedback_notifications WHERE id=?", (report_id,)).fetchone())
+            assert notification["state"] == "sent", notification["last_error"]
+            assert not await feedback.notify_one(), "Notification was sent twice"
+            print("notification=sent (Feishu acknowledged; same recipient as error alerts)")
         print(json.dumps({"status": "sent", "feedback_id": report_id, "record_id": row["record_id"],
                           "attachment_bytes": len(screenshot), "duplicate_submissions": 2, "records": 1}))
 

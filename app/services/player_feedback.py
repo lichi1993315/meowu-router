@@ -14,6 +14,7 @@ import httpx
 
 from app.core.config import OUTPUT_DIR
 from app.core.logging import log
+from app.services import feishu_alerts
 
 MAX_IMAGE = 2 * 1024 * 1024
 MAX_META = 48 * 1024
@@ -37,6 +38,11 @@ def connect(path: Path):
         due REAL NOT NULL DEFAULT 0, attempts INTEGER NOT NULL DEFAULT 0,
         file_token TEXT NOT NULL DEFAULT '', record_id TEXT NOT NULL DEFAULT '',
         sent_at REAL, last_error TEXT NOT NULL DEFAULT '')""")
+    db.execute("""CREATE TABLE IF NOT EXISTS feedback_notifications (
+        id TEXT PRIMARY KEY, text TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending',
+        due REAL NOT NULL DEFAULT 0, attempts INTEGER NOT NULL DEFAULT 0,
+        sent_at REAL, last_error TEXT NOT NULL DEFAULT '')""")
+    db.execute("CREATE INDEX IF NOT EXISTS feedback_notifications_due ON feedback_notifications(state,due)")
     for name, columns in (("due", "state,due,received"), ("owner", "owner,received"),
                           ("ip", "ip,received"), ("sent", "state,sent_at")):
         db.execute(f"CREATE INDEX IF NOT EXISTS feedback_{name} ON feedback({columns})")
@@ -97,6 +103,7 @@ def accept(payload: dict, image: bytes, owner: str, ip: str, path: Path | None =
             if count >= 3:
                 raise FeedbackRejected(429, "Please wait before sending another feedback")
         pending = db.execute("SELECT COUNT(*) FROM (SELECT 1 FROM feedback WHERE state IN ('pending','sending') LIMIT 1000)").fetchone()[0]
+        pending += db.execute("SELECT COUNT(*) FROM (SELECT 1 FROM feedback_notifications WHERE state IN ('pending','sending') LIMIT 1000)").fetchone()[0]
         if pending >= 1000:
             raise FeedbackRejected(503, "Feedback queue full; please retry later")
         db.execute("INSERT INTO feedback(id,owner,ip,payload,fingerprint,image,received) VALUES(?,?,?,?,?,?,?)",
@@ -119,6 +126,71 @@ def claim(path: Path):
 def update(path: Path, report_id: str, **values):
     with connect(path) as db:
         db.execute("UPDATE feedback SET " + ",".join(k + "=?" for k in values) + " WHERE id=?", (*values.values(), report_id))
+
+
+def notification_text(row: dict, record: str) -> str:
+    """Plain-text summary with a durable record link; screenshots remain in the Base."""
+    payload = json.loads(row["payload"])
+    app = os.getenv("FEISHU_FEEDBACK_APP_TOKEN", "").strip()
+    table = os.getenv("FEISHU_FEEDBACK_TABLE_ID", "").strip()
+    link = f"https://feishu.cn/base/{app}?table={table}&record={record}"
+    return "\n".join([
+        "【喵呜岛 · 新的玩家 Bug 反馈】",
+        "反馈编号：" + row["id"],
+        "版本：" + payload["version"] + " ｜平台：" + payload["platform"],
+        "玩家：" + (payload["player_id"] or row["owner"]),
+        "场景：" + payload["scene"],
+        "", "问题描述：", feishu_alerts._clean_text(payload["description"], max_chars=1200),
+        "", "复现办法：", feishu_alerts._clean_text(payload.get("reproduction") or "未填写", max_chars=600),
+        "", "截图：" + ("已附在表格记录中" if row["file_token"] or row["image"] else "未附截图"),
+        "查看完整反馈：" + link,
+    ])
+
+
+def finish_record(path: Path, row: dict, record: str):
+    """Commit the table receipt and notification outbox together; retries cannot enqueue twice."""
+    with connect(path) as db:
+        db.execute("UPDATE feedback SET state='sent',record_id=?,sent_at=?,last_error='' WHERE id=?",
+                   (record, time.time(), row["id"]))
+        db.execute("INSERT OR IGNORE INTO feedback_notifications(id,text) VALUES(?,?)",
+                   (row["id"], notification_text(row, record)))
+
+
+def claim_notification(path: Path):
+    with connect(path) as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM feedback_notifications WHERE state IN ('pending','sending') AND due<=? ORDER BY due LIMIT 1",
+                         (time.time(),)).fetchone()
+        if row:
+            db.execute("UPDATE feedback_notifications SET state='sending',due=? WHERE id=?", (time.time() + 300, row["id"]))
+        return dict(row) if row else None
+
+
+async def notify_one(path: Path | None = None, sender=None) -> bool:
+    """Retry notifications independently: a failed message never rewrites the table or attachment."""
+    path = path or database()
+    row = await asyncio.to_thread(claim_notification, path)
+    if row is None:
+        return False
+    error = ""
+    try:
+        sent = await (sender or feishu_alerts.send_player_feedback_alert)(row["text"], row["id"])
+        if not sent:
+            error = "Feishu not acknowledged"
+    except Exception as exc:
+        sent = False
+        error = type(exc).__name__
+
+    def finish():
+        with connect(path) as db:
+            db.execute("UPDATE feedback_notifications SET state=?,attempts=?,due=?,sent_at=?,last_error=? WHERE id=?",
+                       ("sent" if sent else "pending", row["attempts"] + 1,
+                        time.time() + min(300, 10 * 2 ** min(row["attempts"], 5)),
+                        time.time() if sent else None, error, row["id"]))
+    await asyncio.to_thread(finish)
+    if error:
+        log(f"[WARNING] Feedback {row['id']} notification deferred: {error}")
+    return True
 
 
 class FeishuFeedbackClient:
@@ -193,8 +265,7 @@ async def deliver_one(path: Path | None = None, remote=None) -> bool:
                     row["file_token"] = await remote.upload(row)
                     await asyncio.to_thread(update, path, row["id"], file_token=row["file_token"])
                 record = await remote.create(row)
-            await asyncio.to_thread(update, path, row["id"], state="sent", record_id=record,
-                                    sent_at=time.time(), last_error="")
+            await asyncio.to_thread(finish_record, path, row, record)
     except Exception as exc:
         # Do not log response bodies, headers, or player descriptions.
         error = str(exc) if type(exc) is RuntimeError else type(exc).__name__
@@ -208,7 +279,9 @@ async def delivery_loop():
     while True:
         try:
             for _ in range(10):
-                if not await deliver_one():
+                delivered = await deliver_one()
+                notified = await notify_one()
+                if not delivered and not notified:
                     break
         except Exception as exc:
             log(f"[WARNING] Feedback queue: {type(exc).__name__}")

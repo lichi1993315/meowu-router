@@ -760,6 +760,24 @@ async def _send_text_message(client: httpx.AsyncClient, token: str, text: str, r
     return True
 
 
+async def send_player_feedback_alert(text: str, report_id: str) -> bool:
+    """Use the error-alert recipient for explicit player reports, with a separate UUID namespace."""
+    missing = _missing_config()
+    if missing:
+        log(f"[WARNING] Feishu feedback notification missing env: {', '.join(missing)}")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=float(os.getenv("FEISHU_TIMEOUT", str(_DEFAULT_TIMEOUT)))) as client:
+            token = await _get_tenant_access_token(client)
+            if not token:
+                return False
+            # Explicit player reports are not suppressed by the automatic-error toggle or Editor filters.
+            return await _send_text_message(client, token, text, "player-feedback:" + report_id)
+    except Exception as exc:
+        log(f"[WARNING] Feishu feedback notification failed: {type(exc).__name__}")
+        return False
+
+
 async def _create_docx(client: httpx.AsyncClient, token: str, title: str) -> str | None:
     response = await client.post(
         _DOCX_URL,

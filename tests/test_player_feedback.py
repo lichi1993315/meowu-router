@@ -5,13 +5,14 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import httpx
 from cryptography.fernet import Fernet
 from fastapi import FastAPI
 
 from app.services import player_feedback as feedback
+from app.services import feishu_alerts
 from app.api.routes.feedback import router, MAX_BODY
 
 
@@ -137,3 +138,103 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
             await feedback.deliver_one(self.path)
         with feedback.connect(self.path) as db:
             self.assertEqual(db.execute("SELECT state FROM feedback").fetchone()[0], "pending")
+
+
+class FeedbackNotificationTests(unittest.IsolatedAsyncioTestCase):
+    setUp = FeedbackTests.setUp
+    tearDown = FeedbackTests.tearDown
+    accept = FeedbackTests.accept
+
+    async def test_notify_after_table_success_retries_without_rewriting_record(self):
+        self.accept(reproduction="顶着一只猫，14:00–15:00 时在河里钓鱼")
+        sender = AsyncMock(side_effect=[False, True])
+        self.assertFalse(await feedback.notify_one(self.path, sender))
+        remote = Remote()
+        with patch.dict(os.environ, {"FEISHU_FEEDBACK_APP_TOKEN": "base-test", "FEISHU_FEEDBACK_TABLE_ID": "table-test"}):
+            await feedback.deliver_one(self.path, remote)
+        await feedback.notify_one(self.path, sender)
+        with feedback.connect(self.path) as db:
+            notification = dict(db.execute("SELECT * FROM feedback_notifications").fetchone())
+            self.assertEqual(notification["state"], "pending")
+            self.assertGreater(notification["due"], time.time())
+            self.assertEqual(db.execute("SELECT state FROM feedback").fetchone()[0], "sent")
+            db.execute("UPDATE feedback_notifications SET due=0")
+        await feedback.notify_one(self.path, sender)
+        self.assertFalse(await feedback.notify_one(self.path, sender))
+        self.assertFalse(await feedback.deliver_one(self.path, remote))
+        self.assertEqual((remote.creates, remote.uploads), (1, 1))
+        self.assertEqual(sender.await_count, 2)
+        text, report_id = sender.await_args.args
+        self.assertIn("顶着一只猫", text)
+        self.assertIn("验证：按钮没有反应", text)
+        self.assertIn("https://feishu.cn/base/base-test?table=table-test&record=record-id", text)
+        self.assertEqual(report_id, "a" * 32)
+        self.accept(reproduction="顶着一只猫，14:00–15:00 时在河里钓鱼")
+        self.assertFalse(await feedback.notify_one(self.path, sender))
+
+    async def test_notification_failure_and_lease_survive_restart(self):
+        self.accept()
+        await feedback.deliver_one(self.path, Remote())
+        first = feedback.claim_notification(self.path)
+        self.assertIsNotNone(first)
+        self.assertIsNone(feedback.claim_notification(self.path))
+        with feedback.connect(self.path) as db:
+            db.execute("UPDATE feedback_notifications SET due=0")
+        sender = AsyncMock(side_effect=TimeoutError())
+        await feedback.notify_one(self.path, sender)
+        with feedback.connect(self.path) as db:
+            row = db.execute("SELECT * FROM feedback_notifications").fetchone()
+            self.assertEqual(row["state"], "pending")
+            self.assertEqual(row["last_error"], "TimeoutError")
+            self.assertIn("未填写", row["text"])
+
+    async def test_migration_does_not_notify_old_completed_reports(self):
+        self.accept()
+        with feedback.connect(self.path) as db:
+            db.execute("UPDATE feedback SET state='sent'")
+            db.execute("DROP TABLE feedback_notifications")
+        sender = AsyncMock()
+        self.assertFalse(await feedback.notify_one(self.path, sender))
+        sender.assert_not_awaited()
+
+    async def test_message_uses_error_recipient_and_stable_deduplication_uuid(self):
+        requests = []
+        async def respond(request):
+            requests.append(request)
+            if "tenant_access_token" in str(request.url):
+                return httpx.Response(200, json={"code": 0, "tenant_access_token": "test-token"})
+            return httpx.Response(200, json={"code": 0})
+        client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        with patch.dict(os.environ, {"FEISHU_BOT_API_KEY": "test-app", "FEISHU_BOT_API_SECRET": "test-secret",
+                                         "FEISHU_CHAT_ID": "test-error-recipient", "FEISHU_RECEIVE_ID_TYPE": "chat_id",
+                                         "FEISHU_ERROR_LOG_ALERTS": "false"}), patch.object(feishu_alerts.httpx, "AsyncClient", return_value=client):
+            self.assertTrue(await feishu_alerts.send_player_feedback_alert("验证：新反馈", "report"))
+        body = json.loads(requests[-1].content)
+        self.assertEqual(body["receive_id"], "test-error-recipient")
+        self.assertEqual(json.loads(body["content"])["text"], "验证：新反馈")
+        self.assertEqual(body["uuid"], __import__("hashlib").sha256(b"player-feedback:report").hexdigest()[:32])
+
+
+    async def test_receipt_and_notification_enqueue_are_atomic(self):
+        self.accept()
+        remote = Remote()
+        with feedback.connect(self.path) as db:
+            db.execute("CREATE TRIGGER reject_notice BEFORE INSERT ON feedback_notifications BEGIN SELECT RAISE(ABORT,'test failure'); END")
+        await feedback.deliver_one(self.path, remote)
+        with feedback.connect(self.path) as db:
+            self.assertEqual(db.execute("SELECT state FROM feedback").fetchone()[0], "pending")
+            self.assertEqual(db.execute("SELECT count(*) FROM feedback_notifications").fetchone()[0], 0)
+            db.execute("DROP TRIGGER reject_notice")
+            db.execute("UPDATE feedback SET due=0")
+        await feedback.deliver_one(self.path, remote)
+        self.assertEqual(remote.creates, 1)
+        with feedback.connect(self.path) as db:
+            self.assertEqual(db.execute("SELECT state FROM feedback").fetchone()[0], "sent")
+            self.assertEqual(db.execute("SELECT count(*) FROM feedback_notifications").fetchone()[0], 1)
+
+    def test_notification_backlog_applies_acceptance_budget(self):
+        with feedback.connect(self.path) as db:
+            db.executemany("INSERT INTO feedback_notifications(id,text) VALUES(?,?)", ((str(i), "test") for i in range(1000)))
+        with self.assertRaises(feedback.FeedbackRejected) as error:
+            self.accept()
+        self.assertEqual(error.exception.status, 503)
