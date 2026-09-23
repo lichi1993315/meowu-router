@@ -45,7 +45,7 @@ def restore_legacy_content(boards, panel, scope, time_range):
         if legacy_id == 23:
             restored['fieldConfig']['defaults'].update(unit='percent', decimals=2)
         if restored['type'] == 'table':
-            restored['fieldConfig']['defaults']['custom']['inspect'] = True
+            restored['fieldConfig']['defaults']['custom'].update(inspect=True,minWidth=150)
         overview['panels'].append(restored)
 
     # Preserve the old module/action/detail breakdown as an explicitly sourced report.

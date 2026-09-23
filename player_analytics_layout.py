@@ -28,7 +28,7 @@ def apply_player_layout(boards):
                 p = panels.pop(pid)
                 p['gridPos'] = {'x': x, 'y': y, 'w': width, 'h': height}
                 if p['type'] == 'table' and width <= 12:
-                    p['fieldConfig']['defaults']['custom']['minWidth'] = 70
+                    p['fieldConfig']['defaults']['custom'].setdefault('minWidth',70)
                 arranged.append(p)
                 x += width
             y += height
@@ -56,7 +56,7 @@ def apply_player_layout(boards):
             # Twelve separate cards mirror the original 4 + 6 + 2 grid exactly.
             specs = [(1,100,'总玩家数','玩家数'),(2,100,'昨日新增','昨日新增'),
                      (3,100,'七日新增','7日新增'),(4,100,'三十日新增','30日新增'),
-                     (5,102,'中位数','游玩时长中位数（分钟）'),(6,102,'平均数','游玩时长平均数（分钟）'),
+                     (5,102,'中位数','时长中位数（分钟）'),(6,102,'平均数','时长平均数（分钟）'),
                      (7,103,'中位数','游玩天数中位数'),(8,103,'平均数','游玩天数平均数'),
                      (9,104,'中位数','岛屿等级中位数'),(10,104,'平均数','岛屿等级平均数'),
                      (11,101,'总金币余额','总金币数'),(12,101,'拥有猫总数','猫总数')]
