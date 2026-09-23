@@ -68,6 +68,29 @@ class DiagnosticReportsTests(unittest.TestCase):
         self.assertIsNone(reports.claim(self.path, 2))
         self.assertEqual(reports.claim(self.path, 302)[0], first[0])
 
+    def test_editor_report_is_suppressed_not_marked_delivered(self):
+        value = reports.accept({"report_id": "editor", "client_platform": "editor"}, {}, "now", 10, self.path)
+        self.assertEqual(value["delivery"], "suppressed")
+        self.assertIsNone(reports.claim(self.path, time.time()))
+
+    def test_encrypted_api_accepts_duplicate_without_sending_or_logging_secrets(self):
+        import os
+        from cryptography.fernet import Fernet
+        from fastapi.testclient import TestClient
+        from app.main import create_app
+        key = Fernet.generate_key()
+        token = Fernet(key).encrypt(json.dumps({"report_id": "api-run", "message": "diagnostic test", "client_platform": "windows"}).encode())
+        with patch.dict(os.environ, {"PAW_FERNET_KEY": key.decode()}), patch.object(reports, "ERROR_LOG_DIR", Path(self.temp.name)):
+            client = TestClient(create_app())
+            headers = {"X-Encrypted": "true", "Content-Type": "text/plain", "X-User-ID": "test"}
+            one = client.post("/error_log", content=token, headers=headers)
+            two = client.post("/v1/error_log", content=token, headers=headers)
+        self.assertEqual(one.status_code, 200)
+        self.assertEqual(one.json()["delivery"], "pending")
+        self.assertEqual(two.json(), one.json())
+        with reports._connect(Path(self.temp.name) / "diagnostic_reports.sqlite3") as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM reports").fetchone()[0], 1)
+
     def test_invalid_or_oversized_report_is_rejected(self):
         with self.assertRaises(ValueError): self.accept("")
         with self.assertRaises(ValueError):
