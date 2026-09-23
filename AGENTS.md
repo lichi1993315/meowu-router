@@ -124,6 +124,15 @@ sudo docker compose -f docker-compose.monitoring.yml logs -f service-name
 sudo docker compose -f docker-compose.monitoring.yml ps
 ```
 
+## 提交、同步与部署一致性
+
+- 发布必须先完成验证，将本次源码和测试改动提交并推送，再让服务器 `/root/develop/router` 的 `main` 快进到同一提交，最后重建受影响的服务。禁止只通过 SCP/SFTP 覆盖文件后重建，却不提交或不同步 Git 历史。
+- 同步前检查本地、远端与服务器的分支、提交号和 `git status --short`。服务器有未提交改动或未推送提交时，先备份并核对差异，将需要保留的代码合并回主分支；不得用 `git reset --hard`、`git clean` 或整目录覆盖清除现场。
+- 只提交本次已验证、已授权的改动。其他任务正在编辑的草稿必须保留，不得为了工作区干净而夹带提交、删除或覆盖；交付时明确列出仍未同步的改动。
+- 服务器源码干净后使用 `git fetch origin` 和 `git merge --ff-only origin/main` 同步。部署完成后核对本地、远端、服务器提交号及服务器工作区，并核对运行镜像中的相关源码与发布提交一致，完成健康检查和必要的功能验证。不能把“本地已提交”或“服务器文件已替换”当作已完成上线。
+- `.env`、`.secrets/`、运行数据及新增备份不得提交。服务器备份放在版本库外的 `/root/router-backups/`；不得用忽略规则隐藏尚未合并的源码。
+- 仅修改文档或 `AGENTS.md` 时，也要提交、推送并同步服务器；无需因此重建服务。实际操作步骤见 [部署说明](docs/deployment.md)。
+
 ## 飞书消息代码部署
 
 飞书机器人消息由 `router-api` 容器发送。凡是修改飞书告警/消息/文档相关代码，例如：
