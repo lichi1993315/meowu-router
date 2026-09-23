@@ -132,6 +132,93 @@ class PlaytimeStoreTests(unittest.TestCase):
         self.assertEqual(rollup["final_duration_sec"], 75)
         self.assertEqual(rollup["event_count"], 1)
 
+    def test_schema_migration_adds_new_columns_before_new_indexes(self) -> None:
+        old_conn = sqlite3.connect(":memory:")
+        try:
+            old_conn.executescript(
+                """
+                CREATE TABLE user_sessions (
+                    user_id TEXT PRIMARY KEY,
+                    nickname TEXT,
+                    player_name TEXT
+                );
+
+                CREATE TABLE play_session_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dedupe_key TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    received_at TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    player_session_id TEXT,
+                    player_id TEXT,
+                    client_version TEXT,
+                    country TEXT,
+                    client_sent_at TEXT,
+                    sequence INTEGER,
+                    game_duration_sec REAL,
+                    outbox_id TEXT,
+                    payload_size_bytes INTEGER DEFAULT 0,
+                    payload_json TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE play_session_rollups (
+                    user_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    player_session_id TEXT,
+                    player_id TEXT,
+                    client_version TEXT,
+                    country TEXT,
+                    first_seen_at TEXT,
+                    last_seen_at TEXT,
+                    login_at TEXT,
+                    logoff_at TEXT,
+                    last_client_sent_at TEXT,
+                    heartbeat_count INTEGER DEFAULT 0,
+                    event_count INTEGER DEFAULT 0,
+                    max_sequence INTEGER,
+                    logoff_duration_sec REAL,
+                    heartbeat_duration_sec REAL,
+                    server_span_sec REAL,
+                    final_duration_sec REAL DEFAULT 0,
+                    duration_source TEXT NOT NULL DEFAULT 'none',
+                    status TEXT NOT NULL DEFAULT 'open',
+                    confidence TEXT NOT NULL DEFAULT 'low',
+                    end_reason TEXT,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, session_id)
+                );
+                """
+            )
+
+            ensure_playtime_schema(old_conn)
+
+            event_columns = {
+                row[1] for row in old_conn.execute("PRAGMA table_info(play_session_events)")
+            }
+            rollup_columns = {
+                row[1] for row in old_conn.execute("PRAGMA table_info(play_session_rollups)")
+            }
+            indexes = {
+                row[0]
+                for row in old_conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'index'"
+                )
+            }
+
+            self.assertIn("release_version", event_columns)
+            self.assertIn("activity_state", event_columns)
+            self.assertIn("release_version", rollup_columns)
+            self.assertIn("activity_state", rollup_columns)
+            self.assertIn("idx_play_session_events_release_version", indexes)
+            self.assertIn("idx_play_session_rollups_release_version", indexes)
+            self.assertIn("idx_play_session_rollups_activity_state", indexes)
+            self.assertIn("idx_play_session_rollups_current_activity", indexes)
+        finally:
+            old_conn.close()
+
     def test_heartbeat_activity_fields_roll_up_and_outbox_update_is_idempotent(self) -> None:
         headers_1 = {**self._headers(), "x-outbox-id": "outbox-1"}
         headers_2 = {**self._headers(), "x-outbox-id": "outbox-2"}

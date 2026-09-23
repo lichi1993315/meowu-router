@@ -10,6 +10,7 @@ GAMEPLAY_TELEMETRY_DIR = Path(
 )
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "gemini")
 DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gemini-3-flash-preview")
 GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3-pro-image-preview")
 _gemini_base_url = os.getenv("GEMINI_BASE_URL", "").strip()

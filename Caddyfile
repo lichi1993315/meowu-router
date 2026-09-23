@@ -16,3 +16,330 @@ api.meowuisland.com {
 		-Server
 	}
 }
+
+cheatem.io, us-west.agentlive.ai {
+	encode gzip
+
+	redir /openapi.json /cheat/openapi.json 301
+	redir /cheat /cheat/ 308
+	redir /api /api/ 308
+	redir /subscribe /subscribe/ 308
+	redir /jokeem /jokeem/ 308
+
+	handle_path /subscribe/* {
+		reverse_proxy host.docker.internal:8008
+	}
+
+	handle_path /cheat/* {
+		reverse_proxy host.docker.internal:8904
+	}
+
+	handle_path /api/* {
+		reverse_proxy host.docker.internal:8904
+	}
+
+	handle /wechat {
+		reverse_proxy host.docker.internal:8904
+	}
+
+	handle /FQMQzb* {
+		reverse_proxy host.docker.internal:52799
+	}
+
+	handle /bundles* {
+		uri strip_prefix /bundles
+		root * /srv/static/bundles
+		header {
+			defer
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=31536000"
+		}
+		file_server
+	}
+
+	handle /pawfishing* {
+		uri strip_prefix /pawfishing
+		root * /srv/static/pawfishing
+		header {
+			defer
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=31536000"
+		}
+		file_server
+	}
+
+	@jokeem path /jokeem /jokeem/*
+	handle @jokeem {
+		uri strip_prefix /jokeem
+		root * /srv/static/jokeem
+
+		header {
+			defer
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET, POST, OPTIONS, HEAD"
+			Access-Control-Allow-Headers "Range, Content-Type, Accept"
+			Access-Control-Expose-Headers "Content-Length, Content-Range"
+		}
+
+		@jokeemOptions method OPTIONS
+		respond @jokeemOptions 204
+
+		@jokeemJsBr path_regexp jokeem_js_br \.js\.br$
+		header @jokeemJsBr {
+			defer
+			Content-Encoding br
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+		}
+
+		@jokeemDataBr path_regexp jokeem_data_br \.data\.br$
+		header @jokeemDataBr {
+			defer
+			Content-Encoding br
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+		}
+
+		@jokeemWasmBr path_regexp jokeem_wasm_br \.wasm\.br$
+		header @jokeemWasmBr {
+			defer
+			Content-Encoding br
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		@jokeemJs path_regexp jokeem_js (?i)\.js$
+		header @jokeemJs {
+			defer
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=3600"
+		}
+
+		@jokeemWasm path_regexp jokeem_wasm \.wasm$
+		header @jokeemWasm {
+			defer
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		@jokeemStaticCache path_regexp jokeem_static_cache (?i)\.(jpg|jpeg|png|gif|ico|css|js|ogg|ttf|woff|woff2|bundle|json|hash)$
+		header @jokeemStaticCache {
+			defer
+			Cache-Control "public, immutable"
+			Access-Control-Allow-Origin *
+		}
+
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@meowu path /meowu /meowu/*
+	handle @meowu {
+		uri strip_prefix /meowu
+		root * /srv/static/meowu
+
+		header {
+			defer
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET, POST, OPTIONS, HEAD"
+			Access-Control-Allow-Headers "Range, Content-Type, Accept"
+			Access-Control-Expose-Headers "Content-Length, Content-Range"
+		}
+
+		@meowuApkOptions {
+			method OPTIONS
+			path_regexp meowu_apk_options (?i)\.apk$
+		}
+		header @meowuApkOptions {
+			defer
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+			Access-Control-Allow-Headers "Range, Content-Type"
+			Access-Control-Max-Age "1728000"
+			Content-Type "text/plain"
+		}
+		respond @meowuApkOptions 204
+
+		@meowuJsUnity path_regexp meowu_js_unity \.js\.unityweb$
+		header @meowuJsUnity {
+			defer
+			Content-Encoding gzip
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=3600"
+		}
+
+		@meowuWasmUnity path_regexp meowu_wasm_unity \.wasm\.unityweb$
+		header @meowuWasmUnity {
+			defer
+			Content-Encoding gzip
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=3600"
+		}
+
+		@meowuDataUnity path_regexp meowu_data_unity \.data\.unityweb$
+		header @meowuDataUnity {
+			defer
+			Content-Encoding gzip
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=3600"
+		}
+
+		@meowuJs path_regexp meowu_js (?i)\.js$
+		header @meowuJs {
+			defer
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+			Cache-Control "public, max-age=3600"
+		}
+
+		@meowuApk path_regexp meowu_apk (?i)\.apk$
+		header @meowuApk {
+			defer
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+			Access-Control-Allow-Headers "Range, Content-Type"
+			Accept-Ranges bytes
+		}
+
+		@meowuStaticCache path_regexp meowu_static_cache (?i)\.(jpg|jpeg|png|gif|ico|css|js|ogg|ttf|woff|woff2)$
+		header @meowuStaticCache {
+			defer
+			Cache-Control "public, immutable"
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuJsGz path_regexp meowu_js_gz \.js\.gz$
+		header @meowuJsGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuDataGz path_regexp meowu_data_gz \.(data|symbols\.json)\.gz$
+		header @meowuDataGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuWasm path_regexp meowu_wasm \.wasm$
+		header @meowuWasm {
+			defer
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuWasmGz path_regexp meowu_wasm_gz \.wasm\.gz$
+		header @meowuWasmGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuJsBr path_regexp meowu_js_br \.js\.br$
+		header @meowuJsBr {
+			defer
+			Content-Encoding br
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuDataBr path_regexp meowu_data_br \.(data|symbols\.json)\.br$
+		header @meowuDataBr {
+			defer
+			Content-Encoding br
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+		}
+
+		@meowuWasmBr path_regexp meowu_wasm_br \.wasm\.br$
+		header @meowuWasmBr {
+			defer
+			Content-Encoding br
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	handle {
+		root * /srv/static/nginx_html
+
+		@rootJsGz path_regexp root_js_gz \.js\.gz$
+		header @rootJsGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/javascript
+		}
+
+		@rootDataGz path_regexp root_data_gz \.(data|symbols\.json)\.gz$
+		header @rootDataGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/octet-stream
+		}
+
+		@rootWasm path_regexp root_wasm \.wasm$
+		header @rootWasm {
+			defer
+			Content-Type application/wasm
+		}
+
+		@rootWasmGz path_regexp root_wasm_gz \.wasm\.gz$
+		header @rootWasmGz {
+			defer
+			Content-Encoding gzip
+			Content-Type application/wasm
+		}
+
+		@rootJsBr path_regexp root_js_br \.js\.br$
+		header @rootJsBr {
+			defer
+			Content-Encoding br
+			Content-Type application/javascript
+			Access-Control-Allow-Origin *
+		}
+
+		@rootDataBr path_regexp root_data_br \.(data|symbols\.json)\.br$
+		header @rootDataBr {
+			defer
+			Content-Encoding br
+			Content-Type application/octet-stream
+			Access-Control-Allow-Origin *
+		}
+
+		@rootWasmBr path_regexp root_wasm_br \.wasm\.br$
+		header @rootWasmBr {
+			defer
+			Content-Encoding br
+			Content-Type application/wasm
+			Access-Control-Allow-Origin *
+		}
+
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

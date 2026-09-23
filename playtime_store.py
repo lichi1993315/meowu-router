@@ -74,8 +74,6 @@ CREATE INDEX IF NOT EXISTS idx_play_session_events_player_session
     ON play_session_events(user_id, player_session_id);
 CREATE INDEX IF NOT EXISTS idx_play_session_events_received
     ON play_session_events(received_at);
-CREATE INDEX IF NOT EXISTS idx_play_session_events_release_version
-    ON play_session_events(release_version);
 
 CREATE TABLE IF NOT EXISTS play_session_rollups (
     user_id TEXT NOT NULL,
@@ -139,12 +137,6 @@ CREATE INDEX IF NOT EXISTS idx_play_session_rollups_last_seen
     ON play_session_rollups(last_seen_at);
 CREATE INDEX IF NOT EXISTS idx_play_session_rollups_duration_source
     ON play_session_rollups(duration_source);
-CREATE INDEX IF NOT EXISTS idx_play_session_rollups_release_version
-    ON play_session_rollups(release_version);
-CREATE INDEX IF NOT EXISTS idx_play_session_rollups_activity_state
-    ON play_session_rollups(activity_state);
-CREATE INDEX IF NOT EXISTS idx_play_session_rollups_current_activity
-    ON play_session_rollups(current_activity);
 """
 
 
@@ -257,6 +249,18 @@ def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "play_session_rollups", "activity_threshold_afk_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "last_event_type", "TEXT")
     ensure_platform_columns(conn, ("play_session_events", "play_session_rollups"))
+    conn.executescript(
+        """
+        CREATE INDEX IF NOT EXISTS idx_play_session_events_release_version
+            ON play_session_events(release_version);
+        CREATE INDEX IF NOT EXISTS idx_play_session_rollups_release_version
+            ON play_session_rollups(release_version);
+        CREATE INDEX IF NOT EXISTS idx_play_session_rollups_activity_state
+            ON play_session_rollups(activity_state);
+        CREATE INDEX IF NOT EXISTS idx_play_session_rollups_current_activity
+            ON play_session_rollups(current_activity);
+        """
+    )
     conn.executescript(PLAYTIME_VIEW_SQL)
 
 

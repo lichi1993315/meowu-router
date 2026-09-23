@@ -1,11 +1,16 @@
 import asyncio
 import json
+import os
 import tempfile
 import time
 import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+from cryptography.fernet import Fernet
+from fastapi.testclient import TestClient
+
+from app.main import create_app
 from app.services import diagnostic_reports as reports
 
 
@@ -67,6 +72,31 @@ class DiagnosticReportsTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.accept("")
         with self.assertRaises(ValueError):
             reports.accept({"report_id": "x", "message": "x" * 140000}, {}, "now", 140000, self.path)
+
+    def test_encrypted_route_acknowledges_only_persisted_report(self):
+        key = Fernet.generate_key()
+        body = Fernet(key).encrypt(json.dumps({
+            "report_id": "route-error", "username": "阿澈", "message": "stack"
+        }).encode())
+        accept = reports.accept
+        with (
+            patch.dict(os.environ, {"PAW_FERNET_KEY": key.decode()}),
+            patch.object(reports, "accept", side_effect=lambda *args: accept(*args, path=self.path)),
+        ):
+            client = TestClient(create_app())
+            try:
+                for _ in range(2):
+                    response = client.post("/error_log", content=body, headers={
+                        "X-Encrypted": "true", "X-User-ID": "one", "Content-Type": "text/plain"
+                    })
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.json()["delivery"], "pending")
+                    with reports._connect(self.path) as db:
+                        rows = db.execute("SELECT body FROM reports").fetchall()
+                    self.assertEqual(len(rows), 1)
+                    self.assertEqual(json.loads(rows[0][0])["payload"]["username"], "阿澈")
+            finally:
+                client.close()
 
 
 if __name__ == "__main__":

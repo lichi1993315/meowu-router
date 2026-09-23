@@ -258,6 +258,302 @@ CREATE INDEX IF NOT EXISTS idx_gameplay_ai_calls_real_time ON gameplay_ai_calls(
 
 
 VIEW_SQL = """
+DROP VIEW IF EXISTS gameplay_behavior_events;
+CREATE VIEW IF NOT EXISTS gameplay_behavior_events AS
+WITH base AS (
+    SELECT
+        ge.*,
+        COALESCE(
+            NULLIF(ge.item_name, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.item_name') AS TEXT), ''),
+            ''
+        ) AS item_name_norm,
+        COALESCE(
+            NULLIF(ge.item_id, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.item_id') AS TEXT), ''),
+            ''
+        ) AS item_id_norm,
+        COALESCE(
+            NULLIF(ge.seed_name, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.seed_name') AS TEXT), ''),
+            NULLIF(ge.seed_id, ''),
+            ''
+        ) AS seed_name_norm,
+        COALESCE(
+            NULLIF(ge.crop_name, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.crop_name') AS TEXT), ''),
+            NULLIF(ge.crop_id, ''),
+            ''
+        ) AS crop_name_norm,
+        COALESCE(
+            NULLIF(ge.fish_name, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.fish.fish_name') AS TEXT), ''),
+            NULLIF(ge.fish_id, ''),
+            ''
+        ) AS fish_name_norm,
+        COALESCE(
+            NULLIF(ge.recipe_name, ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.recipe_name') AS TEXT), ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.dish_name') AS TEXT), ''),
+            NULLIF(ge.recipe_id, ''),
+            ''
+        ) AS recipe_name_norm,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.slot') AS TEXT), ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.part') AS TEXT), ''),
+            ''
+        ) AS outfit_part_norm,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.view_action') AS TEXT), ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.action') AS TEXT), ''),
+            ''
+        ) AS view_action_norm,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.pet_name') AS TEXT), ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.cat_name') AS TEXT), ''),
+            ''
+        ) AS cat_name_norm,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.pet_personality') AS TEXT), ''),
+            ''
+        ) AS cat_personality,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.pet_skin') AS TEXT), ''),
+            ''
+        ) AS cat_skin,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.content') AS TEXT), ''),
+            NULLIF(CAST(json_extract(ge.payload_json, '$.text') AS TEXT), ''),
+            ''
+        ) AS speech_content,
+        COALESCE(
+            NULLIF(CAST(json_extract(ge.payload_json, '$.detail') AS TEXT), ''),
+            ''
+        ) AS payload_detail
+    FROM gameplay_events ge
+),
+classified AS (
+    SELECT
+        base.*,
+        CASE
+            WHEN event_type = 'shop_purchase'
+                AND (
+                    lower(item_name_norm) LIKE 'upgradetable%'
+                    OR lower(item_name_norm) LIKE '%upgrade%'
+                    OR item_name_norm LIKE '%上限%'
+                    OR item_name_norm LIKE '%升级%'
+                    OR item_name_norm LIKE '%Lv%'
+                    OR item_name_norm LIKE '%执照%'
+                    OR item_name_norm LIKE '%加成%'
+                    OR item_name_norm LIKE '%耐久%'
+                    OR item_name_norm LIKE '%最多展示%'
+                )
+            THEN 1
+            ELSE 0
+        END AS is_upgrade_purchase
+    FROM base
+),
+mapped AS (
+    SELECT
+        source_file,
+        user_id,
+        session_id,
+        player_session_id,
+        is_dev,
+        client_version,
+        release_version,
+        game_day,
+        event_index,
+        imported_at,
+        event_type,
+        event_game_minutes,
+        event_real_time_iso,
+        actor_id,
+        actor_name,
+        actor_is_player,
+        island_level,
+        duration_minutes,
+        energy_cost,
+        meowu_output,
+        mounted_cats_count,
+        money_spent,
+        earned_money,
+        item_id_norm AS item_id,
+        item_name_norm AS item_name,
+        payload_json,
+        CASE
+            WHEN event_type IN ('farming_plant', 'farming_water', 'farming_harvest', 'farming_till') THEN '种地'
+            WHEN event_type = 'fishing_catch' THEN '钓鱼'
+            WHEN event_type IN (
+                'restaurant_order_accept',
+                'restaurant_order_taken',
+                'restaurant_cook',
+                'cooking_complete',
+                'cooking_completed',
+                'restaurant_serve',
+                'restaurant_served'
+            ) THEN '餐厅'
+            WHEN event_type IN ('player_equipment_changed', 'player_skin_changed') THEN '换装'
+            WHEN event_type = 'shop_purchase' AND is_upgrade_purchase = 1 THEN '购买升级项'
+            WHEN event_type IN ('shop_purchase', 'shop_sell') THEN '商店'
+            WHEN event_type = 'catalog_view' THEN '图鉴'
+            WHEN event_type = 'cat_detail_view' THEN '猫猫详情'
+            WHEN event_type = 'cat_conversation' THEN '和猫说话'
+            WHEN event_type IN ('player_sleep', 'sleep') THEN '睡觉'
+        END AS behavior_module,
+        CASE
+            WHEN event_type = 'farming_plant' THEN '播种'
+            WHEN event_type = 'farming_water' THEN '浇水'
+            WHEN event_type = 'farming_harvest' THEN '收获'
+            WHEN event_type = 'farming_till' THEN '开垦耕地'
+            WHEN event_type = 'fishing_catch' THEN '钓鱼'
+            WHEN event_type IN ('restaurant_order_accept', 'restaurant_order_taken') THEN '点单'
+            WHEN event_type IN ('restaurant_cook', 'cooking_complete', 'cooking_completed') THEN '做菜'
+            WHEN event_type IN ('restaurant_serve', 'restaurant_served') THEN '上菜'
+            WHEN event_type IN ('player_equipment_changed', 'player_skin_changed')
+                THEN COALESCE(NULLIF(outfit_part_norm, ''), 'unknown')
+            WHEN event_type = 'shop_purchase' THEN '购买'
+            WHEN event_type = 'shop_sell' THEN '出售'
+            WHEN event_type = 'catalog_view' THEN
+                CASE view_action_norm
+                    WHEN 'view_cat' THEN '猫'
+                    WHEN 'view_fish' THEN '鱼'
+                    WHEN 'view_crop' THEN '农作物'
+                    WHEN 'view_tutorial' THEN '教程'
+                    ELSE COALESCE(NULLIF(view_action_norm, ''), 'unknown')
+                END
+            WHEN event_type = 'cat_detail_view' THEN
+                CASE view_action_norm
+                    WHEN 'view_attribute' THEN '属性'
+                    WHEN 'view_trait' THEN '天赋'
+                    WHEN 'view_skill' THEN '技能'
+                    WHEN 'view_log' THEN '日志'
+                    WHEN 'view_diary' THEN '日记'
+                    ELSE COALESCE(NULLIF(view_action_norm, ''), 'unknown')
+                END
+            WHEN event_type = 'cat_conversation' THEN '说话'
+            WHEN event_type IN ('player_sleep', 'sleep') THEN '睡觉'
+        END AS behavior_action,
+        CASE
+            WHEN event_type = 'farming_plant'
+                THEN COALESCE(NULLIF(seed_name_norm, ''), 'unknown')
+            WHEN event_type IN ('farming_water', 'farming_harvest')
+                THEN COALESCE(NULLIF(crop_name_norm, ''), 'unknown')
+            WHEN event_type = 'farming_till'
+                THEN COALESCE(NULLIF(payload_detail, ''), '耕地')
+            WHEN event_type = 'fishing_catch'
+                THEN COALESCE(NULLIF(fish_name_norm, ''), 'unknown')
+            WHEN event_type IN (
+                'restaurant_order_accept',
+                'restaurant_order_taken',
+                'restaurant_cook',
+                'cooking_complete',
+                'cooking_completed',
+                'restaurant_serve',
+                'restaurant_served'
+            )
+                THEN COALESCE(NULLIF(recipe_name_norm, ''), NULLIF(item_name_norm, ''), NULLIF(payload_detail, ''), 'unknown')
+            WHEN event_type IN ('player_equipment_changed', 'player_skin_changed')
+                THEN COALESCE(NULLIF(item_name_norm, ''), 'unknown')
+            WHEN event_type IN ('shop_purchase', 'shop_sell')
+                THEN COALESCE(NULLIF(item_name_norm, ''), NULLIF(item_id_norm, ''), 'unknown')
+            WHEN event_type = 'catalog_view'
+                THEN '-'
+            WHEN event_type = 'cat_detail_view'
+                THEN COALESCE(NULLIF(cat_name_norm, ''), '-')
+            WHEN event_type = 'cat_conversation'
+                THEN '性格:' || COALESCE(NULLIF(cat_personality, ''), 'unknown')
+                    || ' 皮肤:' || COALESCE(NULLIF(cat_skin, ''), 'unknown')
+                    || ' 内容:' || COALESCE(NULLIF(speech_content, ''), 'unknown')
+            WHEN event_type IN ('player_sleep', 'sleep')
+                THEN '-'
+        END AS behavior_detail,
+        CASE
+            WHEN event_type = 'farming_till' THEN 0
+            ELSE 1
+        END AS is_behavior_stat,
+        CASE
+            WHEN event_type IN ('farming_water', 'fishing_catch', 'farming_till') THEN 1
+            ELSE 0
+        END AS is_energy_stat,
+        CASE
+            WHEN event_type = 'farming_water' THEN '浇水'
+            WHEN event_type = 'fishing_catch' THEN '钓鱼'
+            WHEN event_type = 'farming_till' THEN '开垦耕地'
+        END AS energy_action,
+        cat_personality,
+        cat_skin,
+        speech_content,
+        view_action_norm AS view_action,
+        CASE
+            WHEN event_type IN ('farming_plant', 'farming_water', 'farming_harvest', 'farming_till') THEN 10
+            WHEN event_type = 'fishing_catch' THEN 20
+            WHEN event_type IN (
+                'restaurant_order_accept',
+                'restaurant_order_taken',
+                'restaurant_cook',
+                'cooking_complete',
+                'cooking_completed',
+                'restaurant_serve',
+                'restaurant_served'
+            ) THEN 30
+            WHEN event_type IN ('player_equipment_changed', 'player_skin_changed') THEN 40
+            WHEN event_type = 'shop_purchase' AND is_upgrade_purchase = 1 THEN 55
+            WHEN event_type IN ('shop_purchase', 'shop_sell') THEN 50
+            WHEN event_type = 'catalog_view' THEN 60
+            WHEN event_type = 'cat_detail_view' THEN 70
+            WHEN event_type = 'cat_conversation' THEN 80
+            WHEN event_type IN ('player_sleep', 'sleep') THEN 90
+            ELSE 999
+        END AS behavior_sort_order
+    FROM classified
+)
+SELECT
+    source_file,
+    user_id,
+    session_id,
+    player_session_id,
+    is_dev,
+    client_version,
+    release_version,
+    game_day,
+    event_index,
+    imported_at,
+    event_type,
+    event_game_minutes,
+    event_real_time_iso,
+    actor_id,
+    actor_name,
+    actor_is_player,
+    island_level,
+    duration_minutes,
+    energy_cost,
+    meowu_output,
+    mounted_cats_count,
+    money_spent,
+    earned_money,
+    item_id,
+    item_name,
+    payload_json,
+    behavior_module,
+    behavior_action,
+    behavior_detail,
+    behavior_module || '/' || behavior_action
+        || CASE
+            WHEN COALESCE(NULLIF(behavior_detail, ''), '-') = '-' THEN ''
+            ELSE '/' || behavior_detail
+        END AS behavior_label,
+    is_behavior_stat,
+    is_energy_stat,
+    energy_action,
+    cat_personality,
+    cat_skin,
+    speech_content,
+    view_action,
+    behavior_sort_order
+FROM mapped
+WHERE behavior_module IS NOT NULL;
+
 DROP VIEW IF EXISTS gameplay_player_summary;
 CREATE VIEW IF NOT EXISTS gameplay_player_summary AS
 WITH player_sessions AS (
