@@ -53,6 +53,12 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
         payload = dict(self.payload, **changes)
         return feedback.accept(payload, self.image, "owner", "ip", self.path)
 
+    def test_reproduction_optional_and_bounded(self):
+        self.assertEqual(feedback.validate(self.payload, b"").get("reproduction", ""), "")
+        self.assertEqual(feedback.validate(dict(self.payload, reproduction="  顶着猫在河里钓鱼  "), b"")["reproduction"], "顶着猫在河里钓鱼")
+        with self.assertRaises(feedback.FeedbackRejected):
+            feedback.validate(dict(self.payload, reproduction="x" * 2001), b"")
+
     def test_atomic_receipt_and_duplicate(self):
         self.assertEqual(self.accept()["status"], "accepted")
         self.assertEqual(self.accept()["status"], "accepted")

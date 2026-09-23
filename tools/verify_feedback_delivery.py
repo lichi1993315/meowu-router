@@ -24,7 +24,7 @@ async def main():
     for name in ("APP_TOKEN", "TABLE_ID"):
         os.environ["FEISHU_FEEDBACK_" + name] = os.environ["FEISHU_FEEDBACK_TEST_" + name]
     report_id = uuid.uuid4().hex
-    payload = {"feedback_id": report_id, "description": "验证：截图反馈真实附件与重试去重测试", "platform": "integration-test", "version": "feedback-v1-validation"}
+    payload = {"feedback_id": report_id, "description": "验证：截图反馈真实附件与重试去重测试", "platform": "integration-test", "version": "feedback-v1-validation", "reproduction": "顶着一只猫，14:00–15:00 时在河里钓鱼"}
     screenshot = Path(sys.argv[1]).read_bytes()
     metadata = Fernet(os.environ["PAW_FERNET_KEY"].encode()).encrypt(json.dumps(payload).encode()).decode()
     with tempfile.TemporaryDirectory() as folder:
@@ -45,6 +45,7 @@ async def main():
             await remote.authenticate()
             body = await remote.call("GET", remote.records + "/" + row["record_id"])
             fields = body["data"]["record"]["fields"]
+            assert fields["复现办法"] == payload["reproduction"]
             assert fields["截图"][0]["file_token"] == row["file_token"]
             response = await client.get(feedback.API + "/drive/v1/medias/" + row["file_token"] + "/download",
                 headers={"Authorization": "Bearer " + remote.token}, follow_redirects=True)

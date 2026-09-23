@@ -57,7 +57,7 @@ def validate(payload: dict, image: bytes) -> dict:
     if not isinstance(payload, dict):
         raise FeedbackRejected(400, "Invalid metadata")
     result = {}
-    limits = {"feedback_id": 32, "description": 2000, "captured_at": 64,
+    limits = {"feedback_id": 32, "description": 2000, "reproduction": 2000, "captured_at": 64,
               "version": 160, "platform": 32, "scene": 160, "resolution": 32,
               "player_id": 128, "session_id": 128, "errors": 32768}
     for field, limit in limits.items():
@@ -73,6 +73,9 @@ def validate(payload: dict, image: bytes) -> dict:
         raise FeedbackRejected(413, "Screenshot too large")
     if image and (not image.startswith(b"\xff\xd8\xff") or not image.endswith(b"\xff\xd9")):
         raise FeedbackRejected(400, "Screenshot must be JPEG")
+    # Empty optional field preserves fingerprints of reports accepted before this field existed.
+    if not result["reproduction"]:
+        result.pop("reproduction")
     return result
 
 
@@ -163,7 +166,7 @@ class FeishuFeedbackClient:
     async def create(self, row):
         payload = json.loads(row["payload"])
         fields = {"反馈编号": row["id"], "提交时间": int(row["received"] * 1000),
-                  "截图时间": payload["captured_at"], "问题描述": payload["description"],
+                  "截图时间": payload["captured_at"], "问题描述": payload["description"], "复现办法": payload.get("reproduction", ""),
                   "游戏版本": payload["version"], "平台": payload["platform"],
                   "场景": payload["scene"], "分辨率": payload["resolution"],
                   "玩家标识": payload["player_id"] or row["owner"],
