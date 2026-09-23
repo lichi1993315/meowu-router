@@ -70,7 +70,7 @@ class AnalyticsTests(unittest.TestCase):
                     for target in panel.get('targets',[]):
                         sql=target.get('queryText')
                         if not sql:continue
-                        replacements={'${client_platform:sqlstring}':platform,'${release_version:sqlstring}':"'__all__'",'${test_data}':'auto','${user_id:sqlstring}':"''",'${session_id:sqlstring}':"''",'${llm_request_id:sqlstring}':"''",'${page:sqlstring}':"'0'",'${theater_event_id:sqlstring}':"''",'${min_invitations:sqlstring}':"'10'",'${__from}':'1789257600000','${__to}':'1789862400000'}
+                        replacements={'${client_platform:sqlstring}':platform,'${release_version:sqlstring}':"'__all__'",'${test_data}':'auto','${user_id:sqlstring}':"''",'${session_id:sqlstring}':"''",'${llm_request_id:sqlstring}':"''",'${page:sqlstring}':"'0'",'${theater_event_id:sqlstring}':"''",'${min_invitations:sqlstring}':"'10'",'${behavior_period}':'all','${sort_field}':'latest_login','${sort_direction}':'desc','${event_type:sqlstring}':"''",'${__from}':'1789257600000','${__to}':'1789862400000'}
                         for key,value in replacements.items():sql=sql.replace(key,value)
                         with self.subTest(board=board['uid'],panel=panel['title'],platform=platform):self.db.execute(sql).fetchall()
 

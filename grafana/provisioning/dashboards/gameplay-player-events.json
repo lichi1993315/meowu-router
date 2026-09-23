@@ -1,0 +1,330 @@
+{
+  "uid": "gameplay-player-events",
+  "title": "玩家 · 事件一览",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "tags": [
+    "PawFishing",
+    "analytics-v2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_SQLITE",
+        "type": "datasource",
+        "query": "frser-sqlite-datasource",
+        "current": {
+          "text": "SQLite",
+          "value": "SQLite"
+        },
+        "hide": 2
+      },
+      {
+        "name": "client_platform",
+        "label": "客户端平台",
+        "type": "custom",
+        "query": "WebGL : webgl,Windows Player : windows,Unity Editor : editor,其他客户端 : other,未知/历史未上报 : unknown,无客户端归属 : unattributed",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": [
+            "WebGL",
+            "Windows Player",
+            "未知/历史未上报"
+          ],
+          "value": [
+            "webgl",
+            "windows",
+            "unknown"
+          ]
+        }
+      },
+      {
+        "name": "release_version",
+        "label": "发布版本",
+        "type": "query",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "test_data",
+        "label": "测试数据",
+        "type": "custom",
+        "query": "按平台自动 : auto,排除 : exclude,包含 : include,仅测试 : only",
+        "current": {
+          "text": "按平台自动",
+          "value": "auto"
+        }
+      },
+      {
+        "name": "user_id",
+        "label": "玩家 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "session_id",
+        "label": "会话 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "llm_request_id",
+        "label": "AI 请求 ID",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "page",
+        "label": "页码（从0起，每页200条）",
+        "type": "textbox",
+        "current": {
+          "text": "0",
+          "value": "0"
+        }
+      },
+      {
+        "name": "behavior_period",
+        "label": "行为范围",
+        "type": "custom",
+        "query": "历史累计 : all,所选时间 : range",
+        "current": {
+          "text": "历史累计",
+          "value": "all"
+        }
+      },
+      {
+        "name": "event_type",
+        "label": "事件类型（空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "sort_field",
+        "label": "排序字段",
+        "type": "custom",
+        "query": "游玩时长 : play_seconds,游戏日数 : play_days,岛屿等级 : island_level,首次登录 : first_login,最新登录 : latest_login,金币余额 : money",
+        "current": {
+          "text": "最新登录",
+          "value": "latest_login"
+        },
+        "hide": 2
+      },
+      {
+        "name": "sort_direction",
+        "label": "排序方向",
+        "type": "custom",
+        "query": "倒序 : desc,正序 : asc",
+        "current": {
+          "text": "倒序",
+          "value": "desc"
+        },
+        "hide": 2
+      },
+      {
+        "name": "theater_event_id",
+        "label": "小剧场事件 ID",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "min_invitations",
+        "label": "Top 5 最少邀请数",
+        "type": "textbox",
+        "current": {
+          "text": "10",
+          "value": "10"
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "总览",
+      "type": "link",
+      "url": "/d/gameplay-overview",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家一览",
+      "type": "link",
+      "url": "/d/gameplay-players",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "基础数据",
+      "type": "link",
+      "url": "/d/gameplay-player-detail",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "日期一览",
+      "type": "link",
+      "url": "/d/gameplay-player-days",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "事件一览",
+      "type": "link",
+      "url": "/d/gameplay-player-events",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "其他运营报表",
+      "type": "link",
+      "url": "/d/gameplay-retention",
+      "includeVars": true,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 999,
+      "title": "统计口径与历史数据",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "**累计指标按玩家去重；当前状态按最新快照，空值=未采集。** 游戏日按玩家+存档+游戏日去重，旧数据缺存档标识不猜测。金币为当前余额。行为默认历史累计，可切换期间；未知平台保留。新指标需新版客户端/服务器。体力使用实际扣除事件；旧版失败钓鱼无法补采。"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "未采集"
+        }
+      }
+    },
+    {
+      "id": 100,
+      "title": "全部事件 metadata / payload",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "累计按玩家去重；当前状态取最新快照。缺失显示未采集，数值零保留。行为可切换期间，日期为北京时间。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "SELECT * FROM (WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>'' AND (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')='' OR user_id=COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')))),\n    events AS (SELECT * FROM e WHERE (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>'' AND (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')='' OR user_id=COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')))) SELECT occurred_at 时间,archive_id 存档,game_day 游戏日,event_type 类型,event_id,session_id,metadata_json metadata,payload_json payload,COUNT(*) OVER() 总行数 FROM events WHERE (COALESCE(json_extract(json_array(${event_type:sqlstring}),'$[0]'),'')='' OR event_type=COALESCE(json_extract(json_array(${event_type:sqlstring}),'$[0]'),'')) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC LIMIT 200 OFFSET (CAST(COALESCE(json_extract(json_array(${page:sqlstring}),'$[0]'),'0') AS INTEGER)*200)) WHERE COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>''",
+          "rawQueryText": "SELECT * FROM (WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>'' AND (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')='' OR user_id=COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')))),\n    events AS (SELECT * FROM e WHERE (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>'' AND (COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')='' OR user_id=COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')))) SELECT occurred_at 时间,archive_id 存档,game_day 游戏日,event_type 类型,event_id,session_id,metadata_json metadata,payload_json payload,COUNT(*) OVER() 总行数 FROM events WHERE (COALESCE(json_extract(json_array(${event_type:sqlstring}),'$[0]'),'')='' OR event_type=COALESCE(json_extract(json_array(${event_type:sqlstring}),'$[0]'),'')) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC LIMIT 200 OFFSET (CAST(COALESCE(json_extract(json_array(${page:sqlstring}),'$[0]'),'0') AS INTEGER)*200)) WHERE COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>''"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          },
+          "noValue": "未采集"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 9
+      }
+    }
+  ]
+}

@@ -32,3 +32,6 @@ ENV METRICS_PORT=9090
 ENV SCAN_INTERVAL=30
 
 CMD ["python", "metrics_exporter.py"]
+
+# Canonical analytics projection shared by incremental intake and snapshot importer.
+COPY analytics_facts.py player_analytics.py /app/

@@ -1376,7 +1376,8 @@ def import_sample(
             if not isinstance(actor, dict):
                 actor = {}
 
-            meta = {**meta, "event_id": event.get("event_id"), "sequence": event.get("sequence"), "schema_version": event.get("schema_version")}
+            meta = {**event, **meta}
+            meta.pop("payload", None)  # 保留完整事件信封；payload 单独存储。
             fish = payload.get("fish") or {}
             rod = payload.get("rod") or {}
             size = payload.get("size") or {}
@@ -1630,6 +1631,8 @@ def import_sample(
     for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
         conn.execute(f"UPDATE {table} SET client_platform=?, is_development_build=? WHERE source_file=? AND user_id=? AND session_id=?",
                      (metadata["client_platform"], metadata["is_development_build"], source_file, user_id, session_id))
+    from analytics_facts import project_imported
+    project_imported(conn, 'source_file=? AND user_id=? AND session_id=?', (source_file,user_id,session_id))
     return 1
 
 

@@ -27,21 +27,8 @@ WHERE rn=1 AND r.user_id NOT IN ('','unknown','anonymous','anonymous_user');
 
 DROP VIEW IF EXISTS analytics_events;
 CREATE VIEW analytics_events AS
-SELECT g.user_id,g.session_id,g.player_session_id,g.client_platform,g.client_version,g.release_version,
-       g.is_development_build,g.event_real_time_iso occurred_at,g.imported_at received_at,g.event_type,
-       g.actor_id,g.actor_is_player,g.game_day,g.event_index sequence,g.payload_json,
-       json_extract(g.meta_json,'$.event_id') event_id,COALESCE(u.is_developer,0) is_developer
-FROM gameplay_events g LEFT JOIN user_sessions u ON g.user_id=u.user_id
-UNION ALL
-SELECT l.user_id,l.session_id,l.player_session_id,l.client_platform,l.client_version,
-       COALESCE((SELECT release_version FROM play_session_rollups r WHERE r.user_id=l.user_id AND r.session_id=l.session_id),l.client_version),
-       l.is_development_build,l.occurred_at,l.received_at,l.event_type,
-       CAST(json_extract(l.event_json,'$.actor.agent_id') AS TEXT),
-       json_extract(l.event_json,'$.actor.is_player'),json_extract(l.event_json,'$.event_game_day'),
-       json_extract(l.event_json,'$.sequence'),COALESCE(json_extract(l.event_json,'$.payload'),'{}'),
-       l.event_id,COALESCE(u.is_developer,0)
-FROM gameplay_live_events l LEFT JOIN user_sessions u ON l.user_id=u.user_id
-WHERE NOT EXISTS (SELECT 1 FROM gameplay_events g WHERE json_extract(g.meta_json,'$.event_id')=l.event_id);
+SELECT f.*,COALESCE(u.is_developer,0) is_developer FROM analytics_event_facts f
+LEFT JOIN user_sessions u ON f.user_id=u.user_id;
 
 DROP VIEW IF EXISTS analytics_activity;
 CREATE VIEW analytics_activity AS
@@ -77,4 +64,8 @@ def ensure_analytics_schema(conn):
                                    "conversations", "play_session_events", "play_session_rollups"))
     conn.execute("CREATE INDEX IF NOT EXISTS idx_gameplay_event_identity ON gameplay_events(json_extract(meta_json,'$.event_id'))")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_gameplay_event_time ON gameplay_events(event_real_time_iso,client_platform)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_live_user_kind_time ON gameplay_live_events(user_id,event_type,occurred_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_gameplay_user_kind_time ON gameplay_events(user_id,event_type,event_real_time_iso)")
+    from analytics_facts import migrate_facts
+    migrate_facts(conn)
     conn.executescript(VIEWS)

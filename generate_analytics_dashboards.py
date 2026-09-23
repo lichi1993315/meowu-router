@@ -145,6 +145,8 @@ def build():
         {'name':'min_invitations','label':'Top 5 最少邀请数','type':'textbox','current':{'text':'10','value':'10'}},
     ])
     result['gameplay-theater.json'] = theater
+    from player_analytics import extend_dashboards
+    extend_dashboards(result, dashboard, panel, FILTER, USER, LIMIT, time_range)
     return result
 
 if __name__=='__main__':
