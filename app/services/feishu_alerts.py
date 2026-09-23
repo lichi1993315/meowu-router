@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import json
+import hashlib
 import os
 import sqlite3
 from pathlib import Path
@@ -736,7 +737,7 @@ async def _get_tenant_access_token(client: httpx.AsyncClient) -> str | None:
     return data.get("tenant_access_token")
 
 
-async def _send_text_message(client: httpx.AsyncClient, token: str, text: str) -> bool:
+async def _send_text_message(client: httpx.AsyncClient, token: str, text: str, report_id: str | None = None) -> bool:
     receive_id_type = os.getenv("FEISHU_RECEIVE_ID_TYPE", "chat_id").strip() or "chat_id"
     response = await client.post(
         f"{_MESSAGE_URL}?receive_id_type={receive_id_type}",
@@ -748,6 +749,7 @@ async def _send_text_message(client: httpx.AsyncClient, token: str, text: str) -
             "receive_id": _env("FEISHU_CHAT_ID"),
             "msg_type": "text",
             "content": json.dumps({"text": text}, ensure_ascii=False),
+            **({"uuid": hashlib.sha256(report_id.encode()).hexdigest()[:32]} if report_id else {}),
         },
     )
     response.raise_for_status()
@@ -829,17 +831,17 @@ async def send_error_log_alert(
     headers: dict[str, str],
     received_at: str,
     decrypted_body_bytes: int,
-) -> None:
+) -> bool:
     if not _is_enabled():
-        return
+        return False
 
     if _is_unity_dev_payload(payload, headers):
-        return
+        return True
 
     missing = _missing_config()
     if missing:
         log(f"[WARNING] Feishu error_log alert skipped; missing env: {', '.join(missing)}")
-        return
+        return False
 
     text = _build_error_log_alert_text(
         payload=payload,
@@ -853,11 +855,15 @@ async def send_error_log_alert(
         async with httpx.AsyncClient(timeout=timeout) as client:
             token = await _get_tenant_access_token(client)
             if not token:
-                return
+                return False
 
-            await _send_text_message(client, token, text)
+            report_id = payload.get("report_id")
+            if report_id:
+                return await _send_text_message(client, token, text, str(headers.get("x-user-id", "")) + ":" + report_id)
+            return await _send_text_message(client, token, text)
     except Exception as exc:
         log(f"[WARNING] Feishu error_log alert failed: {exc}")
+        return False
 
 
 def _build_logoff_report_summary(

@@ -16,6 +16,18 @@ from app.utils.crypto import FernetConfigError, decrypt_payload
 router = APIRouter()
 
 
+@router.post("/v1/events/batch")
+async def gameplay_event_batch(request: Request):
+    """Persist incremental gameplay events before acknowledging the outbox batch."""
+    from app.core.config import DB_PATH
+    from telemetry_events import accept_batch
+    payload = await read_encrypted_game_telemetry_payload(request)
+    try:
+        return await asyncio.to_thread(accept_batch, DB_PATH, payload, dict(request.headers))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 def _log_game_telemetry_request(
     request: Request,
     *,
@@ -258,6 +270,14 @@ async def upload_error_log(request: Request):
         raw_body = _payload_to_body(payload)
         user_id = request.headers.get("x-user-id")
         headers = dict(request.headers)
+
+        if payload.get("report_id") is not None:
+            from app.services.diagnostic_reports import accept
+            try:
+                result = await asyncio.to_thread(accept, payload, headers, datetime.now().isoformat(), len(raw_body))
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            return JSONResponse(content=result, status_code=200)
 
         sessions.ensure_error_log_dir()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]

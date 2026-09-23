@@ -5,6 +5,7 @@ import httpx
 from fastapi import FastAPI
 
 from app.services.blacklist import sync_blacklist_loop
+from app.services.diagnostic_reports import delivery_loop
 
 
 @asynccontextmanager
@@ -17,7 +18,11 @@ async def lifespan(app: FastAPI):
 
     sync_task = asyncio.create_task(sync_blacklist_loop(app.state))
 
-    yield
-
-    sync_task.cancel()
-    await app.state.http_client.aclose()
+    diagnostic_task = asyncio.create_task(delivery_loop())
+    try:
+        yield
+    finally:
+        sync_task.cancel()
+        diagnostic_task.cancel()
+        await asyncio.gather(sync_task, diagnostic_task, return_exceptions=True)
+        await app.state.http_client.aclose()

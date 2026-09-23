@@ -26,6 +26,8 @@ from typing import Any, Iterable
 
 from playtime_store import ensure_playtime_schema
 from version_utils import release_version_from_client_version
+from telemetry_platform import client_metadata, ensure_platform_columns
+from telemetry_analytics import ensure_analytics_schema
 
 
 DB_PATH = Path(os.getenv("DB_PATH", "/app/data/conversations.db"))
@@ -897,6 +899,7 @@ def sample_from_session_record(session_record: dict[str, Any]) -> dict[str, Any]
         or "unknown"
     )
     sample = {
+        **client_metadata(payload, headers),
         "user_id": user_id,
         "username": payload.get("username"),
         "player_name": payload.get("username"),
@@ -1077,6 +1080,7 @@ def import_sample(
             if not isinstance(actor, dict):
                 actor = {}
 
+            meta = {**meta, "event_id": event.get("event_id"), "sequence": event.get("sequence"), "schema_version": event.get("schema_version")}
             fish = payload.get("fish") or {}
             rod = payload.get("rod") or {}
             size = payload.get("size") or {}
@@ -1123,7 +1127,7 @@ def import_sample(
                         release_version,
                         as_int(event.get("event_game_day")) or game_day,
                         as_int(event.get("event_game_minutes")),
-                        event.get("timestamp"),
+                        event.get("event_real_time_iso") or event.get("timestamp"),
                         actor.get("agent_id"),
                         actor.get("agent_name") or actor.get("agent_id"),
                         model,
@@ -1168,7 +1172,7 @@ def import_sample(
                     imported_at,
                     event_type,
                     as_int(event.get("event_game_minutes")),
-                    event.get("timestamp"),
+                    event.get("event_real_time_iso") or event.get("timestamp"),
                     actor.get("agent_id"),
                     actor.get("agent_name") or actor.get("agent_id"),
                     1 if actor.get("is_player") else 0,
@@ -1326,6 +1330,10 @@ def import_sample(
         """,
         ai_call_rows,
     )
+    metadata = client_metadata(sample)
+    for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
+        conn.execute(f"UPDATE {table} SET client_platform=?, is_development_build=? WHERE source_file=? AND user_id=? AND session_id=?",
+                     (metadata["client_platform"], metadata["is_development_build"], source_file, user_id, session_id))
     return 1
 
 
@@ -1355,6 +1363,7 @@ def backfill_release_versions(conn: sqlite3.Connection, table: str) -> None:
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
+    ensure_platform_columns(conn, ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"))
     ensure_playtime_schema(conn)
     ensure_column(conn, "gameplay_sessions", "player_session_id", "TEXT")
     ensure_column(conn, "gameplay_sessions", "is_dev", "INTEGER DEFAULT 0")
@@ -1582,6 +1591,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     )
 
     conn.executescript(VIEW_SQL)
+
+    ensure_analytics_schema(conn)
 
 
 def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:
