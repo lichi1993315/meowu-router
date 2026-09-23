@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from version_utils import release_version_from_client_version
-from telemetry_platform import client_metadata, ensure_platform_columns
+from telemetry_platform import client_metadata, ensure_platform_columns, ensure_channel_schema, record_session_channel
 
 
 HEARTBEAT_STALE_AFTER_SEC = 180
@@ -193,6 +193,7 @@ def ensure_column(conn: sqlite3.Connection, table: str, column: str, definition:
 
 
 def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
+    ensure_channel_schema(conn)
     conn.executescript(PLAYTIME_SCHEMA_SQL)
     ensure_column(conn, "play_session_events", "release_version", "TEXT")
     ensure_column(conn, "play_session_events", "foreground_duration_sec", "REAL")
@@ -849,6 +850,7 @@ def record_play_session_event(
     )
     # Only a fresh login may start a cohort. Heartbeats, historical retries and
     # logoff imports must not relabel a session that began before activation.
+    record_session_channel(conn, event["user_id"], event["session_id"], event)
     if event_type == "login":
         conn.execute("""
             INSERT OR IGNORE INTO analytics_session_playtests(user_id,session_id,playtest_id)

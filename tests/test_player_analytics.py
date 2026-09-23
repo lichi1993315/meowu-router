@@ -22,7 +22,7 @@ class PlayerAnalyticsTests(unittest.TestCase):
     def query(self,board,pid,user='',**overrides):
         dashboard=build()[board+'.json'];p=next(p for p in dashboard['panels'] if p['id']==pid)
         sql=p['targets'][0]['queryText']
-        values={'client_platform:sqlstring':"'webgl','windows','unknown'",'release_version:sqlstring':"'__all__'",'test_data':'auto','playtest_id':'all',
+        values={'client_platform:sqlstring':"'webgl','windows','unknown'",'distribution_channel:sqlstring':"'__all__'",'release_version:sqlstring':"'__all__'",'test_data':'auto','playtest_id':'all',
                 'user_id:sqlstring':"'"+user+"'" if user else '', 'session_id:sqlstring':'','llm_request_id:sqlstring':'',
                 'page:sqlstring':"'0'",'behavior_period':'all','sort_field':'latest_login','sort_direction':'desc',
                 'event_type:sqlstring':'','theater_event_id:sqlstring':'','min_invitations:sqlstring':"'10'",'__from':'0','__to':'2000000000000'}

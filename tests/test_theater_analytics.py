@@ -25,8 +25,8 @@ class TheaterAnalyticsTests(AnalyticsTests):
     def query(self, panel_id, **replacements):
         board = build()['gameplay-theater.json']
         sql = next(p for p in board['panels'] if p['id']==panel_id)['targets'][0]['queryText']
-        values = {'${client_platform:sqlstring}':"'unknown'", '${release_version:sqlstring}':"'__all__'",
-                  '${test_data}':'auto', '${user_id:sqlstring}':"''", '${session_id:sqlstring}':"''",
+        values = {'${client_platform:sqlstring}':"'unknown'", '${distribution_channel:sqlstring}':"'__all__'",'${release_version:sqlstring}':"'__all__'",
+                  '${playtest_id}':'all','${test_data}':'auto', '${user_id:sqlstring}':"''", '${session_id:sqlstring}':"''",
                   '${theater_event_id:sqlstring}':"''", '${min_invitations:sqlstring}':"'10'",
                   '${page:sqlstring}':"'0'", '${__from}':'1789257600000', '${__to}':'1789862400000'}
         values.update(replacements)

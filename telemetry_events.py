@@ -2,13 +2,14 @@
 import json
 import sqlite3
 from datetime import datetime, timezone
-from telemetry_platform import client_metadata
+from telemetry_platform import client_metadata, ensure_channel_schema, record_session_channel
 from analytics_facts import ensure_facts, upsert_fact
 from version_utils import release_version_from_client_version
 
 
 def ensure_event_schema(conn):
     ensure_facts(conn)
+    ensure_channel_schema(conn)
     conn.execute("""CREATE TABLE IF NOT EXISTS gameplay_live_events (
         event_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, session_id TEXT NOT NULL,
         player_session_id TEXT, client_platform TEXT NOT NULL, client_version TEXT,
@@ -55,6 +56,7 @@ def accept_batch(db_path, payload, headers):
                 raise ValueError("event id belongs to a different session")
             if existing and existing != (user, session):
                 raise ValueError("event id belongs to a different session")
+        record_session_channel(conn, user, session, metadata)
         conn.executemany("INSERT OR IGNORE INTO gameplay_live_events VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
         for event in events:
             upsert_fact(conn,event,user,session,metadata,received,payload.get('player_session_id'),payload.get('client_version'),payload.get('release_version') or release_version_from_client_version(payload.get('client_version')))

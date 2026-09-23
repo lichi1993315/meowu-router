@@ -26,7 +26,7 @@ from typing import Any, Iterable
 
 from playtime_store import ensure_playtime_schema
 from version_utils import release_version_from_client_version
-from telemetry_platform import client_metadata, ensure_platform_columns
+from telemetry_platform import client_metadata, ensure_platform_columns, record_session_channel
 from telemetry_analytics import ensure_analytics_schema
 
 
@@ -1634,6 +1634,7 @@ def import_sample(
         ai_call_rows,
     )
     metadata = client_metadata(sample)
+    record_session_channel(conn, user_id, session_id, metadata)
     for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
         conn.execute(f"UPDATE {table} SET client_platform=?, is_development_build=? WHERE source_file=? AND user_id=? AND session_id=?",
                      (metadata["client_platform"], metadata["is_development_build"], source_file, user_id, session_id))
