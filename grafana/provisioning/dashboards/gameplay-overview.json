@@ -215,7 +215,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "noValue": "未采集"
+          "noValue": "未采集",
+          "unit": "none"
         }
       }
     },
@@ -238,7 +239,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -255,8 +256,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -272,7 +273,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -289,7 +290,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -328,7 +329,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -345,8 +346,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -362,7 +363,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -379,7 +380,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -418,7 +419,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -435,8 +436,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -452,7 +453,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -469,7 +470,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -508,7 +509,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -525,8 +526,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -542,7 +543,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -559,7 +560,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -598,7 +599,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -615,8 +616,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -632,7 +633,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -649,7 +650,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -688,7 +689,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -705,8 +706,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -722,7 +723,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -739,7 +740,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -778,7 +779,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -795,8 +796,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -812,7 +813,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -829,7 +830,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -868,7 +869,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -885,8 +886,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -902,7 +903,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -919,7 +920,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -958,7 +959,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -975,8 +976,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -992,7 +993,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1009,7 +1010,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1048,7 +1049,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1065,8 +1066,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1082,7 +1083,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1099,7 +1100,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1138,7 +1139,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1155,8 +1156,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1172,7 +1173,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1189,7 +1190,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1228,7 +1229,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1245,8 +1246,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1262,7 +1263,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1279,7 +1280,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1318,7 +1319,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1335,8 +1336,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1352,7 +1353,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1369,7 +1370,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1408,7 +1409,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1425,8 +1426,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1442,7 +1443,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1459,7 +1460,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1498,7 +1499,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1515,8 +1516,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1532,7 +1533,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1549,7 +1550,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1588,7 +1589,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1605,8 +1606,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1622,7 +1623,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1639,7 +1640,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1672,13 +1673,13 @@
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE 1),\n    events AS (SELECT * FROM e WHERE 1) SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数 FROM (\n            SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'\n            UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old\n            WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0\n            AND NOT(event_type='building_placed' AND json_extract(payload_json,'$.building_id')=6001\n                AND json_extract(payload_json,'$.position_x') IS NOT NULL\n                AND EXISTS(SELECT 1 FROM e0 till WHERE till.user_id=old.user_id AND till.session_id=old.session_id AND till.game_day=old.game_day\n                    AND till.event_type='farming_till' AND ABS(till.sequence-old.sequence)<=1 AND till.energy_cost=old.energy_cost\n                    AND json_extract(till.payload_json,'$.position_x')=json_extract(old.payload_json,'$.position_x')\n                    AND json_extract(till.payload_json,'$.position_y')=json_extract(old.payload_json,'$.position_y')))\n        ) GROUP BY action ORDER BY 体力 DESC,行为 LIMIT 5",
-          "rawQueryText": "WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE 1),\n    events AS (SELECT * FROM e WHERE 1) SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数 FROM (\n            SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'\n            UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old\n            WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0\n            AND NOT(event_type='building_placed' AND json_extract(payload_json,'$.building_id')=6001\n                AND json_extract(payload_json,'$.position_x') IS NOT NULL\n                AND EXISTS(SELECT 1 FROM e0 till WHERE till.user_id=old.user_id AND till.session_id=old.session_id AND till.game_day=old.game_day\n                    AND till.event_type='farming_till' AND ABS(till.sequence-old.sequence)<=1 AND till.energy_cost=old.energy_cost\n                    AND json_extract(till.payload_json,'$.position_x')=json_extract(old.payload_json,'$.position_x')\n                    AND json_extract(till.payload_json,'$.position_y')=json_extract(old.payload_json,'$.position_y')))\n        ) GROUP BY action ORDER BY 体力 DESC,行为 LIMIT 5"
+          "queryText": "WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE 1),\n    events AS (SELECT * FROM e WHERE 1) SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数 FROM (\n            SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'\n            UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old\n            WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0\n            AND NOT(event_type='building_placed' AND COALESCE(json_extract(payload_json,'$.building_id')=6001,0)\n                AND json_extract(payload_json,'$.position_x') IS NOT NULL\n                AND EXISTS(SELECT 1 FROM e0 till WHERE till.user_id=old.user_id AND till.session_id=old.session_id AND till.game_day=old.game_day\n                    AND till.event_type='farming_till' AND ABS(till.sequence-old.sequence)<=1 AND till.energy_cost=old.energy_cost\n                    AND json_extract(till.payload_json,'$.position_x')=json_extract(old.payload_json,'$.position_x')\n                    AND json_extract(till.payload_json,'$.position_y')=json_extract(old.payload_json,'$.position_y')))\n        ) GROUP BY action ORDER BY 体力 DESC,行为 LIMIT 5",
+          "rawQueryText": "WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))),\n    ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),\n    states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn\n        FROM e0 WHERE event_type='player_state_snapshot'),\n    legacy AS (SELECT g.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(real_time_started_iso) DESC,imported_at DESC) rn\n        FROM gameplay_sessions g WHERE EXISTS(SELECT 1 FROM s WHERE s.user_id=g.user_id AND s.session_id=g.session_id)),\n    days AS (SELECT user_id,COUNT(*) play_days FROM\n        (SELECT DISTINCT user_id,archive_id,game_day FROM e0 WHERE NULLIF(archive_id,'') IS NOT NULL AND game_day IS NOT NULL) GROUP BY user_id),\n    p AS (SELECT ids.user_id,COALESCE(NULLIF(json_extract(st.payload_json,'$.nickname'),''),NULLIF(u.nickname,''),NULLIF(u.player_name,''),ids.user_id) nickname,\n        (SELECT SUM(duration_sec) FROM s WHERE s.user_id=ids.user_id) play_seconds,\n        (SELECT first_entry_at FROM analytics_first_entry f WHERE f.user_id=ids.user_id AND f.cohort_scope=CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END) first_login,\n        (SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id) latest_login,\n        d.play_days,COALESCE(json_extract(st.payload_json,'$.money'),l.money_end,l.money_start) money,\n        COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,\n        json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,\n        st.payload_json state,st.occurred_at state_at,\n        json_extract(st.payload_json,'$.cat_house_count') house_count,\n        json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,\n        json_extract(st.payload_json,'$.cat_house_occupied') house_occupied\n        FROM ids LEFT JOIN user_sessions u USING(user_id) LEFT JOIN states st ON st.user_id=ids.user_id AND st.rn=1\n        LEFT JOIN legacy l ON l.user_id=ids.user_id AND l.rn=1 LEFT JOIN days d USING(user_id)),\n    e AS (SELECT * FROM e0 WHERE ('${behavior_period}'='all' OR julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch'))\n        OR (occurred_at IS NULL AND '${behavior_period}'='all')),\n    players AS (SELECT * FROM p WHERE 1),\n    events AS (SELECT * FROM e WHERE 1) SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数 FROM (\n            SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'\n            UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old\n            WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0\n            AND NOT(event_type='building_placed' AND COALESCE(json_extract(payload_json,'$.building_id')=6001,0)\n                AND json_extract(payload_json,'$.position_x') IS NOT NULL\n                AND EXISTS(SELECT 1 FROM e0 till WHERE till.user_id=old.user_id AND till.session_id=old.session_id AND till.game_day=old.game_day\n                    AND till.event_type='farming_till' AND ABS(till.sequence-old.sequence)<=1 AND till.energy_cost=old.energy_cost\n                    AND json_extract(till.payload_json,'$.position_x')=json_extract(old.payload_json,'$.position_x')\n                    AND json_extract(till.payload_json,'$.position_y')=json_extract(old.payload_json,'$.position_y')))\n        ) GROUP BY action ORDER BY 体力 DESC,行为 LIMIT 5"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1695,8 +1696,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1712,7 +1713,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1729,7 +1730,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1768,7 +1769,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1785,8 +1786,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1802,7 +1803,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1819,7 +1820,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1858,7 +1859,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1875,8 +1876,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1892,7 +1893,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1909,7 +1910,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -1948,7 +1949,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -1965,8 +1966,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -1982,7 +1983,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -1999,7 +2000,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2038,7 +2039,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2055,8 +2056,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2072,7 +2073,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2089,7 +2090,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2128,7 +2129,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2145,8 +2146,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2162,7 +2163,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2179,7 +2180,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2218,7 +2219,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2235,8 +2236,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2252,7 +2253,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2269,7 +2270,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2308,7 +2309,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2325,8 +2326,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2342,7 +2343,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2359,7 +2360,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2398,7 +2399,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2415,8 +2416,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2432,7 +2433,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2449,7 +2450,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2488,7 +2489,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2505,8 +2506,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2522,7 +2523,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2539,7 +2540,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2578,7 +2579,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2595,8 +2596,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2612,7 +2613,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2629,7 +2630,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2668,7 +2669,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2685,8 +2686,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2702,7 +2703,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2719,7 +2720,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
@@ -2758,7 +2759,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "filterable": true
           },
@@ -2775,8 +2776,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "title": "查看玩家详情",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}"
                   }
                 ]
               }
@@ -2792,7 +2793,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
@@ -2809,7 +2810,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看玩家旅程",
+                    "title": "查看玩家详情",
                     "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]

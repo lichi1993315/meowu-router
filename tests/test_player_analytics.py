@@ -109,3 +109,13 @@ class PlayerAnalyticsTests(unittest.TestCase):
     def test_overview_does_not_inherit_selected_player(self):
         self.snapshot('a',1);self.snapshot('b',2)
         self.assertEqual(self.query('gameplay-overview',101,'a')[0][0],3)
+
+    def test_live_backfill_normalizes_release_and_preserves_full_version(self):
+        from analytics_facts import migrate_facts
+        payload={'user_id':'a','session_id':'s','client_platform':'windows','client_version':'unity-demo-v1.1.2.3.abcdef0','events':[AnalyticsTests.event(self)]}
+        accept_batch(self.path,payload,{})
+        self.db.execute('DELETE FROM analytics_event_facts')
+        self.db.execute('DELETE FROM analytics_migrations')
+        self.db.commit()
+        migrate_facts(self.db)
+        self.assertEqual(self.db.execute('SELECT client_version,release_version FROM analytics_event_facts').fetchone(),('unity-demo-v1.1.2.3.abcdef0','demo-v1'))

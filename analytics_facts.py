@@ -1,5 +1,6 @@
 """Incremental canonical event projection; raw tables remain the audit trail."""
 import json
+from version_utils import release_version_from_client_version
 
 COLUMNS = ('event_id','user_id','session_id','player_session_id','client_platform','client_version','release_version',
            'is_development_build','occurred_at','received_at','event_type','actor_id','actor_is_player','game_day',
@@ -50,7 +51,9 @@ def project_imported(conn, where='1', args=()):
 def migrate_facts(conn):
     ensure_facts(conn)
     conn.execute('CREATE TABLE IF NOT EXISTS analytics_migrations(name TEXT PRIMARY KEY)')
-    if conn.execute("SELECT 1 FROM analytics_migrations WHERE name='event_facts_v1'").fetchone():return
+    if conn.execute("SELECT 1 FROM analytics_migrations WHERE name='event_facts_v1'").fetchone():
+        normalize_live_release(conn)
+        return
     # Bound the migration to the initial high-water marks. New batches already dual-write facts.
     # Read and write each page inside BEGIN IMMEDIATE: a long-lived SELECT cursor cannot
     # upgrade its old WAL snapshot after another connection commits (SQLITE_BUSY_SNAPSHOT).
@@ -68,6 +71,15 @@ def migrate_facts(conn):
             else:
                 rows=conn.execute('SELECT user_id,session_id,event_json,received_at,player_session_id,client_platform,client_version,is_development_build FROM gameplay_live_events WHERE rowid>? AND rowid<=?',(after,end)).fetchall()
                 for row in rows:
-                    upsert_fact(conn,json.loads(row[2]),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],row[6])
+                    upsert_fact(conn,json.loads(row[2]),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],release_version_from_client_version(row[6]))
             conn.commit();after=end
     conn.execute("INSERT INTO analytics_migrations VALUES ('event_facts_v1')")
+    normalize_live_release(conn)
+
+
+def normalize_live_release(conn):
+    """Repair the initial backfill's live-only release keys once; preserve explicit releases."""
+    if conn.execute("SELECT 1 FROM analytics_migrations WHERE name='fact_release_v1'").fetchone():return
+    conn.create_function('normalize_fact_release',1,release_version_from_client_version,deterministic=True)
+    conn.execute("UPDATE analytics_event_facts SET release_version=normalize_fact_release(client_version) WHERE release_version=client_version AND client_version LIKE 'unity-%'")
+    conn.execute("INSERT INTO analytics_migrations VALUES ('fact_release_v1')")

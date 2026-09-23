@@ -72,7 +72,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
             SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'
             UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old
             WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0
-            AND NOT(event_type='building_placed' AND json_extract(payload_json,'$.building_id')=6001
+            AND NOT(event_type='building_placed' AND COALESCE(json_extract(payload_json,'$.building_id')=6001,0)
                 AND json_extract(payload_json,'$.position_x') IS NOT NULL
                 AND EXISTS(SELECT 1 FROM e0 till WHERE till.user_id=old.user_id AND till.session_id=old.session_id AND till.game_day=old.game_day
                     AND till.event_type='farming_till' AND ABS(till.sequence-old.sequence)<=1 AND till.energy_cost=old.energy_cost
@@ -114,13 +114,13 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
     overview += [copy.deepcopy(p) for p in old_overview['panels'] if p['id'] in (30,31)]
     result['gameplay-overview.json']=dashboard('gameplay-overview','总览',overview)
     sort="CASE '${sort_field}' WHEN 'play_seconds' THEN play_seconds WHEN 'play_days' THEN play_days WHEN 'island_level' THEN island_level WHEN 'first_login' THEN julianday(first_login) WHEN 'latest_login' THEN julianday(latest_login) WHEN 'money' THEN money END"
-    listing=q(100,'玩家一览',f"SELECT {columns},COUNT(*) OVER() 总行数 FROM players ORDER BY CASE WHEN '${{sort_direction}}'='asc' THEN {sort} END ASC NULLS LAST,CASE WHEN '${{sort_direction}}'!='asc' THEN {sort} END DESC NULLS LAST,user_id"+limit)
+    listing=q(100,'玩家一览',f"SELECT {columns.split(',cat_count')[0]},COUNT(*) OVER() 总行数 FROM players ORDER BY CASE WHEN '${{sort_direction}}'='asc' THEN {sort} END ASC NULLS LAST,CASE WHEN '${{sort_direction}}'!='asc' THEN {sort} END DESC NULLS LAST,user_id"+limit)
     result['gameplay-players.json']=dashboard('gameplay-players','玩家一览',[listing])
     result['gameplay-player-detail.json']=dashboard('gameplay-player-detail','玩家 · 基础数据',base)
     day_sql="""SELECT archive_id 存档,game_day 游戏日,MAX(occurred_at) 最后记录时间,COUNT(*) 事件数,GROUP_CONCAT(DISTINCT event_type) 事件类型,
         (SELECT payload_json FROM e0 x WHERE x.user_id=events.user_id AND x.archive_id=events.archive_id AND x.game_day=events.game_day AND x.event_type='player_state_snapshot' ORDER BY julianday(x.occurred_at) DESC,sequence DESC LIMIT 1) 最新状态metadata
         FROM events WHERE NULLIF(archive_id,'') IS NOT NULL GROUP BY user_id,archive_id,game_day ORDER BY game_day DESC,archive_id"""+limit
-    raw_days=f"SELECT d.session_id,d.game_day,d.day_meta_json metadata FROM gameplay_days d WHERE d.user_id=${{user_id:sqlstring}} ORDER BY game_day DESC,imported_at DESC"+limit
+    raw_days=facts+f"SELECT d.session_id,d.game_day,d.day_meta_json metadata,(SELECT GROUP_CONCAT(DISTINCT event_type) FROM e0 WHERE e0.user_id=d.user_id AND e0.session_id=d.session_id AND e0.game_day=d.game_day) 事件类型 FROM gameplay_days d WHERE d.user_id=${{user_id:sqlstring}} AND EXISTS(SELECT 1 FROM s WHERE s.user_id=d.user_id AND s.session_id=d.session_id) ORDER BY game_day DESC,imported_at DESC"+limit
     result['gameplay-player-days.json']=dashboard('gameplay-player-days','玩家 · 日期一览',[q(100,'游戏日一览（按存档去重）',day_sql),panel(101,'原始日 metadata（旧数据保留来源会话）',raw_days)])
     result['gameplay-player-events.json']=dashboard('gameplay-player-events','玩家 · 事件一览',[q(100,'全部事件 metadata / payload',"SELECT occurred_at 时间,archive_id 存档,game_day 游戏日,event_type 类型,event_id,session_id,metadata_json metadata,payload_json payload,COUNT(*) OVER() 总行数 FROM events WHERE (${event_type:sqlstring}='' OR event_type=${event_type:sqlstring}) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC"+limit)])
     new_uids={'gameplay-overview','gameplay-players','gameplay-player-detail','gameplay-player-days','gameplay-player-events'}
@@ -150,6 +150,8 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
             name=variable['name']
             if name in ('sort_field','sort_direction') and board['uid']!='gameplay-players':variable['hide']=2
             if name=='event_type' and board['uid']!='gameplay-player-events':variable['hide']=2
+            if name in ('theater_event_id','min_invitations') and board['uid'] not in ('gameplay-overview','gameplay-player-detail'):variable['hide']=2
+            if name=='user_id' and board['uid'].startswith('gameplay-player-'):variable['label']='玩家 ID（必选）'
             if name in ('user_id','session_id','llm_request_id') and board['uid'] in ('gameplay-overview','gameplay-players'):variable['hide']=2
         for p in board['panels']:
             for t in p.get('targets',[]):
@@ -169,7 +171,23 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                         selected="COALESCE(json_extract(json_array(${user_id:sqlstring}),'$[0]'),'')<>''"
                         sql="SELECT * FROM ("+sql+") WHERE "+selected
                     t[key]=sql
-            p.setdefault('fieldConfig',{}).setdefault('defaults',{})['noValue']='未采集'
+            p.setdefault('fieldConfig',{}).setdefault('defaults',{}).update(noValue='未采集',unit='none')
+            for override in p['fieldConfig'].get('overrides',[]):
+                for prop in override.get('properties',[]):
+                    if prop['id']=='links':
+                        for link in prop['value']:
+                            link['title']='查看玩家详情'
+                            if override['matcher']['options']=='user_id':link['url']=link['url'].replace('&var-user_id=${__value.raw}','')
+            if board['uid'] in ('gameplay-players','gameplay-player-days','gameplay-player-events') and p['type']=='table':p['gridPos']['h']=18
+            if board['uid']=='gameplay-players' and p['type']=='table':
+                user_link=copy.deepcopy(p['fieldConfig']['overrides'][0])
+                user_link['matcher']['options']='昵称'
+                for link in user_link['properties'][0]['value']:
+                    link['title']='查看玩家详情'
+                    link['url']=link['url'].replace('&var-user_id=${__value.raw}','')
+                p['fieldConfig']['overrides'].append(user_link)
+                for column,width in [('昵称',130),('user_id',315),('首次登录',175),('最新登录',175)]:
+                    p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':column},'properties':[{'id':'custom.width','value':width}]})
 
         if board['uid']=='gameplay-overview':
             y=0;x=0;row_height=0
