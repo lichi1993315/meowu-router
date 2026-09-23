@@ -26,6 +26,8 @@ def apply_player_layout(boards):
             for pid, width in zip(ids, widths):
                 p = panels.pop(pid)
                 p['gridPos'] = {'x': x, 'y': y, 'w': width, 'h': height}
+                if p['type'] == 'table' and width <= 12:
+                    p['fieldConfig']['defaults']['custom']['minWidth'] = 70
                 arranged.append(p)
                 x += width
             y += height

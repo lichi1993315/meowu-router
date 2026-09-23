@@ -948,7 +948,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1039,7 +1040,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1130,7 +1132,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1221,7 +1224,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1312,7 +1316,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1403,7 +1408,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1507,7 +1513,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1598,7 +1605,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1689,7 +1697,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1780,7 +1789,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -1871,7 +1881,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2066,7 +2077,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2170,7 +2182,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2261,7 +2274,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2352,7 +2366,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2638,7 +2653,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2833,7 +2849,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
@@ -2924,7 +2941,8 @@
           "unit": "none",
           "custom": {
             "filterable": true,
-            "inspect": true
+            "inspect": true,
+            "minWidth": 70
           },
           "noValue": "未采集"
         },
