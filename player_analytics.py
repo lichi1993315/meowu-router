@@ -172,6 +172,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                         sql="SELECT * FROM ("+sql+") WHERE "+selected
                     t[key]=sql
             p.setdefault('fieldConfig',{}).setdefault('defaults',{}).update(noValue='未采集',unit='none')
+            if p['type']=='table':p['fieldConfig']['defaults'].setdefault('custom',{})['inspect']=True
             for override in p['fieldConfig'].get('overrides',[]):
                 for prop in override.get('properties',[]):
                     if prop['id']=='links':
@@ -188,6 +189,11 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                 p['fieldConfig']['overrides'].append(user_link)
                 for column,width in [('昵称',130),('user_id',315),('首次登录',175),('最新登录',175)]:
                     p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':column},'properties':[{'id':'custom.width','value':width}]})
+
+        if board['uid']=='gameplay-player-days':
+            y=0
+            for p in board['panels']:
+                p['gridPos']['y']=y;y+=p['gridPos']['h']
 
         if board['uid']=='gameplay-overview':
             y=0;x=0;row_height=0

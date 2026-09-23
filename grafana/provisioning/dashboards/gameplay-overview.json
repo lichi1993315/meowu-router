@@ -241,7 +241,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -331,7 +332,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -421,7 +423,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -511,7 +514,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -601,7 +605,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -691,7 +696,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -781,7 +787,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -871,7 +878,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -961,7 +969,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1051,7 +1060,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1141,7 +1151,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1231,7 +1242,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1321,7 +1333,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1411,7 +1424,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1501,7 +1515,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1591,7 +1606,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1681,7 +1697,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1771,7 +1788,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1861,7 +1879,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -1951,7 +1970,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2041,7 +2061,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2131,7 +2152,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2221,7 +2243,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2311,7 +2334,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2401,7 +2425,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2491,7 +2516,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2581,7 +2607,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2671,7 +2698,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -2761,7 +2789,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },

@@ -261,7 +261,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -351,7 +352,8 @@
         "defaults": {
           "unit": "none",
           "custom": {
-            "filterable": true
+            "filterable": true,
+            "inspect": true
           },
           "noValue": "未采集"
         },
@@ -415,7 +417,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 12,
+        "y": 21,
         "w": 24,
         "h": 18
       }
