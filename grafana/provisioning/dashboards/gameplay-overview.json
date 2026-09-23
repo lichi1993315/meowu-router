@@ -311,9 +311,9 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "value_and_name",
-        "wideLayout": false,
+        "wideLayout": true,
         "showPercentChange": false,
         "reduceOptions": {
           "calcs": [
@@ -321,10 +321,6 @@
           ],
           "fields": "",
           "values": false
-        },
-        "text": {
-          "titleSize": 13,
-          "valueSize": 32
         }
       },
       "gridPos": {
@@ -433,9 +429,9 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "value_and_name",
-        "wideLayout": false,
+        "wideLayout": true,
         "showPercentChange": false,
         "reduceOptions": {
           "calcs": [
@@ -443,10 +439,6 @@
           ],
           "fields": "",
           "values": false
-        },
-        "text": {
-          "titleSize": 13,
-          "valueSize": 32
         }
       },
       "gridPos": {
@@ -555,9 +547,9 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "value_and_name",
-        "wideLayout": false,
+        "wideLayout": true,
         "showPercentChange": false,
         "reduceOptions": {
           "calcs": [
@@ -565,10 +557,6 @@
           ],
           "fields": "",
           "values": false
-        },
-        "text": {
-          "titleSize": 13,
-          "valueSize": 32
         }
       },
       "gridPos": {
@@ -677,9 +665,9 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "value_and_name",
-        "wideLayout": false,
+        "wideLayout": true,
         "showPercentChange": false,
         "reduceOptions": {
           "calcs": [
@@ -687,10 +675,6 @@
           ],
           "fields": "",
           "values": false
-        },
-        "text": {
-          "titleSize": 13,
-          "valueSize": 32
         }
       },
       "gridPos": {
@@ -799,9 +783,9 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "value_and_name",
-        "wideLayout": false,
+        "wideLayout": true,
         "showPercentChange": false,
         "reduceOptions": {
           "calcs": [
@@ -809,10 +793,6 @@
           ],
           "fields": "",
           "values": false
-        },
-        "text": {
-          "titleSize": 13,
-          "valueSize": 32
         }
       },
       "gridPos": {

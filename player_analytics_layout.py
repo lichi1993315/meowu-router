@@ -35,10 +35,9 @@ def apply_player_layout(boards):
             p['type'] = 'stat'
             p['options'] = {
                 'colorMode': 'value', 'graphMode': 'none', 'justifyMode': 'center',
-                'orientation': 'horizontal', 'textMode': 'value_and_name',
-                'wideLayout': False, 'showPercentChange': False,
+                'orientation': 'auto', 'textMode': 'value_and_name',
+                'wideLayout': True, 'showPercentChange': False,
                 'reduceOptions': {'calcs': ['lastNotNull'], 'fields': '', 'values': False},
-                'text': {'titleSize': 13, 'valueSize': 32},
             }
             defaults = p['fieldConfig']['defaults']
             defaults.pop('custom', None)
