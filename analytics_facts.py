@@ -34,10 +34,10 @@ def upsert_fact(conn, event, user, session, metadata, received, player_session=N
     conn.execute(f"INSERT INTO analytics_event_facts ({','.join(COLUMNS)}) VALUES ({','.join('?' for _ in COLUMNS)}) ON CONFLICT(event_id) DO UPDATE SET {assignments}",values)
 
 
-def project_imported(conn, where='1', args=(), commit_every=0):
+def project_imported(conn, where='1', args=()):
     cursor=conn.execute('SELECT * FROM gameplay_events WHERE '+where,args)
     columns=[c[0] for c in cursor.description]
-    for index, values in enumerate(cursor,1):
+    for values in cursor.fetchall():
         row=dict(zip(columns,values));meta=json.loads(row.get('meta_json') or '{}')
         event={**meta,'event_type':row['event_type'],'event_real_time_iso':row['event_real_time_iso'],
                'event_game_day':row['game_day'],'sequence':meta.get('sequence') if meta.get('sequence') is not None else row['event_index'],
@@ -45,15 +45,29 @@ def project_imported(conn, where='1', args=(), commit_every=0):
                'event_game_minutes':row['event_game_minutes'],'duration_minutes':row['duration_minutes'],'meowu_output':row['meowu_output'],
                'energy_cost':row['energy_cost'],'payload':json.loads(row['payload_json'] or '{}')}
         upsert_fact(conn,event,row['user_id'],row['session_id'],row,row['imported_at'],row['player_session_id'],row['client_version'],row['release_version'])
-        if commit_every and index % commit_every == 0:conn.commit()
 
 
 def migrate_facts(conn):
     ensure_facts(conn)
     conn.execute('CREATE TABLE IF NOT EXISTS analytics_migrations(name TEXT PRIMARY KEY)')
     if conn.execute("SELECT 1 FROM analytics_migrations WHERE name='event_facts_v1'").fetchone():return
-    # Once on importer startup, not on each dashboard query or incoming request.
-    for row in conn.execute('SELECT user_id,session_id,event_json,received_at,player_session_id,client_platform,client_version,is_development_build FROM gameplay_live_events'):
-        upsert_fact(conn,json.loads(row[2]),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],row[6])
-    project_imported(conn, commit_every=1000)
+    # Bound the migration to the initial high-water marks. New batches already dual-write facts.
+    # Read and write each page inside BEGIN IMMEDIATE: a long-lived SELECT cursor cannot
+    # upgrade its old WAL snapshot after another connection commits (SQLITE_BUSY_SNAPSHOT).
+    conn.commit()
+    for table in ('gameplay_live_events','gameplay_events'):
+        maximum=conn.execute('SELECT COALESCE(MAX(rowid),0) FROM '+table).fetchone()[0]
+        after=0
+        while after < maximum:
+            conn.execute('BEGIN IMMEDIATE')
+            ids=conn.execute('SELECT rowid FROM '+table+' WHERE rowid>? AND rowid<=? ORDER BY rowid LIMIT 1000',(after,maximum)).fetchall()
+            if not ids:conn.commit();break
+            end=ids[-1][0]
+            if table=='gameplay_events':
+                project_imported(conn,'rowid>? AND rowid<=?',(after,end))
+            else:
+                rows=conn.execute('SELECT user_id,session_id,event_json,received_at,player_session_id,client_platform,client_version,is_development_build FROM gameplay_live_events WHERE rowid>? AND rowid<=?',(after,end)).fetchall()
+                for row in rows:
+                    upsert_fact(conn,json.loads(row[2]),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],row[6])
+            conn.commit();after=end
     conn.execute("INSERT INTO analytics_migrations VALUES ('event_facts_v1')")
