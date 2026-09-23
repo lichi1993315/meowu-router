@@ -40,6 +40,7 @@ def connect(path: Path):
     for name, columns in (("due", "state,due,received"), ("owner", "owner,received"),
                           ("ip", "ip,received"), ("sent", "state,sent_at")):
         db.execute(f"CREATE INDEX IF NOT EXISTS feedback_{name} ON feedback({columns})")
+    db.execute("CREATE INDEX IF NOT EXISTS feedback_images_to_clean ON feedback(sent_at) WHERE state='sent' AND image IS NOT NULL")
     try:
         with db:
             yield db
@@ -95,7 +96,7 @@ def accept(payload: dict, image: bytes, owner: str, ip: str, path: Path | None =
             count = db.execute(f"SELECT COUNT(*) FROM (SELECT 1 FROM feedback WHERE {column}=? AND received>? LIMIT 3)", (value, now - 60)).fetchone()[0]
             if count >= 3:
                 raise FeedbackRejected(429, "Please wait before sending another feedback")
-        pending = db.execute("SELECT COUNT(*) FROM (SELECT 1 FROM feedback WHERE state!='sent' LIMIT 1000)").fetchone()[0]
+        pending = db.execute("SELECT COUNT(*) FROM (SELECT 1 FROM feedback WHERE state IN ('pending','sending') LIMIT 1000)").fetchone()[0]
         if pending >= 1000:
             raise FeedbackRejected(503, "Feedback queue full; please retry later")
         db.execute("INSERT INTO feedback(id,owner,ip,payload,fingerprint,image,received) VALUES(?,?,?,?,?,?,?)",
