@@ -453,6 +453,7 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
             "session_id": "session-1",
             "message": "NullReferenceException",
             "reason": "inventory item missing",
+            "username": "阿澈",
             "secret_debug_dump": "do not include this field",
         }
 
@@ -491,6 +492,7 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         self.assertEqual(captured["payload"]["message"], "NullReferenceException")
         self.assertEqual(captured["payload"]["reason"], "inventory item missing")
         self.assertEqual(alerts["payload"]["message"], "NullReferenceException")
+        self.assertIn("username: 阿澈", _build_error_log_alert_text(**alerts))
         self.assertEqual(alerts["headers"]["x-user-id"], "user-1")
         self.assertGreater(alerts["decrypted_body_bytes"], 0)
 
@@ -524,6 +526,7 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         text = _build_error_log_alert_text(
             payload={
                 "reason": "unity_error",
+                "username": "阿澈",
                 "message": "NullReferenceException\nat GamePlay.ServerDataHelper.Shop.GetShopInfo",
                 "secret_debug_dump": "full payload should not be included",
             },
@@ -540,11 +543,21 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
         )
 
         self.assertIn("游戏 Error Log 告警", text)
+        self.assertIn("username: 阿澈", text)
         self.assertIn("user_id: user-1", text)
         self.assertIn("session_id: session-1", text)
         self.assertIn("NullReferenceException", text)
         self.assertNotIn("secret_debug_dump", text)
         self.assertNotIn("full payload should not be included", text)
+
+    def test_error_log_alert_without_username_keeps_empty_field(self) -> None:
+        text = _build_error_log_alert_text(
+            payload={"reason": "startup_error"},
+            headers={"x-user-id": "user-1"},
+            received_at="2026-09-23T11:02:09",
+            decrypted_body_bytes=40,
+        )
+        self.assertIn("\nusername: \nsession_id:", text)
 
     def test_unity_dev_detection_checks_all_client_version_sources(self) -> None:
         self.assertTrue(_is_unity_dev_payload({}, {"X-Client-Version": "UNITY-DEV"}))
