@@ -37,6 +37,7 @@ def apply_player_layout(boards):
                 'colorMode': 'value', 'graphMode': 'none', 'justifyMode': 'center',
                 'orientation': 'auto', 'textMode': 'value_and_name',
                 'wideLayout': True, 'showPercentChange': False,
+                'text': {'titleSize': 13, 'valueSize': 32},
                 'reduceOptions': {'calcs': ['lastNotNull'], 'fields': '', 'values': False},
             }
             defaults = p['fieldConfig']['defaults']
