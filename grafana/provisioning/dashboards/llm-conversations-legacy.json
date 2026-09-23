@@ -1,0 +1,2133 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "title": "旧版 · 🗣️ 对话历史与用户分析",
+      "type": "link",
+      "url": "/d/llm-conversations-legacy",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "旧版 · Gameplay 数据总览",
+      "type": "link",
+      "url": "/d/gameplay-overview-legacy",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "旧版 · Gameplay 玩家详情",
+      "type": "link",
+      "url": "/d/gameplay-player-detail-legacy",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "旧版 · 🐱 LLM Router 监控面板",
+      "type": "link",
+      "url": "/d/llm-router-dashboard-legacy",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "返回新版经营总览",
+      "type": "link",
+      "url": "/d/gameplay-overview",
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 40,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT COUNT(*) AS cnt FROM active_users",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT COUNT(*) AS cnt FROM active_users",
+          "refId": "A"
+        }
+      ],
+      "title": "👥 有效用户数",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 47,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(s.total_play_seconds / 60.0, 1) AS median_minutes FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id ORDER BY s.total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM active_users) / 2",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(s.total_play_seconds / 60.0, 1) AS median_minutes FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id ORDER BY s.total_play_seconds LIMIT 1 OFFSET (SELECT COUNT(*) FROM active_users) / 2",
+          "refId": "A"
+        }
+      ],
+      "title": "📊 中位数时长",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "排除开发者后的平均时长",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 48,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(AVG(s.total_play_seconds / 60.0), 1) AS real_avg FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(AVG(s.total_play_seconds / 60.0), 1) AS real_avg FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id",
+          "refId": "A"
+        }
+      ],
+      "title": "✨ 真实平均时长",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 0
+      },
+      "id": 43,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(AVG(selected_requests), 1) AS avg_requests FROM active_users",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT ROUND(AVG(selected_requests), 1) AS avg_requests FROM active_users",
+          "refId": "A"
+        }
+      ],
+      "title": "📨 人均请求数",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 0
+      },
+      "id": 303,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "SELECT ROUND(AVG(real_conv), 1) AS avg FROM (SELECT COUNT(*) AS real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2)",
+          "refId": "A",
+          "queryText": "SELECT ROUND(AVG(real_conv), 1) AS avg FROM (SELECT COUNT(*) AS real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2)"
+        }
+      ],
+      "title": "📊 真实平均对话",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 0
+      },
+      "id": 304,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2) SELECT real_conv AS median FROM per_user ORDER BY real_conv LIMIT 1 OFFSET (SELECT COUNT(*) FROM per_user) / 2",
+          "refId": "A",
+          "queryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS real_conv FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_query != '' AND c.is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' GROUP BY c.user_id HAVING real_conv >= 2) SELECT real_conv AS median FROM per_user ORDER BY real_conv LIMIT 1 OFFSET (SELECT COUNT(*) FROM per_user) / 2"
+        }
+      ],
+      "title": "📊 真实对话中位数",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "次留"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 15
+                    },
+                    {
+                      "color": "green",
+                      "value": 30
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "3日留"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 20
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "7日留"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 5
+                    },
+                    {
+                      "color": "green",
+                      "value": 15
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 201,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "日期"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH filtered_chat AS (SELECT c.user_id, c.timestamp FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL)), daily_dau AS (SELECT date(timestamp) AS day, COUNT(DISTINCT user_id) AS dau FROM filtered_chat WHERE date(timestamp) >= date('now', '-14 days') GROUP BY day), version_first_seen AS (SELECT user_id, MIN(date(timestamp)) AS first_day FROM filtered_chat GROUP BY user_id), daily_new AS (SELECT first_day AS day, COUNT(*) AS new_users FROM version_first_seen WHERE first_day >= date('now', '-14 days') GROUP BY day), cohort_users AS (SELECT first_day AS cohort_day, user_id FROM version_first_seen WHERE first_day >= date('now', '-21 days')), daily_activity AS (SELECT DISTINCT date(timestamp) AS active_day, user_id FROM filtered_chat WHERE date(timestamp) >= date('now', '-21 days')), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day AS '日期', COALESCE(d.dau, 0) AS 'DAU', COALESCE(n.new_users, 0) AS '新增', COALESCE(r.ret_1, 0) AS '次留', COALESCE(r.ret_3, 0) AS '3日留', COALESCE(r.ret_7, 0) AS '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
+          "queryType": "table",
+          "rawQueryText": "WITH filtered_chat AS (SELECT c.user_id, c.timestamp FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id != '' AND c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL)), daily_dau AS (SELECT date(timestamp) AS day, COUNT(DISTINCT user_id) AS dau FROM filtered_chat WHERE date(timestamp) >= date('now', '-14 days') GROUP BY day), version_first_seen AS (SELECT user_id, MIN(date(timestamp)) AS first_day FROM filtered_chat GROUP BY user_id), daily_new AS (SELECT first_day AS day, COUNT(*) AS new_users FROM version_first_seen WHERE first_day >= date('now', '-14 days') GROUP BY day), cohort_users AS (SELECT first_day AS cohort_day, user_id FROM version_first_seen WHERE first_day >= date('now', '-21 days')), daily_activity AS (SELECT DISTINCT date(timestamp) AS active_day, user_id FROM filtered_chat WHERE date(timestamp) >= date('now', '-21 days')), retention AS (SELECT c.cohort_day, ROUND(100.0 * SUM(CASE WHEN a1.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_1, ROUND(100.0 * SUM(CASE WHEN a3.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_3, ROUND(100.0 * SUM(CASE WHEN a7.user_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(c.user_id), 1) AS ret_7 FROM cohort_users c LEFT JOIN daily_activity a1 ON c.user_id = a1.user_id AND a1.active_day = date(c.cohort_day, '+1 day') LEFT JOIN daily_activity a3 ON c.user_id = a3.user_id AND a3.active_day = date(c.cohort_day, '+3 day') LEFT JOIN daily_activity a7 ON c.user_id = a7.user_id AND a7.active_day = date(c.cohort_day, '+7 day') WHERE c.cohort_day <= date('now', '-1 day') GROUP BY c.cohort_day) SELECT d.day AS '日期', COALESCE(d.dau, 0) AS 'DAU', COALESCE(n.new_users, 0) AS '新增', COALESCE(r.ret_1, 0) AS '次留', COALESCE(r.ret_3, 0) AS '3日留', COALESCE(r.ret_7, 0) AS '7日留' FROM daily_dau d LEFT JOIN daily_new n ON d.day = n.day LEFT JOIN retention r ON d.day = r.cohort_day ORDER BY d.day DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "📈 DAU & 留存率",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 100,
+      "panels": [],
+      "title": "🔍 对话查询 Conversation Search",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": [
+                "countAll"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ai_response"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "timestamp"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "SELECT datetime(c.timestamp, '+8 hours') AS '时间(北京)', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', c.user_query AS '玩家消息', c.ai_response AS 'AI回复', c.ai_action AS 'AI动作', c.duration_ms AS '延迟(ms)', c.prompt_tokens AS 'Prompt', c.completion_tokens AS 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') AS '时间(北京)', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', c.user_query AS '玩家消息', c.ai_response AS 'AI回复', c.ai_action AS 'AI动作', c.duration_ms AS '延迟(ms)', c.prompt_tokens AS 'Prompt', c.completion_tokens AS 'Completion' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.user_id LIKE '%${user_filter:raw}%' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (c.user_query != '' OR '$show_all' = 'true') ORDER BY c.timestamp DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "📝 对话历史",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": [
+                "countAll"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "玩家消息"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AI回复"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 380
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 102,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "时间(北京)"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "${DS_SQLITE}"
+          },
+          "queryText": "SELECT datetime(c.timestamp, '+8 hours') AS '时间(北京)', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', c.user_query AS '玩家消息', c.ai_response AS 'AI回复', c.ai_action AS 'AI动作', c.duration_ms AS '延迟(ms)' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.country = 'CN' AND c.ai_action = 'speak' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) ORDER BY c.timestamp DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT datetime(c.timestamp, '+8 hours') AS '时间(北京)', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', c.user_query AS '玩家消息', c.ai_response AS 'AI回复', c.ai_action AS 'AI动作', c.duration_ms AS '延迟(ms)' FROM conversations c LEFT JOIN user_sessions s ON c.user_id = s.user_id WHERE c.country = 'CN' AND c.ai_action = 'speak' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) ORDER BY c.timestamp DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "🇨🇳 CN + speak 对话历史（排除开发者）",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 101,
+      "panels": [],
+      "title": "📊 AI 行为分析",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "id": 10,
+      "options": {
+        "displayLabels": [
+          "name",
+          "value"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "/^count$/",
+          "values": true
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "SELECT ai_action AS action, COUNT(*) AS count FROM conversations WHERE ai_action != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY ai_action ORDER BY count DESC LIMIT 20",
+          "queryType": "table",
+          "rawQueryText": "SELECT ai_action AS action, COUNT(*) AS count FROM conversations WHERE ai_action != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY ai_action ORDER BY count DESC LIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "🎯 AI 动作分布",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "count"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "次数"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "SELECT user_query AS '玩家消息', COUNT(*) AS '次数' FROM conversations WHERE user_query != '' AND message_type = 'chat' AND is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+          "queryType": "table",
+          "rawQueryText": "SELECT user_query AS '玩家消息', COUNT(*) AS '次数' FROM conversations WHERE user_query != '' AND message_type = 'chat' AND is_preset = 0 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+          "refId": "A"
+        }
+      ],
+      "title": "🔥 热门玩家消息 Top 30",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": [
+                "countAll"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "请求数"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "时长(分)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 44,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "请求数"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH chat_stats AS (SELECT c.user_id, COUNT(*) AS chat_count, COUNT(DISTINCT date(c.timestamp)) AS days_played, COUNT(DISTINCT COALESCE(NULLIF(c.session_id, ''), CAST(c.id AS TEXT))) AS selected_sessions, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(c.client_version, ''), '(empty)')) AS client_versions FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id) SELECT COALESCE(s.nickname, s.player_name, '') AS '昵称', s.user_id AS '用户ID', CASE WHEN s.is_developer = 1 THEN '🔧' ELSE '' END AS 'DEV', chat_stats.client_versions AS '版本', s.country AS '国', chat_stats.chat_count AS '请求', s.total_requests AS '总请求', chat_stats.days_played AS '天数', chat_stats.selected_sessions AS '会话', s.session_count AS '总会话', ROUND(s.total_play_seconds / 60.0, 1) AS '时长(分)', ROUND(s.total_play_seconds / 60.0 / MAX(COALESCE(chat_stats.days_played, 1), 1), 1) AS '日均(分)', ROUND(s.total_play_seconds / 60.0 / MAX(chat_stats.selected_sessions, 1), 1) AS '会话均(分)', s.island_level AS '岛Lv', s.money AS '金币', CAST(julianday('now') - julianday(s.last_seen) AS INTEGER) AS '距今天' FROM user_sessions s JOIN chat_stats ON s.user_id = chat_stats.user_id WHERE chat_stats.chat_count >= 2 ORDER BY chat_stats.chat_count DESC",
+          "queryType": "table",
+          "rawQueryText": "WITH chat_stats AS (SELECT c.user_id, COUNT(*) AS chat_count, COUNT(DISTINCT date(c.timestamp)) AS days_played, COUNT(DISTINCT COALESCE(NULLIF(c.session_id, ''), CAST(c.id AS TEXT))) AS selected_sessions, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(c.client_version, ''), '(empty)')) AS client_versions FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id) SELECT COALESCE(s.nickname, s.player_name, '') AS '昵称', s.user_id AS '用户ID', CASE WHEN s.is_developer = 1 THEN '🔧' ELSE '' END AS 'DEV', chat_stats.client_versions AS '版本', s.country AS '国', chat_stats.chat_count AS '请求', s.total_requests AS '总请求', chat_stats.days_played AS '天数', chat_stats.selected_sessions AS '会话', s.session_count AS '总会话', ROUND(s.total_play_seconds / 60.0, 1) AS '时长(分)', ROUND(s.total_play_seconds / 60.0 / MAX(COALESCE(chat_stats.days_played, 1), 1), 1) AS '日均(分)', ROUND(s.total_play_seconds / 60.0 / MAX(chat_stats.selected_sessions, 1), 1) AS '会话均(分)', s.island_level AS '岛Lv', s.money AS '金币', CAST(julianday('now') - julianday(s.last_seen) AS INTEGER) AS '距今天' FROM user_sessions s JOIN chat_stats ON s.user_id = chat_stats.user_id WHERE chat_stats.chat_count >= 2 ORDER BY chat_stats.chat_count DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "📋 有效用户明细 (请求数>=2)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": [
+                "countAll"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "id": 21,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH filtered AS (SELECT c.*, COUNT(*) OVER (PARTITION BY c.user_id) AS selected_requests, ROW_NUMBER() OVER (PARTITION BY c.user_id ORDER BY c.timestamp DESC) AS rn FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}))) SELECT COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', datetime(c.timestamp, '+8 hours') AS '时间(北京)', c.user_query AS '最后消息', c.ai_response AS 'AI回复' FROM filtered c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE c.selected_requests = 1 AND c.rn = 1 ORDER BY c.timestamp DESC LIMIT 100",
+          "queryType": "table",
+          "rawQueryText": "WITH filtered AS (SELECT c.*, COUNT(*) OVER (PARTITION BY c.user_id) AS selected_requests, ROW_NUMBER() OVER (PARTITION BY c.user_id ORDER BY c.timestamp DESC) AS rn FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring}))) SELECT COALESCE(s.nickname, s.player_name, '') AS '昵称', c.user_id AS '用户ID', c.country AS '国家', CASE WHEN lower(COALESCE(c.client_version, '')) LIKE 'unity%' THEN 'Unity' WHEN COALESCE(c.client_version, '') = '' THEN 'Unknown' ELSE 'Non-Unity' END AS '客户端', COALESCE(NULLIF(c.client_version, ''), '(empty)') AS '版本', datetime(c.timestamp, '+8 hours') AS '时间(北京)', c.user_query AS '最后消息', c.ai_response AS 'AI回复' FROM filtered c INNER JOIN user_sessions s ON c.user_id = s.user_id WHERE c.selected_requests = 1 AND c.rn = 1 ORDER BY c.timestamp DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "⚠️ 流失用户分析 (仅1次请求)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "用户数",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 80
+      },
+      "id": 45,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT '0-5分钟' AS range_label, 1 AS sort_order, COUNT(*) AS count FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 < 5 UNION ALL SELECT '5-30分钟', 2, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 5 AND s.total_play_seconds / 60.0 < 30 UNION ALL SELECT '30-60分钟', 3, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 30 AND s.total_play_seconds / 60.0 < 60 UNION ALL SELECT '1-2小时', 4, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 60 AND s.total_play_seconds / 60.0 < 120 UNION ALL SELECT '2-5小时', 5, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 120 AND s.total_play_seconds / 60.0 < 300 UNION ALL SELECT '5小时以上', 6, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 300 ORDER BY sort_order",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT '0-5分钟' AS range_label, 1 AS sort_order, COUNT(*) AS count FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 < 5 UNION ALL SELECT '5-30分钟', 2, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 5 AND s.total_play_seconds / 60.0 < 30 UNION ALL SELECT '30-60分钟', 3, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 30 AND s.total_play_seconds / 60.0 < 60 UNION ALL SELECT '1-2小时', 4, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 60 AND s.total_play_seconds / 60.0 < 120 UNION ALL SELECT '2-5小时', 5, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 120 AND s.total_play_seconds / 60.0 < 300 UNION ALL SELECT '5小时以上', 6, COUNT(*) FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id WHERE s.total_play_seconds / 60.0 >= 300 ORDER BY sort_order",
+          "refId": "A"
+        }
+      ],
+      "title": "⏱️ 游玩时长分布",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "sort_order": true
+            },
+            "renameByName": {
+              "count": "用户数",
+              "range_label": "时长区间"
+            }
+          }
+        }
+      ],
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 80
+      },
+      "id": 46,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT s.country AS '国家', COUNT(*) AS count FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id GROUP BY s.country ORDER BY count DESC",
+          "queryType": "table",
+          "rawQueryText": "WITH active_users AS (SELECT c.user_id, COUNT(*) AS selected_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND c.user_id != '' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id HAVING selected_requests >= 2) SELECT s.country AS '国家', COUNT(*) AS count FROM user_sessions s JOIN active_users au ON s.user_id = au.user_id GROUP BY s.country ORDER BY count DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "🌏 有效用户地区分布",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "count"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "piechart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 88
+      },
+      "id": 110,
+      "panels": [],
+      "title": "📊 用户深度分析 User Engagement",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 89
+      },
+      "id": 103,
+      "panels": [],
+      "title": "👥 全部用户会话统计",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 90
+      },
+      "id": 111,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "SELECT strftime('%H', datetime(timestamp, '+8 hours')) AS 'Hour (BJ)', COUNT(*) AS 'Requests' FROM conversations WHERE ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY 1 ORDER BY 1",
+          "refId": "A",
+          "queryText": "SELECT strftime('%H', datetime(timestamp, '+8 hours')) AS 'Hour (BJ)', COUNT(*) AS 'Requests' FROM conversations WHERE ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "title": "⏰ 活跃时段分布 (北京时间)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 90
+      },
+      "id": 112,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS selected_requests, COUNT(DISTINCT COALESCE(NULLIF(c.session_id, ''), CAST(c.id AS TEXT))) AS selected_sessions FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id HAVING selected_requests >= 5) SELECT COALESCE(s.nickname, s.player_name, substr(s.user_id, 1, 8)) AS 'User', ROUND(CAST(p.selected_requests AS FLOAT) / MAX(p.selected_sessions, 1), 1) AS 'Avg Requests/Session', p.selected_requests AS total_requests, p.selected_sessions AS session_count FROM per_user p JOIN user_sessions s ON p.user_id = s.user_id ORDER BY 2 DESC LIMIT 10",
+          "refId": "A",
+          "queryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS selected_requests, COUNT(DISTINCT COALESCE(NULLIF(c.session_id, ''), CAST(c.id AS TEXT))) AS selected_sessions FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id HAVING selected_requests >= 5) SELECT COALESCE(s.nickname, s.player_name, substr(s.user_id, 1, 8)) AS 'User', ROUND(CAST(p.selected_requests AS FLOAT) / MAX(p.selected_sessions, 1), 1) AS 'Avg Requests/Session', p.selected_requests AS total_requests, p.selected_sessions AS session_count FROM per_user p JOIN user_sessions s ON p.user_id = s.user_id ORDER BY 2 DESC LIMIT 10"
+        }
+      ],
+      "title": "🏆 互动深度排行 Top 10",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 90
+      },
+      "id": 113,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "SELECT COALESCE(s.nickname, s.player_name, substr(c.user_id, 1, 8)) AS 'User', ROUND(CAST(SUM(c.completion_tokens) AS FLOAT) / MAX(SUM(c.prompt_tokens), 1), 2) AS 'Output/Input Ratio', SUM(c.completion_tokens) AS 'Out', SUM(c.prompt_tokens) AS 'In' FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id HAVING SUM(c.prompt_tokens) > 500 ORDER BY 2 DESC LIMIT 10",
+          "refId": "A",
+          "queryText": "SELECT COALESCE(s.nickname, s.player_name, substr(c.user_id, 1, 8)) AS 'User', ROUND(CAST(SUM(c.completion_tokens) AS FLOAT) / MAX(SUM(c.prompt_tokens), 1), 2) AS 'Output/Input Ratio', SUM(c.completion_tokens) AS 'Out', SUM(c.prompt_tokens) AS 'In' FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id HAVING SUM(c.prompt_tokens) > 500 ORDER BY 2 DESC LIMIT 10"
+        }
+      ],
+      "title": "📝 内容生成比排行 Top 10",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 98
+      },
+      "id": 200,
+      "panels": [],
+      "title": "📈 用户增长 & 留存 DAU & Retention",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": [
+                "countAll"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "总请求"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 99
+      },
+      "id": 202,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "总请求"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH filtered_chat AS (SELECT c.user_id, c.timestamp, c.client_version FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' AND c.user_id != ''), first_day_users AS (SELECT user_id, MIN(date(timestamp)) AS first_day, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(client_version, ''), '(empty)')) AS client_versions FROM filtered_chat GROUP BY user_id), retained_users AS (SELECT DISTINCT f.user_id, f.first_day, date(c.timestamp) AS return_day, f.client_versions FROM first_day_users f JOIN filtered_chat c ON f.user_id = c.user_id WHERE date(c.timestamp) = date(f.first_day, '+1 day')) SELECT COALESCE(s.nickname, s.player_name, substr(r.user_id, 1, 8)) AS '用户', r.client_versions AS '版本', r.first_day AS '首日', r.return_day AS '次日', s.country AS '国家', s.total_requests AS '总请求', ROUND(s.total_play_seconds / 60.0, 1) AS '游玩分钟', s.session_count AS '会话数' FROM retained_users r JOIN user_sessions s ON r.user_id = s.user_id ORDER BY s.total_requests DESC",
+          "refId": "A",
+          "queryText": "WITH filtered_chat AS (SELECT c.user_id, c.timestamp, c.client_version FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) AND c.user_id != 'anonymous_user' AND c.user_id != ''), first_day_users AS (SELECT user_id, MIN(date(timestamp)) AS first_day, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(client_version, ''), '(empty)')) AS client_versions FROM filtered_chat GROUP BY user_id), retained_users AS (SELECT DISTINCT f.user_id, f.first_day, date(c.timestamp) AS return_day, f.client_versions FROM first_day_users f JOIN filtered_chat c ON f.user_id = c.user_id WHERE date(c.timestamp) = date(f.first_day, '+1 day')) SELECT COALESCE(s.nickname, s.player_name, substr(r.user_id, 1, 8)) AS '用户', r.client_versions AS '版本', r.first_day AS '首日', r.return_day AS '次日', s.country AS '国家', s.total_requests AS '总请求', ROUND(s.total_play_seconds / 60.0, 1) AS '游玩分钟', s.session_count AS '会话数' FROM retained_users r JOIN user_sessions s ON r.user_id = s.user_id ORDER BY s.total_requests DESC"
+        }
+      ],
+      "title": "🏆 次日留存玩家明细",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 107
+      },
+      "id": 300,
+      "panels": [],
+      "title": "📊 深度分析 Deep Analytics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "用户数",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 108
+      },
+      "id": 301,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS request_count FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id) SELECT '1次' AS bucket, 1 AS sort_order, SUM(CASE WHEN request_count = 1 THEN 1 ELSE 0 END) AS count FROM per_user UNION ALL SELECT '2-5次', 2, SUM(CASE WHEN request_count BETWEEN 2 AND 5 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '6-20次', 3, SUM(CASE WHEN request_count BETWEEN 6 AND 20 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '21-100次', 4, SUM(CASE WHEN request_count BETWEEN 21 AND 100 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '100+次', 5, SUM(CASE WHEN request_count > 100 THEN 1 ELSE 0 END) FROM per_user ORDER BY sort_order",
+          "refId": "A",
+          "queryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS request_count FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id) SELECT '1次' AS bucket, 1 AS sort_order, SUM(CASE WHEN request_count = 1 THEN 1 ELSE 0 END) AS count FROM per_user UNION ALL SELECT '2-5次', 2, SUM(CASE WHEN request_count BETWEEN 2 AND 5 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '6-20次', 3, SUM(CASE WHEN request_count BETWEEN 6 AND 20 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '21-100次', 4, SUM(CASE WHEN request_count BETWEEN 21 AND 100 THEN 1 ELSE 0 END) FROM per_user UNION ALL SELECT '100+次', 5, SUM(CASE WHEN request_count > 100 THEN 1 ELSE 0 END) FROM per_user ORDER BY sort_order"
+        }
+      ],
+      "title": "📊 真实用户对话分布 (排除开发者)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "sort_order": true
+            },
+            "renameByName": {
+              "bucket": "对话次数",
+              "count": "用户数"
+            }
+          }
+        }
+      ],
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 40
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 108
+      },
+      "id": 302,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS total_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id), ranked AS (SELECT user_id, total_requests, ROW_NUMBER() OVER (ORDER BY total_requests DESC) AS rn, COUNT(*) OVER () AS total FROM per_user), top10 AS (SELECT SUM(total_requests) AS top_vol FROM ranked WHERE rn <= MAX(total * 0.1, 1)), all_vol AS (SELECT SUM(total_requests) AS total_vol FROM per_user) SELECT COALESCE(ROUND(100.0 * top10.top_vol / NULLIF(all_vol.total_vol, 0), 1), 0) AS pct FROM top10, all_vol",
+          "refId": "A",
+          "queryText": "WITH per_user AS (SELECT c.user_id, COUNT(*) AS total_requests FROM conversations c JOIN user_sessions s ON c.user_id = s.user_id WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) AND (s.is_developer = 0 OR s.is_developer IS NULL) GROUP BY c.user_id), ranked AS (SELECT user_id, total_requests, ROW_NUMBER() OVER (ORDER BY total_requests DESC) AS rn, COUNT(*) OVER () AS total FROM per_user), top10 AS (SELECT SUM(total_requests) AS top_vol FROM ranked WHERE rn <= MAX(total * 0.1, 1)), all_vol AS (SELECT SUM(total_requests) AS total_vol FROM per_user) SELECT COALESCE(ROUND(100.0 * top10.top_vol / NULLIF(all_vol.total_vol, 0), 1), 0) AS pct FROM top10, all_vol"
+        }
+      ],
+      "title": "🐋 Top 10% 用户贡献流量",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 116
+      },
+      "id": 400,
+      "panels": [],
+      "title": "☁️ 热门词汇 Top Words",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "次数",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 117
+      },
+      "id": 401,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "SELECT user_query AS '玩家消息', COUNT(*) AS '次数' FROM conversations WHERE is_preset = 0 AND user_query != '' AND LENGTH(user_query) > 1 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30",
+          "refId": "A",
+          "queryText": "SELECT user_query AS '玩家消息', COUNT(*) AS '次数' FROM conversations WHERE is_preset = 0 AND user_query != '' AND LENGTH(user_query) > 1 AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY user_query ORDER BY COUNT(*) DESC LIMIT 30"
+        }
+      ],
+      "title": "🔥 热门玩家消息 Top 30 (排除预设)",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 127
+      },
+      "id": 500,
+      "panels": [],
+      "title": "🏆 金币排行榜",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": [
+                "sum"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "排名"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "金币"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "yellow",
+                      "value": 0
+                    },
+                    {
+                      "color": "orange",
+                      "value": 10000
+                    },
+                    {
+                      "color": "red",
+                      "value": 50000
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 128
+      },
+      "id": 501,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "金币"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "queryType": "table",
+          "rawQueryText": "WITH version_stats AS (SELECT c.user_id, COUNT(*) AS chat_count, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(c.client_version, ''), '(empty)')) AS client_versions FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id) SELECT ROW_NUMBER() OVER (ORDER BY s.money DESC) AS '排名', COALESCE(s.nickname, s.player_name, 'anonymous') AS '昵称', version_stats.client_versions AS '版本', s.money AS '金币', s.island_level AS '等级', (CAST(s.tasks_completed AS TEXT) || '/' || CAST(s.tasks_total AS TEXT)) AS '任务进度', s.current_task_title AS '当前任务', s.current_task_status AS '任务状态', (CAST(s.achievements_unlocked AS TEXT) || '/' || CAST(s.achievements_total AS TEXT)) AS '成就', s.country AS '国家', version_stats.chat_count AS '请求数', ROUND(s.total_play_seconds / 60.0, 1) AS '游玩分钟' FROM user_sessions s JOIN version_stats ON s.user_id = version_stats.user_id WHERE (s.is_developer = 0 OR s.is_developer IS NULL) AND (s.is_blacklisted = 0 OR s.is_blacklisted IS NULL) AND s.user_id != 'anonymous_user' AND s.user_id != '' ORDER BY s.money DESC",
+          "refId": "A",
+          "queryText": "WITH version_stats AS (SELECT c.user_id, COUNT(*) AS chat_count, GROUP_CONCAT(DISTINCT COALESCE(NULLIF(c.client_version, ''), '(empty)')) AS client_versions FROM conversations c WHERE c.message_type = 'chat' AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(c.release_version, ''), '__empty__') IN (${release_version:sqlstring})) GROUP BY c.user_id) SELECT ROW_NUMBER() OVER (ORDER BY s.money DESC) AS '排名', COALESCE(s.nickname, s.player_name, 'anonymous') AS '昵称', version_stats.client_versions AS '版本', s.money AS '金币', s.island_level AS '等级', (CAST(s.tasks_completed AS TEXT) || '/' || CAST(s.tasks_total AS TEXT)) AS '任务进度', s.current_task_title AS '当前任务', s.current_task_status AS '任务状态', (CAST(s.achievements_unlocked AS TEXT) || '/' || CAST(s.achievements_total AS TEXT)) AS '成就', s.country AS '国家', version_stats.chat_count AS '请求数', ROUND(s.total_play_seconds / 60.0, 1) AS '游玩分钟' FROM user_sessions s JOIN version_stats ON s.user_id = version_stats.user_id WHERE (s.is_developer = 0 OR s.is_developer IS NULL) AND (s.is_blacklisted = 0 OR s.is_blacklisted IS NULL) AND s.user_id != 'anonymous_user' AND s.user_id != '' ORDER BY s.money DESC"
+        }
+      ],
+      "title": "🏆 金币排行榜 (全量玩家)",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "1m",
+  "schemaVersion": 42,
+  "tags": [
+    "llm",
+    "conversations",
+    "analytics",
+    "PawFishing",
+    "legacy-reports"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "SQLite",
+          "value": "SQLite"
+        },
+        "includeAll": false,
+        "label": "SQLite Datasource",
+        "name": "DS_SQLITE",
+        "options": [],
+        "query": "frser-sqlite-datasource",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "definition": "WITH release_stats AS (SELECT COALESCE(NULLIF(release_version, ''), '(empty)') AS release_label, COALESCE(NULLIF(release_version, ''), '__empty__') AS value, MAX(timestamp) AS latest_seen FROM conversations GROUP BY release_version) SELECT CASE WHEN value <> '__empty__' AND latest_seen IS NOT NULL THEN release_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE release_label END AS __text, value AS __value FROM release_stats ORDER BY CASE WHEN value = 'dev' THEN 1 WHEN value = '__empty__' THEN 3 ELSE 0 END, latest_seen DESC, value",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Release Version",
+        "multi": true,
+        "name": "release_version",
+        "options": [],
+        "query": "WITH release_stats AS (SELECT COALESCE(NULLIF(release_version, ''), '(empty)') AS release_label, COALESCE(NULLIF(release_version, ''), '__empty__') AS value, MAX(timestamp) AS latest_seen FROM conversations GROUP BY release_version) SELECT CASE WHEN value <> '__empty__' AND latest_seen IS NOT NULL THEN release_label || ' @ ' || datetime(latest_seen, '+8 hours') || ' BJ' ELSE release_label END AS __text, value AS __value FROM release_stats ORDER BY CASE WHEN value = 'dev' THEN 1 WHEN value = '__empty__' THEN 3 ELSE 0 END, latest_seen DESC, value",
+        "refresh": 1,
+        "regex": "",
+        "sort": 0,
+        "type": "query",
+        "allValue": "'__all__'"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "label": "用户ID筛选",
+        "name": "user_filter",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "false",
+          "value": "false"
+        },
+        "label": "显示所有记录",
+        "name": "show_all",
+        "options": [
+          {
+            "selected": true,
+            "text": "false",
+            "value": "false"
+          },
+          {
+            "selected": false,
+            "text": "true",
+            "value": "true"
+          }
+        ],
+        "query": "false,true",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "旧版 · 🗣️ 对话历史与用户分析",
+  "uid": "llm-conversations-legacy",
+  "version": 1,
+  "description": "从 2026-09-20 改版前备份恢复，沿用原有查询和统计口径，读取当前数据库。旧版不能可靠区分客户端平台；需要新口径请使用新版报表。"
+}

@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import (
     DEFAULT_LLM_MODEL,
+    DEFAULT_LLM_PROVIDER,
     GEMINI_API_KEY,
     GEMINI_IMAGE_MODEL,
     GEMINI_SDK_URL,
@@ -53,7 +54,10 @@ _PROVIDER_ALIASES = {
     "doubao": "volcengine",
     "gemini": "gemini",
     "google": "gemini",
+    "google_vertex": "vertex_ai",
     "openai": "openai",
+    "vertex": "vertex_ai",
+    "vertex_ai": "vertex_ai",
     "volcano": "volcengine",
     "volcengine": "volcengine",
     "ark": "volcengine",
@@ -262,11 +266,40 @@ def _infer_provider_from_model(model: str | None) -> str | None:
 
 def _resolve_litellm_model(model: str | None, provider: str | None) -> tuple[str, str]:
     model = _clean_optional_str(model) or DEFAULT_LLM_MODEL
-    provider = _normalize_provider(provider) or _infer_provider_from_model(model) or "gemini"
+    model_provider = _infer_provider_from_model(model) if _is_litellm_prefixed_model(model) else None
+    provider = model_provider or _normalize_provider(provider) or _infer_provider_from_model(model) or "gemini"
 
     if _is_litellm_prefixed_model(model):
         return model, provider
     return f"{provider}/{model}", provider
+
+
+def _default_litellm_provider() -> str:
+    return _normalize_provider(DEFAULT_LLM_PROVIDER) or _infer_provider_from_model(DEFAULT_LLM_MODEL) or "gemini"
+
+
+def _provider_api_key(provider: str) -> str | None:
+    if provider in {"gemini", "vertex_ai"}:
+        return GEMINI_API_KEY
+    return None
+
+
+def _require_server_credentials(provider: str, api_key: str | None) -> None:
+    if provider in {"gemini", "vertex_ai"} and not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+
+
+def _resolve_litellm_transport(
+    litellm_model: str,
+    provider: str,
+    api_base: str | None,
+) -> tuple[str, str, str | None]:
+    if provider == "vertex_ai":
+        # LiteLLM's vertex_ai adapter only supports OAuth. Its Gemini adapter
+        # supports API-key auth against the configured native Vertex endpoint.
+        model = _strip_litellm_provider_prefix(litellm_model)
+        return f"gemini/{model}", "gemini", api_base or GEMINI_SDK_URL
+    return litellm_model, provider, api_base
 
 
 def _resolve_gemini_image_model(model: str | None, provider: str | None) -> str:
@@ -339,7 +372,7 @@ def _build_litellm_kwargs(
     *,
     litellm_model: str,
     provider: str,
-    api_key: str,
+    api_key: str | None,
     api_base: str | None,
     api_version: str | None,
 ) -> dict[str, Any]:
@@ -349,12 +382,13 @@ def _build_litellm_kwargs(
             continue
         if key in {"model", "extra_body", "contents", "generationConfig", "generation_config"}:
             continue
-        if key == "tools" and provider == "gemini":
+        if key == "tools" and provider in {"gemini", "vertex_ai"}:
             value = _sanitize_openai_tools_for_gemini(value)
         kwargs[key] = value
 
     kwargs["model"] = litellm_model
-    kwargs["api_key"] = api_key
+    if api_key:
+        kwargs["api_key"] = api_key
     if api_base:
         kwargs["api_base"] = api_base
     if api_version:
@@ -721,16 +755,29 @@ async def handle_chat_completions(
 
         requested_model = _clean_optional_str(request_json.get("model"))
         requested_provider = _extract_body_field(request_json, _MODEL_TYPE_FIELDS)
+        requested_provider_field = _normalize_provider(requested_provider)
+        requested_prefixed_provider = (
+            _infer_provider_from_model(requested_model)
+            if requested_model and _is_litellm_prefixed_model(requested_model)
+            else None
+        )
         client_api_key = _extract_client_api_key(request, request_json)
         requested_provider_normalized = (
-            _normalize_provider(requested_provider)
+            requested_provider_field
+            or requested_prefixed_provider
             or _infer_provider_from_model(requested_model)
         )
+        server_requested_provider = requested_provider_field or requested_prefixed_provider
+        if not server_requested_provider and requested_provider_normalized == "gemini":
+            server_requested_provider = _default_litellm_provider()
+        elif not server_requested_provider:
+            server_requested_provider = requested_provider_normalized
+
         use_client_model = bool(requested_model and client_api_key)
-        use_server_gemini_model = bool(
+        use_server_model = bool(
             requested_model
             and not client_api_key
-            and requested_provider_normalized == "gemini"
+            and server_requested_provider in {"gemini", "vertex_ai"}
         )
 
         if _is_image_request(request_json, requested_model):
@@ -851,20 +898,34 @@ async def handle_chat_completions(
             litellm_model, provider = _resolve_litellm_model(requested_model, requested_provider)
             upstream_api_key = client_api_key
         else:
-            upstream_api_key = GEMINI_API_KEY
-            if not upstream_api_key:
-                raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
-            if use_server_gemini_model:
-                litellm_model, provider = _resolve_litellm_model(requested_model, "gemini")
+            if use_server_model:
+                litellm_model, provider = _resolve_litellm_model(
+                    requested_model,
+                    server_requested_provider,
+                )
             else:
-                litellm_model, provider = _resolve_litellm_model(DEFAULT_LLM_MODEL, "gemini")
+                litellm_model, provider = _resolve_litellm_model(
+                    DEFAULT_LLM_MODEL,
+                    _default_litellm_provider(),
+                )
+            upstream_api_key = _provider_api_key(provider)
+            _require_server_credentials(provider, upstream_api_key)
+
+        upstream_api_base = _extract_api_base(request_json)
+        transport_model, transport_provider, upstream_api_base = (
+            _resolve_litellm_transport(
+                litellm_model,
+                provider,
+                upstream_api_base,
+            )
+        )
 
         litellm_kwargs = _build_litellm_kwargs(
             request_json,
-            litellm_model=litellm_model,
-            provider=provider,
+            litellm_model=transport_model,
+            provider=transport_provider,
             api_key=upstream_api_key,
-            api_base=_extract_api_base(request_json),
+            api_base=upstream_api_base,
             api_version=_extract_api_version(request_json),
         )
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from version_utils import release_version_from_client_version
+from telemetry_platform import client_metadata, ensure_platform_columns
 
 
 HEARTBEAT_STALE_AFTER_SEC = 180
@@ -247,6 +248,7 @@ def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "play_session_rollups", "activity_threshold_idle_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "activity_threshold_afk_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "last_event_type", "TEXT")
+    ensure_platform_columns(conn, ("play_session_events", "play_session_rollups"))
     conn.executescript(
         """
         CREATE INDEX IF NOT EXISTS idx_play_session_events_release_version
@@ -499,6 +501,7 @@ def _build_event(
         dedupe_key = f"server_time:{event_type}:{user_id}:{session_id}:{received_at}"
 
     return {
+        **client_metadata(payload, headers),
         "dedupe_key": dedupe_key,
         "event_type": event_type,
         "received_at": received_at,
@@ -675,6 +678,8 @@ def recompute_play_session_rollup(
         "player_session_id": _latest_nonempty(rows, "player_session_id"),
         "player_id": _latest_nonempty(rows, "player_id"),
         "client_version": _latest_nonempty(rows, "client_version"),
+        "client_platform": next((row["client_platform"] for row in rows if row["client_platform"] != "unknown"), "unknown"),
+        "is_development_build": max(row["is_development_build"] or 0 for row in rows),
         "release_version": _latest_nonempty(rows, "release_version"),
         "country": _latest_nonempty(rows, "country"),
         "first_seen_at": first_seen_at,
@@ -810,6 +815,7 @@ def recompute_play_session_rollup(
         """,
         rollup,
     )
+    conn.execute("UPDATE play_session_rollups SET client_platform=:client_platform, is_development_build=:is_development_build WHERE user_id=:user_id AND session_id=:session_id", rollup)
     return rollup
 
 
@@ -907,6 +913,7 @@ def record_play_session_event(
         """,
         event,
     )
+    conn.execute("UPDATE play_session_events SET client_platform=:client_platform, is_development_build=:is_development_build WHERE dedupe_key=:dedupe_key", event)
     return recompute_play_session_rollup(
         conn,
         user_id=event["user_id"],

@@ -29,6 +29,7 @@ from prometheus_client import (
 
 from playtime_store import ensure_playtime_schema
 from version_utils import release_version_from_client_version
+from telemetry_platform import client_metadata, ensure_platform_columns
 
 # ============ 配置 ============
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "./output"))
@@ -304,6 +305,10 @@ class MetricsState:
                 phrase TEXT UNIQUE
             )
         ''')
+        ensure_platform_columns(conn, ("conversations",))
+        for column in ("llm_request_id", "attempt_id", "player_session_id", "decision_id"):
+            self._add_column_if_missing(cursor, "conversations", column, "TEXT")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_conversations_request ON conversations(llm_request_id)")
         ensure_playtime_schema(conn)
         
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)')
@@ -487,6 +492,9 @@ class MetricsState:
                 is_preset,
             ))
 
+            metadata = client_metadata(record)
+            cursor.execute("UPDATE conversations SET client_platform=?, is_development_build=?, llm_request_id=?, attempt_id=?, player_session_id=?, decision_id=? WHERE file_path=?",
+                           (metadata["client_platform"], metadata["is_development_build"], record.get("llm_request_id"), record.get("attempt_id"), record.get("player_session_id"), record.get("decision_id"), file_path))
             cursor.execute('''
                 INSERT INTO user_sessions (user_id, first_seen, last_seen, total_requests, country)
                 VALUES (?, ?, ?, ?, ?)
@@ -873,6 +881,7 @@ def _process_session_file(session_record: dict, filepath: Path, state: MetricsSt
             "message_type": event_type,
             "session_id": session_id,
             "client_version": client_version,
+            **client_metadata(payload, headers),
             "session_duration_sec": payload.get("session_duration_sec") if event_type == "logoff" else None,
             "total_money": payload.get("total_money") if event_type == "logoff" else None,
             "island_level": payload.get("island_level") if event_type == "logoff" else None,
@@ -1131,6 +1140,11 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             "message_type": message_type,
             "session_id": session_id,
             "client_version": client_version,
+        **client_metadata(body, headers),
+        "llm_request_id": headers.get("x-llm-request-id") or headers.get("X-LLM-Request-ID"),
+        "attempt_id": headers.get("x-attempt-id") or headers.get("X-Attempt-ID"),
+        "player_session_id": headers.get("x-player-session-id") or headers.get("X-Player-Session-ID"),
+        "decision_id": headers.get("x-decision-id") or headers.get("X-Decision-ID"),
             "session_duration_sec": session_duration_sec,
             "total_money": total_money if message_type == "logoff" else None,
             "island_level": island_level if message_type == "logoff" else None,

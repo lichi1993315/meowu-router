@@ -204,6 +204,172 @@ class GameplayTelemetryImporterTests(unittest.TestCase):
         self.assertEqual(summary["release_versions"], "taptap-0.1")
         self.assertEqual(summary["client_versions"], client_version)
 
+    def test_behavior_view_maps_dashboard_business_events(self) -> None:
+        sample = {
+            "user_id": "user-1",
+            "client_version": "unity-test",
+            "gameplay_telemetry": {
+                "session_meta": {"session_id": "session-behavior"},
+                "days": {
+                    "1": {
+                        "events": [
+                            {"event_type": "money_delta", "payload": {"delta": 10}},
+                            {
+                                "event_type": "task_started",
+                                "payload": {"task_title": "Task started"},
+                            },
+                            {
+                                "event_type": "building_placed",
+                                "energy_cost": 3,
+                                "payload": {"building_name": "路灯"},
+                            },
+                            {
+                                "event_type": "farming_plant",
+                                "payload": {"seed_name": "土豆种子"},
+                            },
+                            {
+                                "event_type": "farming_water",
+                                "energy_cost": 3,
+                                "payload": {"crop_name": "土豆"},
+                            },
+                            {
+                                "event_type": "farming_harvest",
+                                "payload": {"crop_name": "土豆"},
+                            },
+                            {
+                                "event_type": "farming_till",
+                                "energy_cost": 5,
+                                "payload": {"plot_id": 1},
+                            },
+                            {
+                                "event_type": "fishing_catch",
+                                "energy_cost": 8,
+                                "payload": {"fish": {"fish_name": "鲈鱼"}},
+                            },
+                            {
+                                "event_type": "restaurant_order_taken",
+                                "payload": {"detail": "1"},
+                            },
+                            {
+                                "event_type": "cooking_completed",
+                                "payload": {"dish_name": "清水"},
+                            },
+                            {
+                                "event_type": "restaurant_serve",
+                                "payload": {"recipe_name": "清水"},
+                            },
+                            {
+                                "event_type": "player_skin_changed",
+                                "payload": {"part": "Nose", "item_name": "Nose_06"},
+                            },
+                            {
+                                "event_type": "shop_purchase",
+                                "payload": {"item_id": 1001, "item_name": "小白菜"},
+                            },
+                            {
+                                "event_type": "shop_purchase",
+                                "payload": {"item_id": 413000, "item_name": "岛屿宠物上限"},
+                            },
+                            {
+                                "event_type": "shop_sell",
+                                "payload": {"item_id": 1006, "item_name": "易拉罐"},
+                            },
+                            {
+                                "event_type": "catalog_view",
+                                "payload": {"view_action": "view_fish"},
+                            },
+                            {
+                                "event_type": "cat_detail_view",
+                                "payload": {
+                                    "view_action": "view_trait",
+                                    "pet_name": "豆豆",
+                                },
+                            },
+                            {
+                                "event_type": "cat_conversation",
+                                "payload": {
+                                    "pet_personality": "8",
+                                    "pet_skin": "31",
+                                    "content": "今天也要努力赚钱",
+                                },
+                            },
+                            {"event_type": "player_sleep", "payload": {}},
+                        ]
+                    }
+                },
+            },
+        }
+
+        import_sample(
+            self.conn,
+            source_file="/tmp/behavior.json",
+            sample=sample,
+            imported_at="2026-06-07T01:10:00+00:00",
+        )
+
+        excluded_count = self.conn.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM gameplay_behavior_events
+            WHERE event_type IN ('money_delta', 'task_started', 'building_placed')
+            """
+        ).fetchone()["count"]
+        self.assertEqual(excluded_count, 0)
+
+        behavior_rows = self.conn.execute(
+            """
+            SELECT behavior_module, behavior_action, behavior_detail
+            FROM gameplay_behavior_events
+            WHERE is_behavior_stat = 1
+            ORDER BY behavior_sort_order, behavior_action, behavior_detail
+            """
+        ).fetchall()
+        behavior_keys = {
+            (row["behavior_module"], row["behavior_action"], row["behavior_detail"])
+            for row in behavior_rows
+        }
+        self.assertIn(("种地", "播种", "土豆种子"), behavior_keys)
+        self.assertIn(("种地", "浇水", "土豆"), behavior_keys)
+        self.assertIn(("种地", "收获", "土豆"), behavior_keys)
+        self.assertIn(("钓鱼", "钓鱼", "鲈鱼"), behavior_keys)
+        self.assertIn(("餐厅", "点单", "1"), behavior_keys)
+        self.assertIn(("餐厅", "做菜", "清水"), behavior_keys)
+        self.assertIn(("餐厅", "上菜", "清水"), behavior_keys)
+        self.assertIn(("换装", "Nose", "Nose_06"), behavior_keys)
+        self.assertIn(("商店", "购买", "小白菜"), behavior_keys)
+        self.assertIn(("购买升级项", "购买", "岛屿宠物上限"), behavior_keys)
+        self.assertIn(("商店", "出售", "易拉罐"), behavior_keys)
+        self.assertIn(("图鉴", "鱼", "-"), behavior_keys)
+        self.assertIn(("猫猫详情", "天赋", "豆豆"), behavior_keys)
+        self.assertIn(("睡觉", "睡觉", "-"), behavior_keys)
+
+        cat_row = self.conn.execute(
+            """
+            SELECT behavior_detail, cat_personality, cat_skin, speech_content
+            FROM gameplay_behavior_events
+            WHERE behavior_module = '和猫说话'
+            """
+        ).fetchone()
+        self.assertEqual(cat_row["cat_personality"], "8")
+        self.assertEqual(cat_row["cat_skin"], "31")
+        self.assertEqual(cat_row["speech_content"], "今天也要努力赚钱")
+        self.assertIn("性格:8", cat_row["behavior_detail"])
+        self.assertIn("皮肤:31", cat_row["behavior_detail"])
+
+        energy_rows = self.conn.execute(
+            """
+            SELECT energy_action, COUNT(*) AS count, SUM(energy_cost) AS energy
+            FROM gameplay_behavior_events
+            WHERE is_energy_stat = 1
+            GROUP BY energy_action
+            ORDER BY energy_action
+            """
+        ).fetchall()
+        self.assertEqual(
+            [(row["energy_action"], row["count"], row["energy"]) for row in energy_rows],
+            [("开垦耕地", 1, 5.0), ("浇水", 1, 3.0), ("钓鱼", 1, 8.0)],
+        )
+
     def test_aggregates_event_ai_usage_without_session_meta(self) -> None:
         sample = {
             "user_id": "user-1",

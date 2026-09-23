@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir \
 
 # 复制代码
 COPY metrics_exporter.py .
+COPY telemetry_platform.py /app/telemetry_platform.py
+COPY telemetry_events.py /app/telemetry_events.py
+COPY telemetry_analytics.py /app/telemetry_analytics.py
 COPY version_utils.py .
 COPY playtime_store.py .
 COPY developer_admin.py .

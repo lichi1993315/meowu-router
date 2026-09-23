@@ -1,6 +1,6 @@
 {
-  "uid": "gameplay-player-detail",
-  "title": "玩家旅程",
+  "uid": "gameplay-quality",
+  "title": "数据质量",
   "schemaVersion": 39,
   "version": 1,
   "timezone": "Asia/Shanghai",
@@ -81,7 +81,8 @@
         "current": {
           "text": "",
           "value": ""
-        }
+        },
+        "hide": 2
       },
       {
         "name": "session_id",
@@ -90,7 +91,8 @@
         "current": {
           "text": "",
           "value": ""
-        }
+        },
+        "hide": 2
       },
       {
         "name": "llm_request_id",
@@ -99,7 +101,8 @@
         "current": {
           "text": "",
           "value": ""
-        }
+        },
+        "hide": 2
       },
       {
         "name": "page",
@@ -109,7 +112,8 @@
         "current": {
           "text": "0",
           "value": "0"
-        }
+        },
+        "hide": 2
       }
     ]
   },
@@ -188,19 +192,19 @@
     },
     {
       "id": 1,
-      "title": "选择玩家后查看会话",
+      "title": "历史全量平台覆盖（不受筛选）",
       "type": "table",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "${DS_SQLITE}"
       },
-      "description": "遵守时间、平台和版本筛选。缺失值不补零；历史事件没有真实时间时不纳入期间统计。",
+      "description": "专门展示历史平台缺失，防止默认正式平台筛选掩盖旧数据。",
       "targets": [
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ) SELECT user_id,session_id,player_session_id,client_platform,client_version,started_at,ended_at,ROUND(duration_sec/60,2) 会话分钟,confidence,status FROM s WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY started_at DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)",
-          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ) SELECT user_id,session_id,player_session_id,client_platform,client_version,started_at,ended_at,ROUND(duration_sec/60,2) 会话分钟,confidence,status FROM s WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY started_at DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)"
+          "queryText": "SELECT client_platform 平台,COUNT(*) 会话数,COUNT(DISTINCT user_id) 玩家数 FROM analytics_sessions GROUP BY client_platform",
+          "rawQueryText": "SELECT client_platform 平台,COUNT(*) 会话数,COUNT(DISTINCT user_id) 玩家数 FROM analytics_sessions GROUP BY client_platform"
         }
       ],
       "fieldConfig": {
@@ -277,7 +281,7 @@
     },
     {
       "id": 2,
-      "title": "真实事件时间线",
+      "title": "期间事件字段覆盖",
       "type": "table",
       "datasource": {
         "type": "frser-sqlite-datasource",
@@ -288,8 +292,8 @@
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT user_id,session_id,occurred_at,event_type,actor_id,json_extract(payload_json,'$.request_stats.llm_request_id') llm_request_id,payload_json FROM e WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY julianday(occurred_at) DESC,sequence DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)",
-          "rawQueryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT user_id,session_id,occurred_at,event_type,actor_id,json_extract(payload_json,'$.request_stats.llm_request_id') llm_request_id,payload_json FROM e WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY julianday(occurred_at) DESC,sequence DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)"
+          "queryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT COUNT(*) 事件数,SUM(event_id IS NOT NULL) 有事件ID,SUM(client_platform NOT IN ('unknown','unattributed')) 已知平台,SUM(json_extract(payload_json,'$.request_stats.llm_request_id') IS NOT NULL) 有模型关联ID FROM e",
+          "rawQueryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT COUNT(*) 事件数,SUM(event_id IS NOT NULL) 有事件ID,SUM(client_platform NOT IN ('unknown','unattributed')) 已知平台,SUM(json_extract(payload_json,'$.request_stats.llm_request_id') IS NOT NULL) 有模型关联ID FROM e"
         }
       ],
       "fieldConfig": {
@@ -366,7 +370,7 @@
     },
     {
       "id": 3,
-      "title": "中转模型记录",
+      "title": "历史缺时间记录（不受时间筛选）",
       "type": "table",
       "datasource": {
         "type": "frser-sqlite-datasource",
@@ -377,8 +381,8 @@
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "WITH c AS (SELECT c.*, COALESCE(u.is_developer,0) is_developer FROM conversations c LEFT JOIN user_sessions u ON c.user_id=u.user_id), filtered AS (SELECT * FROM c WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(timestamp) >= julianday(${__from}/1000,'unixepoch') AND julianday(timestamp) < julianday(${__to}/1000,'unixepoch') AND message_type='chat') SELECT user_id,session_id,timestamp,client_platform,llm_request_id,attempt_id,user_query,ai_response,duration_ms,prompt_tokens,completion_tokens FROM filtered WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) AND (${llm_request_id:sqlstring}='' OR llm_request_id=${llm_request_id:sqlstring}) ORDER BY timestamp DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)",
-          "rawQueryText": "WITH c AS (SELECT c.*, COALESCE(u.is_developer,0) is_developer FROM conversations c LEFT JOIN user_sessions u ON c.user_id=u.user_id), filtered AS (SELECT * FROM c WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(timestamp) >= julianday(${__from}/1000,'unixepoch') AND julianday(timestamp) < julianday(${__to}/1000,'unixepoch') AND message_type='chat') SELECT user_id,session_id,timestamp,client_platform,llm_request_id,attempt_id,user_query,ai_response,duration_ms,prompt_tokens,completion_tokens FROM filtered WHERE ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) AND (${llm_request_id:sqlstring}='' OR llm_request_id=${llm_request_id:sqlstring}) ORDER BY timestamp DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)"
+          "queryText": "SELECT client_platform,event_type,COUNT(*) 缺时间条数 FROM gameplay_events WHERE event_real_time_iso IS NULL AND ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) GROUP BY 1,2 ORDER BY 3 DESC",
+          "rawQueryText": "SELECT client_platform,event_type,COUNT(*) 缺时间条数 FROM gameplay_events WHERE event_real_time_iso IS NULL AND ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) GROUP BY 1,2 ORDER BY 3 DESC"
         }
       ],
       "fieldConfig": {
@@ -455,19 +459,19 @@
     },
     {
       "id": 4,
-      "title": "历史缺时间事件（不受时间筛选，最多200条）",
+      "title": "数据更新时间（不受筛选）",
       "type": "table",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "${DS_SQLITE}"
       },
-      "description": "只有明确选择玩家才能查；这些事件无法还原真实时间，不混入期间时间线。",
+      "description": "遵守时间、平台和版本筛选。缺失值不补零；历史事件没有真实时间时不纳入期间统计。",
       "targets": [
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "SELECT user_id,session_id,game_day,event_index,event_type,payload_json FROM gameplay_events WHERE event_real_time_iso IS NULL AND ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY game_day DESC,event_index DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)",
-          "rawQueryText": "SELECT user_id,session_id,game_day,event_index,event_type,payload_json FROM gameplay_events WHERE event_real_time_iso IS NULL AND ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ${user_id:sqlstring}<>'' AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring}) AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}) ORDER BY game_day DESC,event_index DESC LIMIT 200 OFFSET (CAST(${page:sqlstring} AS INTEGER)*200)"
+          "queryText": "SELECT '心跳' 数据源,MAX(received_at) 最近入库 FROM play_session_events UNION ALL SELECT '增量事件',MAX(received_at) FROM gameplay_live_events UNION ALL SELECT '退出快照',MAX(imported_at) FROM gameplay_sessions UNION ALL SELECT '中转请求',MAX(timestamp) FROM conversations",
+          "rawQueryText": "SELECT '心跳' 数据源,MAX(received_at) 最近入库 FROM play_session_events UNION ALL SELECT '增量事件',MAX(received_at) FROM gameplay_live_events UNION ALL SELECT '退出快照',MAX(imported_at) FROM gameplay_sessions UNION ALL SELECT '中转请求',MAX(timestamp) FROM conversations"
         }
       ],
       "fieldConfig": {
@@ -538,6 +542,184 @@
       "gridPos": {
         "x": 0,
         "y": 30,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 5,
+      "title": "期间会话可信度",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "遵守时间、平台和版本筛选。缺失值不补零；历史事件没有真实时间时不纳入期间统计。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ) SELECT client_platform,duration_source,confidence,COUNT(*) 会话数 FROM s GROUP BY 1,2,3",
+          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ) SELECT client_platform,duration_source,confidence,COUNT(*) 会话数 FROM s GROUP BY 1,2,3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 6,
+      "title": "AI 请求关联覆盖",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "遵守时间、平台和版本筛选。缺失值不补零；历史事件没有真实时间时不纳入期间统计。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT COUNT(*) AI响应数,SUM(EXISTS(SELECT 1 FROM conversations c WHERE c.llm_request_id=json_extract(e.payload_json,'$.request_stats.llm_request_id') AND c.user_id=e.user_id)) 可查中转原文数 FROM e WHERE event_type='cat_agent_response'",
+          "rawQueryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT COUNT(*) AI响应数,SUM(EXISTS(SELECT 1 FROM conversations c WHERE c.llm_request_id=json_extract(e.payload_json,'$.request_stats.llm_request_id') AND c.user_id=e.user_id)) 可查中转原文数 FROM e WHERE event_type='cat_agent_response'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 48,
         "w": 24,
         "h": 9
       }

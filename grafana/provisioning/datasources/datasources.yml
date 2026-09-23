@@ -13,4 +13,6 @@ datasources:
     access: proxy
     jsonData:
       path: /var/lib/grafana/sqlite/conversations.db
+      # Allow short importer transactions to finish before rejecting dashboard reads.
+      pathOptions: "_pragma=busy_timeout(10000)"
     editable: true

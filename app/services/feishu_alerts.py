@@ -690,6 +690,8 @@ def _build_error_log_alert_text(
     session_id = headers.get("x-session-id") or payload.get("session_id") or ""
     client_version = _client_version_from_payload(payload, headers)
     reason = payload.get("reason") or payload.get("error_reason") or ""
+    # 姓名来自游戏存档，不使用账号 ID 或后台备注替代。
+    username = _clean_text(payload.get("username"), max_chars=120)
     message = payload.get("message") or payload.get("error") or payload.get("exception") or ""
     message = _clean_text(message, max_chars=2400)
 
@@ -698,6 +700,7 @@ def _build_error_log_alert_text(
         "",
         f"received_at: {received_at}",
         f"user_id: {user_id}",
+        f"username: {username}",
         f"session_id: {session_id}",
         f"client_version: {client_version}",
         f"content_type: {headers.get('content-type', '')}",

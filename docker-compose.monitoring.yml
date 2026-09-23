@@ -26,6 +26,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_BASE_URL=${GEMINI_BASE_URL}
       - GEMINI_SDK_URL=${GEMINI_SDK_URL:-}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-vertex_ai}
       - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL:-gemini-3-flash-preview}
       - GEMINI_IMAGE_MODEL=${GEMINI_IMAGE_MODEL:-gemini-3-pro-image-preview}
       - PAW_FERNET_KEY=${PAW_FERNET_KEY}
@@ -51,7 +52,7 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
-  # Caddy - public HTTPS entrypoint for api.meowuisland.com
+  # Caddy - public HTTPS entrypoint
   caddy:
     image: caddy:2-alpine
     container_name: llm-router-caddy
@@ -61,8 +62,15 @@ services:
       - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /var/www/html/bundles:/srv/static/bundles:ro
+      - /home/www-data/pawfishing:/srv/static/pawfishing:ro
+      - /home/www-data/jokeem:/srv/static/jokeem:ro
+      - /home/www-data/meowu:/srv/static/meowu:ro
+      - /usr/share/nginx/html:/srv/static/nginx_html:ro
       - caddy_data:/data
       - caddy_config:/config
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - router-api
     networks:
