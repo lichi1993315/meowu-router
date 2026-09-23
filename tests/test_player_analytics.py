@@ -55,7 +55,7 @@ class PlayerAnalyticsTests(unittest.TestCase):
         self.emit('a','stamina_spent',{'action':'fishing','amount':8})
         self.emit('a','fishing_finished',{'region':'WaterPond','water_kind':'shadow','outcome':'failed'})
         rows=self.query('gameplay-overview',141)
-        self.assertEqual([tuple(r) for r in rows],[('fishing',8,1,0),('farming_till',3,1,0)])
+        self.assertEqual([tuple(r) for r in rows],[('fishing',8,1,0,1,8),('farming_till',3,1,0,1,3)])
         self.assertEqual(tuple(self.query('gameplay-overview',142)[0]),('WaterPond','shadow',1,0,1,0))
 
     def test_skill_points_exclude_reward_and_freeze_counts_only_transitions(self):
@@ -104,7 +104,7 @@ class PlayerAnalyticsTests(unittest.TestCase):
         import_sample(self.db,source_file='legacy-till',sample={'user_id':'a','client_platform':'windows','gameplay_telemetry':
             {'session_meta':{'session_id':'s-a'},'days':{'1':{'events':events}}}},imported_at='2026-09-23T10:00:00Z')
         self.db.commit()
-        self.assertEqual([tuple(r) for r in self.query('gameplay-overview',141)],[('farming_till',3,1,1)])
+        self.assertEqual([tuple(r) for r in self.query('gameplay-overview',141)],[('farming_till',3,1,1,1,3)])
 
     def test_overview_does_not_inherit_selected_player(self):
         self.snapshot('a',1);self.snapshot('b',2)
@@ -119,3 +119,32 @@ class PlayerAnalyticsTests(unittest.TestCase):
         self.db.commit()
         migrate_facts(self.db)
         self.assertEqual(self.db.execute('SELECT client_version,release_version FROM analytics_event_facts').fetchone(),('unity-demo-v1.1.2.3.abcdef0','demo-v1'))
+
+    def test_restored_ai_reports_deduplicate_snapshots_and_do_not_invent_call_dates(self):
+        for source in ('first','retry'):
+            self.db.execute("""INSERT INTO gameplay_sessions(source_file,user_id,session_id,imported_at,real_time_started_iso,client_platform,client_version,release_version,ai_response_count,ai_total_tokens,ai_input_tokens,ai_output_tokens,ai_cached_input_tokens,ai_estimated_cost_usd)
+                VALUES (?,'a','s','2026-09-23','2026-09-23T00:00:00Z','windows','v1','v1',2,1100,1000,100,200,0.5)""",(source,))
+            self.db.execute("""INSERT INTO gameplay_ai_calls(source_file,user_id,session_id,event_index,game_day,imported_at,client_platform,client_version,release_version,model,total_tokens,input_tokens,output_tokens,cached_input_tokens,estimated_cost_usd)
+                VALUES (?,'a','s',1,0,'2026-09-23','windows','v1','v1','test-model',1100,1000,100,200,0.5)""",(source,))
+        self.db.commit()
+        for pid,expected in ((20,2),(21,1100),(22,0.5),(23,20)):
+            self.assertEqual(self.query('gameplay-overview',pid)[0][0],expected)
+        self.assertEqual(self.query('gameplay-overview',26)[0][2],1)
+        daily=self.query('gameplay-overview',27)
+        self.assertEqual(daily[0][0],'未采集日期')
+        self.assertEqual(daily[0][1],1)
+        self.assertEqual(self.query('gameplay-overview',27,behavior_period='range'),[])
+        self.assertEqual(self.query('gameplay-overview',20,**{'client_platform:sqlstring':"'editor'"})[0][0],0)
+
+    def test_restored_tasks_manual_chat_and_player_columns_respect_origin(self):
+        self.db.execute("INSERT INTO user_sessions(user_id,nickname,tasks_completed,tasks_total,current_task_title,current_task_status) VALUES ('a','名字',2,5,'种植','active')")
+        payload={'user_id':'a','session_id':'s','client_platform':'windows','client_version':'v1','timestamp':'2026-09-23T00:00:00Z'}
+        record_play_session_event(self.db,payload=payload,headers={},event_type='login',received_at=payload['timestamp'])
+        for kind,preset,platform in [('chat',0,'windows'),('chat',1,'windows'),('chat',0,'editor'),('login',0,'windows')]:
+            self.db.execute("INSERT INTO conversations(user_id,session_id,message_type,user_query,is_preset,client_platform,timestamp,client_version) VALUES ('a','s',?,'文本',?,?,'2026-09-23T01:00:00Z','v1')",(kind,preset,platform))
+        self.db.commit()
+        listing=self.query('gameplay-players',100)[0]
+        self.assertEqual(listing[10:15],('v1',1,'2/5','种植','active'))
+        self.assertEqual(listing[17],'2026-09-23 09:00:00')
+        self.assertEqual(tuple(self.query('gameplay-overview',28)[0]),('种植','active',1,1))
+        self.assertEqual(self.query('gameplay-overview',29)[0][2],1)

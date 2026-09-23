@@ -14,8 +14,8 @@ class AnalyticsTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.path = str(Path(self.tmp.name)/'test.db')
         self.db = sqlite3.connect(self.path)
-        self.db.execute('CREATE TABLE user_sessions(user_id TEXT PRIMARY KEY,is_developer INTEGER DEFAULT 0,nickname TEXT,player_name TEXT)')
-        self.db.execute('CREATE TABLE conversations(id INTEGER,user_id TEXT,session_id TEXT,timestamp TEXT,message_type TEXT,release_version TEXT,client_version TEXT,llm_request_id TEXT,attempt_id TEXT,user_query TEXT,ai_response TEXT,duration_ms REAL,prompt_tokens INTEGER,completion_tokens INTEGER)')
+        self.db.execute('CREATE TABLE user_sessions(user_id TEXT PRIMARY KEY,is_developer INTEGER DEFAULT 0,nickname TEXT,player_name TEXT,is_blacklisted INTEGER DEFAULT 0,tasks_completed INTEGER,tasks_total INTEGER,current_task_title TEXT,current_task_status TEXT,total_play_seconds REAL,last_seen TEXT)')
+        self.db.execute('CREATE TABLE conversations(id INTEGER,user_id TEXT,session_id TEXT,timestamp TEXT,message_type TEXT,release_version TEXT,client_version TEXT,llm_request_id TEXT,attempt_id TEXT,user_query TEXT,ai_response TEXT,duration_ms REAL,prompt_tokens INTEGER,completion_tokens INTEGER,is_preset INTEGER DEFAULT 0)')
         ensure_schema(self.db)
         self.db.commit()
     def tearDown(self):

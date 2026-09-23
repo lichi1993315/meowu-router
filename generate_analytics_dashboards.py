@@ -147,6 +147,8 @@ def build():
     result['gameplay-theater.json'] = theater
     from player_analytics import extend_dashboards
     extend_dashboards(result, dashboard, panel, FILTER, USER, LIMIT, time_range)
+    from player_analytics_legacy import restore_legacy_content
+    restore_legacy_content(result, panel, FILTER, time_range)
     from player_analytics_layout import apply_player_layout
     apply_player_layout(result)
     return result

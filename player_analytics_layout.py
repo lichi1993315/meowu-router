@@ -1,4 +1,5 @@
 """Legacy-style presentation for the current player analytics query contracts."""
+import copy
 
 
 def apply_player_layout(boards):
@@ -52,33 +53,56 @@ def apply_player_layout(boards):
             })
 
         if uid == 'gameplay-overview':
-            section('玩家规模与成长')
-            for pid in (100, 101, 102, 103, 104):
+            # Twelve separate cards mirror the original 4 + 6 + 2 grid exactly.
+            specs = [(1,100,'总玩家数','玩家数'),(2,100,'昨日新增','昨日新增'),
+                     (3,100,'七日新增','7日新增'),(4,100,'三十日新增','30日新增'),
+                     (5,102,'中位数','游玩时长中位数（分钟）'),(6,102,'平均数','游玩时长平均数（分钟）'),
+                     (7,103,'中位数','游玩天数中位数'),(8,103,'平均数','游玩天数平均数'),
+                     (9,104,'中位数','岛屿等级中位数'),(10,104,'平均数','岛屿等级平均数'),
+                     (11,101,'总金币余额','总金币数'),(12,101,'拥有猫总数','猫总数')]
+            for pid,source,field,title in specs:
+                panels[pid] = copy.deepcopy(panels[source])
+                panels[pid].update(id=pid,title=title)
+                panels[pid]['transformations'] = [{'id':'filterFieldsByName','options':{'include':{'names':[field]}}}]
                 stat(pid)
-            panels[102]['title'] = '游玩时长（分钟）'
-            line([100], 4)
-            line([102, 103, 104], 5)
-            line([101], 4)
-            line([105], 6)
+                panels[pid]['options']['textMode'] = 'value'
+                panels[pid]['options'].pop('text',None)
+            section('总览')
+            line([1,2,3,4],4)
+            line([5,6,7,8,9,10],4)
+            line([11,12],4)
+            line([120,14,126])
+            line([127,141,128])
+            section('AI Token / 成本')
+            for pid in (20,21,22,23):
+                stat(pid)
+                panels[pid]['options']['textMode'] = 'value'
+            line([20,21,22,23],4)
+            line([24,25])
+            line([26,27])
+            section('玩家一览')
+            line([28,29])
+            line([19],12)
 
-            section('经营与行为 · Top 5')
-            line([120, 140, 126])
-            line([127, 141, 128])
+            section('职业与玩家行为')
+            line([105,140])
             section('商店与招募 · Top 5')
-            line([122, 124, 121])
-            line([123, 125], widths=[8, 8])
+            line([122,124,121])
+            line([123,125],widths=[8,8])
             section('钓鱼 · 区域与鱼影')
-            line([142, 154], widths=[14, 10])
+            line([142,154],widths=[14,10])
             section('猫的工作与猫舍')
-            line([143, 150, 144])
-            line([151], 6)
+            line([143,150,144])
+            line([151],6)
             section('穿搭、交流与小剧场')
-            line([152, 145], 10, [14, 10])
-            line([226], 9)
-            section('采集覆盖与历史说明')
-            line([153, 30], 6)
-            line([31], 9)
-            line([999], 4)
+            line([152,145],10,[14,10])
+            line([226],9)
+            section('指标覆盖与历史说明')
+            line([100,101],6)
+            line([102,103,104],6)
+            line([153,30],6)
+            line([31],9)
+            line([999],4)
         elif uid == 'gameplay-player-detail':
             section('玩家基础数据')
             line([100], 5)

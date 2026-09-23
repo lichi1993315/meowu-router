@@ -6,6 +6,8 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
     # Apply origin/test filters before per-player aggregation. Dates only filter behaviors.
     facts = f"""WITH e0 AS NOT MATERIALIZED (SELECT * FROM analytics_events WHERE {scope}),
     s AS MATERIALIZED (SELECT * FROM analytics_sessions WHERE {scope}),
+    chat_source AS (SELECT c.*,COALESCE(u.is_developer,0) is_developer FROM conversations c LEFT JOIN user_sessions u ON c.user_id=u.user_id),
+    chats AS (SELECT * FROM chat_source WHERE {scope}),
     ids AS (SELECT user_id FROM s UNION SELECT user_id FROM e0),
     states AS (SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC) rn
         FROM e0 WHERE event_type='player_state_snapshot'),
@@ -21,6 +23,12 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
         COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,
         json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,
         st.payload_json state,st.occurred_at state_at,
+        (SELECT GROUP_CONCAT(DISTINCT client_version) FROM s WHERE s.user_id=ids.user_id) client_versions,
+        (SELECT COUNT(*) FROM chats WHERE chats.user_id=ids.user_id AND COALESCE(NULLIF(message_type,''),'chat')='chat' AND COALESCE(user_query,'')<>'' AND COALESCE(is_preset,0)=0 AND ('${{behavior_period}}'='all' OR {time_range('timestamp')})) active_chat_count,
+        u.tasks_completed,u.tasks_total,u.current_task_title,u.current_task_status,
+        (SELECT MIN(real_time_started_iso) FROM legacy WHERE legacy.user_id=ids.user_id) first_telemetry,
+        l.real_time_started_iso latest_telemetry,
+        COALESCE((SELECT MAX(timestamp) FROM chats WHERE chats.user_id=ids.user_id AND message_type='login'),(SELECT MAX(started_at) FROM s WHERE s.user_id=ids.user_id)) real_login,
         json_extract(st.payload_json,'$.cat_house_count') house_count,
         json_extract(st.payload_json,'$.cat_house_capacity') house_capacity,
         json_extract(st.payload_json,'$.cat_house_occupied') house_occupied
@@ -68,7 +76,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
         overview.append(q(120+i,title+' Top 5',sql));base.append(q(120+i,title+' Top 5',sql))
     behaviors = [
         (140,'玩家行为 Top 5',"SELECT event_type 行为,COUNT(*) 次数 FROM events WHERE actor_is_player=1 AND (behavior_stat=1 OR (behavior_stat IS NULL AND event_type IN ('farming_plant','farming_water','farming_till','farming_harvest','fishing_catch','cooking_completed','building_placed','shop_purchase','cat_conversation','player_sleep'))) GROUP BY 1 ORDER BY 次数 DESC,行为 LIMIT 5"),
-        (141,'体力消耗 Top 5',"""SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数 FROM (
+        (141,'体力消耗 Top 5',"""SELECT action 行为,SUM(amount) 体力,COUNT(*) 扣除次数,SUM(legacy) 旧版样本数,SUM(amount>0) 有体力记录次数,ROUND(AVG(NULLIF(amount,0)),2) 单次平均体力 FROM (
             SELECT json_extract(payload_json,'$.action') action,json_extract(payload_json,'$.amount') amount,0 legacy FROM events WHERE event_type='stamina_spent'
             UNION ALL SELECT CASE WHEN event_type='fishing_catch' THEN 'fishing' ELSE event_type END,energy_cost,1 FROM events old
             WHERE COALESCE(schema_version,0)<3 AND actor_is_player=1 AND energy_cost>0
@@ -114,7 +122,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
     overview += [copy.deepcopy(p) for p in old_overview['panels'] if p['id'] in (30,31)]
     result['gameplay-overview.json']=dashboard('gameplay-overview','总览',overview)
     sort="CASE '${sort_field}' WHEN 'play_seconds' THEN play_seconds WHEN 'play_days' THEN play_days WHEN 'island_level' THEN island_level WHEN 'first_login' THEN julianday(first_login) WHEN 'latest_login' THEN julianday(latest_login) WHEN 'money' THEN money END"
-    listing=q(100,'玩家一览',f"SELECT {columns.split(',cat_count')[0]},COUNT(*) OVER() 总行数 FROM players ORDER BY CASE WHEN '${{sort_direction}}'='asc' THEN {sort} END ASC NULLS LAST,CASE WHEN '${{sort_direction}}'!='asc' THEN {sort} END DESC NULLS LAST,user_id"+limit)
+    listing=q(100,'玩家一览',f"SELECT {columns},client_versions 版本,active_chat_count 主动聊天次数,CASE WHEN tasks_total IS NOT NULL THEN CAST(COALESCE(tasks_completed,0) AS TEXT)||'/'||CAST(tasks_total AS TEXT) END 任务进度,current_task_title 当前任务,current_task_status 任务状态,datetime(first_telemetry,'+8 hours') 首次Telemetry日期,datetime(latest_telemetry,'+8 hours') 最新Telemetry开始时间,datetime(real_login,'+8 hours') 最近真实登录时间,COUNT(*) OVER() 总行数 FROM players ORDER BY CASE WHEN '${{sort_direction}}'='asc' THEN {sort} END ASC NULLS LAST,CASE WHEN '${{sort_direction}}'!='asc' THEN {sort} END DESC NULLS LAST,user_id"+limit)
     result['gameplay-players.json']=dashboard('gameplay-players','玩家一览',[listing])
     result['gameplay-player-detail.json']=dashboard('gameplay-player-detail','玩家 · 基础数据',base)
     day_sql="""SELECT archive_id 存档,game_day 游戏日,MAX(occurred_at) 最后记录时间,COUNT(*) 事件数,GROUP_CONCAT(DISTINCT event_type) 事件类型,
