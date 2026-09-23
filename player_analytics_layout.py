@@ -136,6 +136,30 @@ def apply_player_layout(boards):
             section('统计口径与历史说明')
             line([999], 4)
 
+        if uid in ('gameplay-overview','gameplay-player-detail'):
+            section('AI／小剧场 · 业务统计')
+            line([301],5)
+            line([302,303])
+            line([304],7)
+            section('岛屿词汇 · 提交与实际使用')
+            line([305],5)
+            line([306,307])
+            line([320],8)
+            section('AI 建筑 · 生成、建成与历史记录')
+            line([308],5)
+            line([309,310])
+            section('建筑冒险 · 主题、阶段与结果')
+            line([311,312])
+            line([316,321],7)
+            line([322],7)
+            line([317,318])
+            section("AI · 业务效率与费用")
+            line([314],8)
+            line([315,319])
+            section('业务采集覆盖与明细')
+            line([300],7)
+            line([313],10)
+
         # Future query panels must be explicitly placed instead of silently disappearing.
         if panels:
             raise ValueError(f'Unplaced panels in {uid}: {list(panels)}')

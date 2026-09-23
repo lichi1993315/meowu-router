@@ -68,4 +68,8 @@ def ensure_analytics_schema(conn):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_gameplay_user_kind_time ON gameplay_events(user_id,event_type,event_real_time_iso)")
     from analytics_facts import migrate_facts
     migrate_facts(conn)
+    # Cross-session outcomes are joined by island/flow; avoid one history scan per scene.
+    conn.execute("""CREATE INDEX IF NOT EXISTS idx_facts_business_flow ON analytics_event_facts(
+        COALESCE(NULLIF(archive_id,''),session_id),
+        COALESCE(NULLIF(json_extract(payload_json,'$.flow_id'),''),NULLIF(json_extract(payload_json,'$.theater_event_id'),'')))""")
     conn.executescript(VIEWS)

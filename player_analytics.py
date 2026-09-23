@@ -132,6 +132,10 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
     raw_days=facts+f"SELECT d.session_id,d.game_day,d.day_meta_json metadata,(SELECT GROUP_CONCAT(DISTINCT event_type) FROM e0 WHERE e0.user_id=d.user_id AND e0.session_id=d.session_id AND e0.game_day=d.game_day) 事件类型 FROM gameplay_days d WHERE d.user_id=${{user_id:sqlstring}} AND EXISTS(SELECT 1 FROM s WHERE s.user_id=d.user_id AND s.session_id=d.session_id) ORDER BY game_day DESC,imported_at DESC"+limit
     result['gameplay-player-days.json']=dashboard('gameplay-player-days','玩家 · 日期一览',[q(100,'游戏日一览（按存档去重）',day_sql),panel(101,'原始日 metadata（旧数据保留来源会话）',raw_days)])
     result['gameplay-player-events.json']=dashboard('gameplay-player-events','玩家 · 事件一览',[q(100,'全部事件 metadata / payload',"SELECT occurred_at 时间,archive_id 存档,game_day 游戏日,event_type 类型,event_id,session_id,metadata_json metadata,payload_json payload,COUNT(*) OVER() 总行数 FROM events WHERE (${event_type:sqlstring}='' OR event_type=${event_type:sqlstring}) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC"+limit)])
+    from business_analytics import panels as business_panels
+    overview_business = business_panels(q)
+    result['gameplay-overview.json']['panels'].extend(copy.deepcopy(overview_business))
+    result['gameplay-player-detail.json']['panels'].extend(copy.deepcopy(overview_business))
     new_uids={'gameplay-overview','gameplay-players','gameplay-player-detail','gameplay-player-days','gameplay-player-events'}
     for board in result.values():
         if board['uid'] not in new_uids:continue
