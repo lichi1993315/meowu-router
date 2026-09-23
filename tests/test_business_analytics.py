@@ -14,7 +14,9 @@ class BusinessAnalyticsTests(unittest.TestCase):
         summary=self.query('gameplay-overview',301)[0]
         self.assertIsNone(summary[0]);self.assertIsNone(summary[2])
         self.assertEqual(summary[1],1)
-        self.assertEqual(self.query('gameplay-overview',302)[0][2],'未采集')
+        breakdown=self.query('gameplay-overview',302)[0]
+        self.assertEqual(breakdown[2],'未采集')
+        self.assertIsNone(breakdown[4]);self.assertIsNone(breakdown[6])
 
     def test_multiplayer_lines_are_one_scene_and_uid_zero_is_in_actor_count(self):
         self.emit('a','theater_lifecycle',{'flow_id':'f','theater_type':'pair','phase':'offered','participant_count':2})

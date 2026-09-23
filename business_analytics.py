@@ -30,6 +30,7 @@ def panels(q):
       FROM flow_keys k JOIN analytics_events f ON COALESCE(NULLIF(f.archive_id,''),f.session_id)=k.island AND COALESCE(NULLIF(json_extract(f.payload_json,'$.flow_id'),''),NULLIF(json_extract(f.payload_json,'$.theater_event_id'),''))=k.flow
       WHERE ('${behavior_period}'='all' OR julianday(f.occurred_at)<julianday(${__to}/1000,'unixepoch'))),
     flows_raw AS (SELECT island,flow,MAX(template) template,
+      MAX(event_type IN ('theater_lifecycle','ai_adventure_state')) lifecycle,
       MAX(CASE WHEN event_type='ai_adventure_state' THEN 'adventure' ELSE json_extract(payload_json,'$.business_group') END) business_group,
       MIN(CASE WHEN event_type='theater_lifecycle' AND phase='offered' OR event_type='ai_adventure_state' AND json_extract(payload_json,'$.previous_phase')='' THEN occurred_at END) offered,
       MIN(CASE WHEN event_type='theater_line' OR event_type='ai_adventure_state' AND phase IN ('playing_act_1','playing_act_2') THEN occurred_at END) started,
@@ -84,7 +85,8 @@ def panels(q):
         FROM flows""",'按存档和剧情 ID 去重，包含建筑冒险；期间模式按发起时间选场次，关联截至所选结束时的结果。无发起证据的历史单列且不进入完成率分母。'),
       p(302,'小剧场 · 类别与参演猫数',"""SELECT COALESCE(business_group,'未采集') 业务组,template 类型,
         CASE WHEN actual_actors IS NULL THEN '未采集' WHEN actual_actors>=4 THEN '4只及以上' ELSE CAST(actual_actors AS TEXT)||'只' END 实际参演猫数,
-        COUNT(*) 观察到场次,SUM(offered IS NOT NULL) 发起场次,SUM(started IS NOT NULL) 开演场次,SUM(completed IS NOT NULL) 完成场次
+        COUNT(*) 观察到场次,CASE WHEN MAX(lifecycle)=1 THEN SUM(offered IS NOT NULL) END 已记录发起,
+        SUM(started IS NOT NULL) 已记录开演,CASE WHEN MAX(lifecycle)=1 THEN SUM(completed IS NOT NULL) END 已记录完成
         FROM flows GROUP BY 1,2,3 ORDER BY 观察到场次 DESC""",'猫数来自实际播放请求演员集合；不是携带猫数。缺真实演员记录的旧场次保留未知。'),
       p(303,'小剧场 · 邀请曝光与玩家参与',"""SELECT template 类型,COUNT(DISTINCT CASE WHEN event_type='theater_view' THEN user_id END) 曝光玩家,
         COUNT(DISTINCT CASE WHEN event_type='theater_choice' AND json_extract(payload_json,'$.choice_class')='continue' THEN user_id END) 选择继续玩家,
