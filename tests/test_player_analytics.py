@@ -22,7 +22,7 @@ class PlayerAnalyticsTests(unittest.TestCase):
     def query(self,board,pid,user='',**overrides):
         dashboard=build()[board+'.json'];p=next(p for p in dashboard['panels'] if p['id']==pid)
         sql=p['targets'][0]['queryText']
-        values={'client_platform:sqlstring':"'webgl','windows','unknown'",'release_version:sqlstring':"'__all__'",'test_data':'auto',
+        values={'client_platform:sqlstring':"'webgl','windows','unknown'",'release_version:sqlstring':"'__all__'",'test_data':'auto','playtest_id':'all',
                 'user_id:sqlstring':"'"+user+"'" if user else '', 'session_id:sqlstring':'','llm_request_id:sqlstring':'',
                 'page:sqlstring':"'0'",'behavior_period':'all','sort_field':'latest_login','sort_direction':'desc',
                 'event_type:sqlstring':'','theater_event_id:sqlstring':'','min_invitations:sqlstring':"'10'",'__from':'0','__to':'2000000000000'}
@@ -144,7 +144,17 @@ class PlayerAnalyticsTests(unittest.TestCase):
             self.db.execute("INSERT INTO conversations(user_id,session_id,message_type,user_query,is_preset,client_platform,timestamp,client_version) VALUES ('a','s',?,'文本',?,?,'2026-09-23T01:00:00Z','v1')",(kind,preset,platform))
         self.db.commit()
         listing=self.query('gameplay-players',100)[0]
-        self.assertEqual(listing[10:15],('v1',1,'2/5','种植','active'))
-        self.assertEqual(listing[17],'2026-09-23 09:00:00')
+        self.assertEqual(listing[11:16],('v1',1,'2/5','种植','active'))
+        self.assertEqual(listing[18],'2026-09-23 09:00:00')
         self.assertEqual(tuple(self.query('gameplay-overview',28)[0]),('种植','active',1,1))
         self.assertEqual(self.query('gameplay-overview',29)[0][2],1)
+
+    def test_playtest_filter_separates_players_and_event_details(self):
+        self.db.execute("INSERT INTO analytics_session_playtests VALUES ('a','s-a','中秋playtest')")
+        self.db.commit()
+        self.snapshot('a',20)
+        self.snapshot('b',80)
+        self.assertEqual(self.query('gameplay-overview',101,playtest_id='中秋playtest')[0][0],20)
+        self.assertEqual(self.query('gameplay-overview',101,playtest_id='legacy')[0][0],80)
+        self.assertEqual(self.query('gameplay-overview',101,playtest_id='all')[0][0],100)
+        self.assertEqual(self.query('gameplay-player-events',100,'b',playtest_id='中秋playtest'),[])

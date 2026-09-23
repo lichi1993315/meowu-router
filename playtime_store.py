@@ -248,6 +248,15 @@ def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
     ensure_column(conn, "play_session_rollups", "activity_threshold_idle_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "activity_threshold_afk_sec", "REAL")
     ensure_column(conn, "play_session_rollups", "last_event_type", "TEXT")
+    # Activation is explicit at deployment; restarting services never moves the boundary.
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS analytics_playtests (
+            playtest_id TEXT PRIMARY KEY, started_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS analytics_session_playtests (
+            user_id TEXT NOT NULL, session_id TEXT NOT NULL, playtest_id TEXT NOT NULL,
+            PRIMARY KEY(user_id,session_id));
+        CREATE INDEX IF NOT EXISTS idx_session_playtest ON analytics_session_playtests(playtest_id);
+    """)
     ensure_platform_columns(conn, ("play_session_events", "play_session_rollups"))
     conn.executescript(
         """
@@ -838,6 +847,18 @@ def record_play_session_event(
         received_at=received_at,
         payload_size_bytes=payload_size_bytes,
     )
+    # Only a fresh login may start a cohort. Heartbeats, historical retries and
+    # logoff imports must not relabel a session that began before activation.
+    if event_type == "login":
+        conn.execute("""
+            INSERT OR IGNORE INTO analytics_session_playtests(user_id,session_id,playtest_id)
+            SELECT :user_id,:session_id,playtest_id FROM analytics_playtests
+            WHERE julianday(:client_sent_at)>=julianday(started_at)
+              AND julianday(:received_at)>=julianday(started_at)
+              AND NOT EXISTS(SELECT 1 FROM play_session_events WHERE user_id=:user_id AND session_id=:session_id)
+              AND :user_id NOT IN ('','unknown','anonymous','anonymous_user') AND :session_id<>''
+            ORDER BY julianday(started_at) DESC LIMIT 1
+        """, event)
     conn.execute(
         """
         INSERT INTO play_session_events (

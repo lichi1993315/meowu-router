@@ -21,13 +21,13 @@ WITH candidates AS (
  SELECT *, ROW_NUMBER() OVER (PARTITION BY user_id,COALESCE(NULLIF(player_session_id,''),session_id)
  ORDER BY source_rank,ended_at DESC) rn FROM candidates
 )
-SELECT r.*, COALESCE(u.is_developer,0) is_developer FROM ranked r
+SELECT r.*, (SELECT m.playtest_id FROM analytics_session_playtests m WHERE m.user_id=r.user_id AND m.session_id=r.session_id) playtest_id, COALESCE(u.is_developer,0) is_developer FROM ranked r
 LEFT JOIN user_sessions u ON r.user_id=u.user_id
 WHERE rn=1 AND r.user_id NOT IN ('','unknown','anonymous','anonymous_user');
 
 DROP VIEW IF EXISTS analytics_events;
 CREATE VIEW analytics_events AS
-SELECT f.*,COALESCE(u.is_developer,0) is_developer FROM analytics_event_facts f
+SELECT f.*, (SELECT m.playtest_id FROM analytics_session_playtests m WHERE m.user_id=f.user_id AND m.session_id=f.session_id) playtest_id,COALESCE(u.is_developer,0) is_developer FROM analytics_event_facts f
 LEFT JOIN user_sessions u ON f.user_id=u.user_id;
 
 DROP VIEW IF EXISTS analytics_activity;

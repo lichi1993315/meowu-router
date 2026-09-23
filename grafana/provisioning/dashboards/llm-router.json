@@ -75,6 +75,16 @@
         }
       },
       {
+        "name": "playtest_id",
+        "label": "Playtest 批次",
+        "type": "custom",
+        "query": "全部 : all,中秋playtest : 中秋playtest,历史／未标记 : legacy",
+        "current": {
+          "text": "全部",
+          "value": "all"
+        }
+      },
+      {
         "name": "test_data",
         "label": "测试数据",
         "type": "custom",
@@ -1287,8 +1297,8 @@
         {
           "refId": "A",
           "queryType": "table",
-          "queryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT json_extract(payload_json,'$.model') 模型,json_extract(payload_json,'$.mode') 用途,COUNT(*) 响应数,SUM(json_extract(payload_json,'$.input_tokens')) 输入Token,SUM(json_extract(payload_json,'$.cached_tokens')) 缓存Token,SUM(json_extract(payload_json,'$.output_tokens')) 输出Token,SUM(json_extract(payload_json,'$.estimated_usd')) 估算USD,AVG(json_extract(payload_json,'$.full_latency_ms')) 平均完整响应毫秒 FROM e WHERE event_type='cat_agent_response' GROUP BY 1,2",
-          "rawQueryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT json_extract(payload_json,'$.model') 模型,json_extract(payload_json,'$.mode') 用途,COUNT(*) 响应数,SUM(json_extract(payload_json,'$.input_tokens')) 输入Token,SUM(json_extract(payload_json,'$.cached_tokens')) 缓存Token,SUM(json_extract(payload_json,'$.output_tokens')) 输出Token,SUM(json_extract(payload_json,'$.estimated_usd')) 估算USD,AVG(json_extract(payload_json,'$.full_latency_ms')) 平均完整响应毫秒 FROM e WHERE event_type='cat_agent_response' GROUP BY 1,2"
+          "queryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT json_extract(payload_json,'$.model') 模型,json_extract(payload_json,'$.mode') 用途,COUNT(*) 响应数,SUM(json_extract(payload_json,'$.input_tokens')) 输入Token,SUM(json_extract(payload_json,'$.cached_tokens')) 缓存Token,SUM(json_extract(payload_json,'$.output_tokens')) 输出Token,SUM(json_extract(payload_json,'$.estimated_usd')) 估算USD,AVG(json_extract(payload_json,'$.full_latency_ms')) 平均完整响应毫秒 FROM e WHERE event_type='cat_agent_response' GROUP BY 1,2",
+          "rawQueryText": "WITH e AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') ) SELECT json_extract(payload_json,'$.model') 模型,json_extract(payload_json,'$.mode') 用途,COUNT(*) 响应数,SUM(json_extract(payload_json,'$.input_tokens')) 输入Token,SUM(json_extract(payload_json,'$.cached_tokens')) 缓存Token,SUM(json_extract(payload_json,'$.output_tokens')) 输出Token,SUM(json_extract(payload_json,'$.estimated_usd')) 估算USD,AVG(json_extract(payload_json,'$.full_latency_ms')) 平均完整响应毫秒 FROM e WHERE event_type='cat_agent_response' GROUP BY 1,2"
         }
       ],
       "fieldConfig": {
@@ -1310,7 +1320,7 @@
                 "value": [
                   {
                     "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
                   }
                 ]
               }
@@ -1327,7 +1337,7 @@
                 "value": [
                   {
                     "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
                   }
                 ]
               }
@@ -1344,7 +1354,7 @@
                 "value": [
                   {
                     "title": "查看玩家旅程",
-                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
                   }
                 ]
               }

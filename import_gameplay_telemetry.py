@@ -808,12 +808,12 @@ def first_float(raw: dict[str, Any], keys: Iterable[str]) -> float | None:
     return None
 
 
-def calculate_ai_cost_usd(usage: dict[str, Any]) -> float:
+def calculate_ai_cost_usd(usage: dict[str, Any]) -> float | None:
     input_rate = as_float(usage.get("input_usd_per_million_tokens"))
     output_rate = as_float(usage.get("output_usd_per_million_tokens"))
     cached_rate = as_float(usage.get("cached_input_usd_per_million_tokens"))
     if input_rate is None or output_rate is None:
-        return 0.0
+        return None if is_nonzero_ai_usage(usage) else 0.0
 
     cached_input = int0(usage.get("billable_cached_input_tokens"))
     uncached_input = int0(usage.get("billable_uncached_input_tokens"))
@@ -821,7 +821,7 @@ def calculate_ai_cost_usd(usage: dict[str, Any]) -> float:
         cached_input = int0(usage.get("cached_input_tokens"))
         uncached_input = max(0, int0(usage.get("input_tokens")) - cached_input)
 
-    cached_cost = cached_input * cached_rate if cached_rate is not None else 0.0
+    cached_cost = cached_input * (cached_rate if cached_rate is not None else input_rate)
     return (
         (uncached_input * input_rate)
         + cached_cost
@@ -904,7 +904,10 @@ def normalize_ai_token_usage(
         if usage["input_tokens"]
         else 0.0
     )
-    usage["estimated_cost_usd"] = calculate_ai_cost_usd(usage)
+    usage["estimated_cost_usd"] = (
+        as_float(raw["session_estimated_usd"]) if "session_estimated_usd" in raw else
+        as_float(raw["estimated_usd"]) if "estimated_usd" in raw else calculate_ai_cost_usd(usage)
+    )
     return usage
 
 
@@ -943,7 +946,7 @@ def extract_event_ai_usage(
         if not usage.get(key) and payload.get(key) is not None:
             usage[key] = payload.get(key)
 
-    usage["estimated_cost_usd"] = calculate_ai_cost_usd(usage)
+    usage["estimated_cost_usd"] = as_float(payload["estimated_usd"]) if "estimated_usd" in payload else calculate_ai_cost_usd(usage)
     if not is_nonzero_ai_usage(usage):
         return None
     return usage
@@ -976,7 +979,10 @@ def aggregate_ai_usages(usages: list[dict[str, Any]]) -> dict[str, Any]:
             "archive_total_consumed_tokens",
         ):
             aggregate[key] += int0(usage.get(key))
-        aggregate["estimated_cost_usd"] += float0(usage.get("estimated_cost_usd"))
+        if usage.get("estimated_cost_usd") is None:
+            aggregate["estimated_cost_usd"] = None
+        elif aggregate["estimated_cost_usd"] is not None:
+            aggregate["estimated_cost_usd"] += usage["estimated_cost_usd"]
     if not aggregate["total_tokens"]:
         aggregate["total_tokens"] = aggregate["input_tokens"] + aggregate["output_tokens"]
     if not aggregate["billable_cached_input_tokens"]:
@@ -1444,7 +1450,7 @@ def import_sample(
                         as_float(event_ai_usage.get("input_usd_per_million_tokens")),
                         as_float(event_ai_usage.get("output_usd_per_million_tokens")),
                         as_float(event_ai_usage.get("cached_input_usd_per_million_tokens")),
-                        as_float(event_ai_usage.get("estimated_cost_usd")) or 0.0,
+                        as_float(event_ai_usage.get("estimated_cost_usd")),
                         as_int(request_stats.get("message_count")),
                         as_int(request_stats.get("message_content_chars")),
                         as_int(request_stats.get("message_json_chars")),
@@ -1577,7 +1583,7 @@ def import_sample(
             int0(session_ai_usage.get("billable_uncached_input_tokens")),
             int0(session_ai_usage.get("billable_cached_input_tokens")),
             as_float(session_ai_usage.get("cache_hit_ratio")) or 0.0,
-            as_float(session_ai_usage.get("estimated_cost_usd")) or 0.0,
+            as_float(session_ai_usage.get("estimated_cost_usd")),
             as_int(session_ai_usage.get("archive_total_consumed_tokens")),
             ",".join(sorted(ai_models)),
             as_json(ai_pricing),
@@ -1892,6 +1898,16 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(VIEW_SQL)
 
     ensure_analytics_schema(conn)
+    # Repair already imported new-client totals without rereading event archives.
+    # json_type distinguishes an explicit unknown cost (JSON null) from old payloads.
+    conn.execute("""UPDATE gameplay_sessions
+        SET ai_estimated_cost_usd=json_extract(session_meta_json,'$.ai_token_usage.session_estimated_usd')
+        WHERE json_type(session_meta_json,'$.ai_token_usage.session_estimated_usd') IS NOT NULL
+          AND ai_estimated_cost_usd IS NOT json_extract(session_meta_json,'$.ai_token_usage.session_estimated_usd')""")
+    conn.execute("""UPDATE gameplay_ai_calls
+        SET estimated_cost_usd=json_extract(payload_json,'$.estimated_usd')
+        WHERE json_type(payload_json,'$.estimated_usd') IS NOT NULL
+          AND estimated_cost_usd IS NOT json_extract(payload_json,'$.estimated_usd')""")
 
 
 def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:

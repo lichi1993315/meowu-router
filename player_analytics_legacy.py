@@ -35,9 +35,14 @@ def restore_legacy_content(boards, panel, scope, time_range):
         # are reused. Filtering and snapshot selection belong to the shared prefix above.
         select = 'SELECT ' + source['targets'][0]['queryText'].rsplit(') SELECT ', 1)[1]
         select = select.replace('COALESCE(us.is_developer, 0) = 0 AND ', '')
+        # SQL SUM ignores unknown costs but must not coerce an entirely unknown
+        # sample to zero. The descriptions make partial known totals explicit.
+        select = select.replace('COALESCE(ai_estimated_cost_usd, 0)', 'ai_estimated_cost_usd').replace('COALESCE(s.ai_estimated_cost_usd, 0)', 's.ai_estimated_cost_usd')
+        select = select.replace('COALESCE(SUM(ai_estimated_cost_usd), 0)', 'CASE WHEN COUNT(*)=0 THEN 0 ELSE SUM(ai_estimated_cost_usd) END')
+        select = select.replace('SUM(COALESCE(estimated_cost_usd, 0))', 'SUM(estimated_cost_usd)')
         if legacy_id == 27:
             select = select.replace("date(COALESCE(event_real_time_iso, imported_at))", "COALESCE(date(event_real_time_iso,'+8 hours'),'未采集日期')")
-        description = '恢复旧版 AI/玩家运营字段，沿用平台、版本和测试数据筛选。AI 总计取去重会话快照，模型/每日表取去重调用明细，来源覆盖可能不同；成本为估算值。行为范围默认累计。缺真实时间不推算为导入当天。'
+        description = '恢复旧版 AI/玩家运营字段，沿用平台、版本和测试数据筛选。AI 总计取去重会话快照，模型/每日表取去重调用明细，来源覆盖可能不同；成本为客户端上报估算值，缓存未回报时可能为上限；缺价格显示未采集，混合样本仅累计已知费用。行为范围默认累计。缺真实时间不推算为导入当天。'
         restored = panel(legacy_id, source['title'], prefix + select, kind=source['type'], description=description)
         restored['fieldConfig']['defaults'].update(noValue='未采集', unit='none')
         if legacy_id in (22,):

@@ -9,7 +9,8 @@ DS = {'type': 'frser-sqlite-datasource', 'uid': '${DS_SQLITE}'}
 PLATFORM = "('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring}))"
 VERSION = "('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring}))"
 TEST = "('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor')))"
-FILTER = f'{PLATFORM} AND {VERSION} AND {TEST}'
+PLAYTEST = "('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}'))"
+FILTER = f'{PLATFORM} AND {VERSION} AND {TEST} AND {PLAYTEST}'
 COHORT_SCOPE = "CASE WHEN '${test_data}' IN ('include','only') OR ('${test_data}'='auto' AND ('editor' IN (${client_platform:sqlstring}) OR '__all__' IN (${client_platform:sqlstring}))) THEN 'all' ELSE 'production' END"
 
 def time_range(column):
@@ -26,6 +27,7 @@ def variables():
         {'name':'DS_SQLITE','type':'datasource','query':'frser-sqlite-datasource','current':{'text':'SQLite','value':'SQLite'},'hide':2},
         {'name':'client_platform','label':'客户端平台','type':'custom','query':'WebGL : webgl,Windows Player : windows,Unity Editor : editor,其他客户端 : other,未知/历史未上报 : unknown,无客户端归属 : unattributed','multi':True,'includeAll':True,'allValue':"'__all__'",'current':{'text':['WebGL','Windows Player','未知/历史未上报'],'value':['webgl','windows','unknown']}},
         {'name':'release_version','label':'发布版本','type':'query','datasource':DS,'query':"SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",'refresh':1,'multi':True,'includeAll':True,'allValue':"'__all__'",'current':{'text':'All','value':'$__all'}},
+        {'name':'playtest_id','label':'Playtest 批次','type':'custom','query':'全部 : all,中秋playtest : 中秋playtest,历史／未标记 : legacy','current':{'text':'全部','value':'all'}},
         {'name':'test_data','label':'测试数据','type':'custom','query':'按平台自动 : auto,排除 : exclude,包含 : include,仅测试 : only','current':{'text':'按平台自动','value':'auto'}},
         {'name':'user_id','label':'玩家 ID（留空=全部）','type':'textbox','current':{'text':'','value':''}},
         {'name':'session_id','label':'会话 ID（留空=全部）','type':'textbox','current':{'text':'','value':''}},
@@ -45,7 +47,7 @@ def panel(pid,title,query,kind='table',unit='short',description=''):
        'fieldConfig':{'defaults':{'unit':unit,'custom':{'filterable':True}},'overrides':[]},
        'options':{'showHeader':True,'cellHeight':'sm'} if kind=='table' else {'reduceOptions':{'calcs':['lastNotNull'],'fields':'','values':False},'colorMode':'value','graphMode':'none'}}
     for column,param in [('user_id','user_id'),('session_id','session_id'),('llm_request_id','llm_request_id')]:
-        p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':column},'properties':[{'id':'links','value':[{'title':'查看玩家旅程','url':f'/d/gameplay-player-detail?${{__url_time_range}}&${{client_platform:queryparam}}&${{release_version:queryparam}}&${{test_data:queryparam}}&var-user_id=${{__data.fields.user_id}}&var-{param}=${{__value.raw}}'}]}]})
+        p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':column},'properties':[{'id':'links','value':[{'title':'查看玩家旅程','url':f'/d/gameplay-player-detail?${{__url_time_range}}&${{client_platform:queryparam}}&${{release_version:queryparam}}&${{test_data:queryparam}}&${{playtest_id:queryparam}}&var-user_id=${{__data.fields.user_id}}&var-{param}=${{__value.raw}}'}]}]})
     return p
 
 
@@ -89,14 +91,14 @@ def build():
     result['gameplay-overview.json']=dashboard('gameplay-overview','经营总览',overview)
     # Cohort uses globally determined first entry; return activity is across platforms by default.
     cohort_filter=PLATFORM.replace('OR client_platform IN','OR f.first_platform IN')+' AND '+VERSION.replace("NULLIF(release_version,''),","NULLIF(f.first_release,''),")
-    retention=f"""WITH activity AS MATERIALIZED (SELECT DISTINCT user_id,client_platform,is_development_build,activity_day FROM analytics_activity), cohorts AS (SELECT f.* FROM analytics_first_entry f WHERE {cohort_filter} AND f.cohort_scope={COHORT_SCOPE} AND ('${{test_data}}'!='only' OR f.first_is_test=1) AND {time_range('f.first_entry_at')}),
+    retention=f"""WITH activity AS MATERIALIZED (SELECT DISTINCT user_id,client_platform,is_development_build,activity_day FROM analytics_activity), cohorts AS (SELECT f.* FROM analytics_first_entry f WHERE {cohort_filter} AND f.user_id IN (SELECT user_id FROM analytics_sessions WHERE {FILTER}) AND f.cohort_scope={COHORT_SCOPE} AND ('${{test_data}}'!='only' OR f.first_is_test=1) AND {time_range('f.first_entry_at')}),
     n AS (SELECT 1 d UNION ALL SELECT 3 UNION ALL SELECT 7 UNION ALL SELECT 30)
     SELECT first_day 首次入岛日期,first_platform 首次平台,n.d 留存日,COUNT(*) cohort人数,
     CASE WHEN date(first_day,'+'||n.d||' days')<date('now','+8 hours') THEN SUM(EXISTS(SELECT 1 FROM activity a WHERE (c.cohort_scope='all' OR (a.client_platform!='editor' AND a.is_development_build=0)) AND a.user_id=c.user_id AND a.activity_day=date(c.first_day,'+'||n.d||' days'))) END 任意平台回访人数,
     CASE WHEN date(first_day,'+'||n.d||' days')<date('now','+8 hours') THEN ROUND(100.0*SUM(EXISTS(SELECT 1 FROM activity a WHERE (c.cohort_scope='all' OR (a.client_platform!='editor' AND a.is_development_build=0)) AND a.user_id=c.user_id AND a.activity_day=date(c.first_day,'+'||n.d||' days')))/COUNT(*),2) END 留存率,
     CASE WHEN date(first_day,'+'||n.d||' days')<date('now','+8 hours') THEN ROUND(100.0*SUM(EXISTS(SELECT 1 FROM activity a WHERE (c.cohort_scope='all' OR (a.client_platform!='editor' AND a.is_development_build=0)) AND a.user_id=c.user_id AND a.client_platform=c.first_platform AND a.activity_day=date(c.first_day,'+'||n.d||' days')))/COUNT(*),2) END 原平台留存率
     FROM cohorts c CROSS JOIN n GROUP BY first_day,first_platform,n.d ORDER BY first_day DESC,n.d"""
-    activity_filter=FILTER.replace('is_developer','COALESCE(u.is_developer,0)')
+    activity_filter=FILTER.replace('is_developer','COALESCE(u.is_developer,0)').replace('(user_id,session_id)', '(a.user_id,a.session_id)')
     daily=f"SELECT activity_day 日期,COUNT(DISTINCT a.user_id) DAU FROM analytics_activity a LEFT JOIN user_sessions u ON a.user_id=u.user_id WHERE {activity_filter} AND activity_day>=date(${{__from}}/1000,'unixepoch','+8 hours') AND activity_day<=date(${{__to}}/1000,'unixepoch','+8 hours') GROUP BY activity_day ORDER BY activity_day"
     result['gameplay-retention.json']=dashboard('gameplay-retention','新手与留存',[
       panel(1,'每日游戏活跃（登录/前台心跳）',daily),panel(2,'成熟 cohort 留存；空值=待观察',retention,description='默认正式玩家全局首登；显式选择 Editor 或包含测试数据时使用包含测试的全局首登。任意平台和原平台回访并列，未成熟为空。'),

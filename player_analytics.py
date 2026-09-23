@@ -23,6 +23,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
         COALESCE(json_extract(st.payload_json,'$.island_level'),l.island_level_max) island_level,
         json_array_length(json_extract(st.payload_json,'$.cats')) cat_count,
         st.payload_json state,st.occurred_at state_at,
+        (SELECT GROUP_CONCAT(DISTINCT m.playtest_id) FROM s JOIN analytics_session_playtests m USING(user_id,session_id) WHERE s.user_id=ids.user_id) playtest_id,
         (SELECT GROUP_CONCAT(DISTINCT client_version) FROM s WHERE s.user_id=ids.user_id) client_versions,
         (SELECT COUNT(*) FROM chats WHERE chats.user_id=ids.user_id AND COALESCE(NULLIF(message_type,''),'chat')='chat' AND COALESCE(user_query,'')<>'' AND COALESCE(is_preset,0)=0 AND ('${{behavior_period}}'='all' OR {time_range('timestamp')})) active_chat_count,
         u.tasks_completed,u.tasks_total,u.current_task_title,u.current_task_status,
@@ -42,7 +43,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
     facts = facts.replace(f"(occurred_at IS NOT NULL AND {time_range('occurred_at')})", f"('${{behavior_period}}'='all' OR {time_range('occurred_at')})")
     def q(pid,title,sql,description=''):
         return panel(pid,title,facts+sql,description=description or '累计按玩家去重；当前状态取最新快照。缺失显示未采集，数值零保留。行为可切换期间，日期为北京时间。')
-    columns = "nickname 昵称,user_id,ROUND(play_seconds/60.0,2) 游玩分钟,play_days 游戏日数,island_level 岛屿等级,datetime(first_login,'+8 hours') 首次登录,datetime(latest_login,'+8 hours') 最新登录,money 金币余额,cat_count 猫数量,state_at 快照时间"
+    columns = "nickname 昵称,user_id,ROUND(play_seconds/60.0,2) 游玩分钟,play_days 游戏日数,island_level 岛屿等级,datetime(first_login,'+8 hours') 首次登录,datetime(latest_login,'+8 hours') 最新登录,money 金币余额,cat_count 猫数量,state_at 快照时间,playtest_id Playtest批次"
     overview = [q(100,'玩家数与新增',"""SELECT COUNT(*) 总玩家数,
         SUM(date(first_login,'+8 hours')=date('now','+8 hours','-1 day')) 昨日新增,
         SUM(date(first_login,'+8 hours')>=date('now','+8 hours','-7 days') AND date(first_login,'+8 hours')<date('now','+8 hours')) 七日新增,
