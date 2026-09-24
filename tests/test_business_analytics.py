@@ -27,6 +27,9 @@ class BusinessAnalyticsTests(unittest.TestCase):
         self.assertEqual(detail[4:7],('不适用','不适用','不适用'))
         self.emit('a','theater_lifecycle',{'flow_id':'question','theater_type':'pet_truth_question','phase':'offered','participant_count':1})
         self.assertEqual(self.query('gameplay-overview',302)[0][2],'不适用（问答）')
+        # SQLite datasource infers the column type from values; mixed numbers and
+        # labels otherwise turn later "not applicable" cells back into nulls.
+        self.assertEqual(self.query('gameplay-overview',313)[0][6],'1')
 
     def test_missing_template_does_not_override_real_template_when_flows_merge(self):
         self.emit('a','theater_lifecycle',{'flow_id':'f','theater_type':'pair','phase':'offered'})

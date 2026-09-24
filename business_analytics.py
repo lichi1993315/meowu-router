@@ -127,7 +127,7 @@ def panels(q):
         CASE WHEN event_type='island_lexicon_used' AND flow IS NULL THEN '不适用' ELSE flow END 流程ID,
         CASE WHEN event_type IN ('theater_lifecycle','ai_adventure_state') THEN template ELSE '不适用' END 剧情类型,
         CASE WHEN event_type IN ('island_lexicon_result','island_lexicon_used','ai_building_created') THEN '不适用' ELSE phase END 阶段,
-        CASE WHEN event_type IN ('theater_lifecycle','ai_adventure_state') THEN actors ELSE '不适用' END 参演猫数,
+        CASE WHEN event_type IN ('theater_lifecycle','ai_adventure_state') THEN CAST(actors AS TEXT) ELSE '不适用' END 参演猫数,
         payload_json payload FROM business WHERE event_type IN ('theater_lifecycle','island_lexicon_result','island_lexicon_used','ai_building_generation','ai_building_created','ai_adventure_state') ORDER BY julianday(occurred_at) DESC LIMIT 200""",'保留完整 payload，可对照游戏中的行为与最终结果；不属于该事件契约的字段显示不适用。'),
       p(314,'AI · 业务调用、耗时与已知费用',"""SELECT COALESCE(business_group,'未关联') 业务,COUNT(*) 请求数,SUM(completed) 完成请求,SUM(failed) 失败请求,SUM(cancelled) 取消请求,
         SUM(completed=0 AND failed=0 AND cancelled=0) 尚无结果,SUM(usd) 已知费用USD,SUM(completed=1 AND usd IS NULL) 缺计价请求数,
