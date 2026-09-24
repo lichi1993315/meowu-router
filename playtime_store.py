@@ -850,12 +850,14 @@ def record_play_session_event(
     )
     # Only a fresh login may start a cohort. Heartbeats, historical retries and
     # logoff imports must not relabel a session that began before activation.
+    # Missing/legacy platform reports are not eligible for a playtest cohort.
     record_session_channel(conn, event["user_id"], event["session_id"], event)
     if event_type == "login":
         conn.execute("""
             INSERT OR IGNORE INTO analytics_session_playtests(user_id,session_id,playtest_id)
             SELECT :user_id,:session_id,playtest_id FROM analytics_playtests
-            WHERE julianday(:client_sent_at)>=julianday(started_at)
+            WHERE :client_platform IN ('webgl','windows','editor','other')
+              AND julianday(:client_sent_at)>=julianday(started_at)
               AND julianday(:received_at)>=julianday(started_at)
               AND NOT EXISTS(SELECT 1 FROM play_session_events WHERE user_id=:user_id AND session_id=:session_id)
               AND :user_id NOT IN ('','unknown','anonymous','anonymous_user') AND :session_id<>''

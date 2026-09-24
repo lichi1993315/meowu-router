@@ -2,6 +2,7 @@
 import json
 import sqlite3
 import unittest
+from pathlib import Path
 
 from playtime_store import ensure_playtime_schema, record_play_session_event
 from import_gameplay_telemetry import normalize_ai_token_usage, extract_event_ai_usage, aggregate_ai_usages, ensure_schema
@@ -14,7 +15,7 @@ class PlaytestCostTests(unittest.TestCase):
         ensure_playtime_schema(db)
         db.execute("INSERT INTO analytics_playtests VALUES ('中秋playtest','2026-09-23T10:00:00Z')")
         def record(session, kind, sent, received='2026-09-23T11:00:00Z'):
-            record_play_session_event(db,payload={'user_id':'a','session_id':session,'timestamp':sent},headers={},event_type=kind,received_at=received)
+            record_play_session_event(db,payload={'user_id':'a','session_id':session,'timestamp':sent,'client_platform':'windows'},headers={},event_type=kind,received_at=received)
         record('old','login','2026-09-23T09:00:00Z')
         record('old','heartbeat','2026-09-23T10:05:00Z')
         record('old','login','2026-09-23T10:10:00Z')
@@ -25,6 +26,43 @@ class PlaytestCostTests(unittest.TestCase):
         self.assertEqual([tuple(x) for x in db.execute('SELECT * FROM analytics_session_playtests')],[('a','new','中秋playtest')])
         ensure_playtime_schema(db)
         self.assertEqual(db.execute('SELECT started_at FROM analytics_playtests').fetchone()[0],'2026-09-23T10:00:00Z')
+        db.close()
+
+    def test_known_platform_and_september_24_boundary_repair(self):
+        db = sqlite3.connect(':memory:')
+        db.row_factory = sqlite3.Row
+        ensure_playtime_schema(db)
+        db.execute("INSERT INTO analytics_playtests VALUES ('中秋playtest','2026-09-23T14:50:19.335Z')")
+        cases = [('before', 'windows', '2026-09-23T15:59:59Z'),
+                 ('boundary', 'windows', '2026-09-23T16:00:00Z'),
+                 ('web', 'webgl', '2026-09-24T00:00:00Z'),
+                 ('editor', 'editor', '2026-09-24T00:00:00Z'),
+                 ('other', 'other', '2026-09-24T00:00:00Z'),
+                 ('unknown', 'unknown', '2026-09-24T00:00:00Z'),
+                 ('legacy', 'unattributed', '2026-09-24T00:00:00Z'),
+                 ('empty', '', '2026-09-24T00:00:00Z'),
+                 ('missing', None, '2026-09-24T00:00:00Z')]
+        for session, platform, sent in cases:
+            record_play_session_event(db, payload={'user_id':'a', 'session_id':session,
+                'timestamp':sent, 'client_platform':platform}, headers={}, event_type='login',
+                received_at='2026-09-24T01:00:00Z')
+        self.assertEqual({r[0] for r in db.execute('SELECT session_id FROM analytics_session_playtests')},
+                         {'before', 'boundary', 'web', 'editor', 'other'})
+        # Simulate tags written by the old rule, then repair them without deleting events.
+        for session, _, _ in cases:
+            db.execute("INSERT OR IGNORE INTO analytics_session_playtests VALUES ('a',?,'中秋playtest')", (session,))
+        migration = (Path(__file__).resolve().parents[1] / 'migrations/20260924_playtest_boundary.sql').read_text()
+        for _ in range(2):
+            db.executescript(migration)
+            self.assertEqual({r[0] for r in db.execute('SELECT session_id FROM analytics_session_playtests')},
+                             {'boundary', 'web', 'editor', 'other'})
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM play_session_events').fetchone()[0], len(cases))
+        self.assertEqual(db.execute('SELECT started_at FROM analytics_playtests').fetchone()[0],
+                         '2026-09-23T16:00:00Z')
+        record_play_session_event(db, payload={'user_id':'a', 'session_id':'late-old-login',
+            'timestamp':'2026-09-23T15:59:59Z', 'client_platform':'windows'}, headers={},
+            event_type='login', received_at='2026-09-24T02:00:00Z')
+        self.assertIsNone(db.execute("SELECT 1 FROM analytics_session_playtests WHERE session_id='late-old-login'").fetchone())
         db.close()
 
     def test_multi_model_total_is_authoritative_without_flat_rates(self):
