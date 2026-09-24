@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from urllib.request import Request, urlopen
 
 
 def plan(overview):
@@ -60,6 +61,16 @@ def main():
                LARKSUITE_CLI_APP_SECRET=values['FEISHU_BOT_API_SECRET'].strip().strip('"'),
                LARKSUITE_CLI_BRAND='feishu',LARKSUITE_CLI_CONFIG_DIR='/tmp/operations-lark-config',
                LARKSUITE_CLI_NO_UPDATE_NOTIFIER='1',LARKSUITE_CLI_NO_SKILLS_NOTIFIER='1')
+
+    request = Request('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
+                      data=json.dumps({'app_id':env['LARKSUITE_CLI_APP_ID'],
+                                       'app_secret':env['LARKSUITE_CLI_APP_SECRET']}).encode(),
+                      headers={'Content-Type':'application/json'})
+    with urlopen(request,timeout=30) as response:
+        auth = json.load(response)
+    if auth.get('code') != 0:
+        raise RuntimeError('Feishu application authentication failed')
+    env['LARKSUITE_CLI_TENANT_ACCESS_TOKEN'] = auth['tenant_access_token']
 
     def cli(command, *flags):
         result = subprocess.run([args.cli,'base',command,'--base-token',state['app'],'--as','bot',*flags],

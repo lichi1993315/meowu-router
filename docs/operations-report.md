@@ -24,3 +24,13 @@ docker compose -f docker-compose.operations-report.yml logs --tail=10 operations
 ```
 
 每日趋势另设60秒SQL预算，每个范围两条查询，共六条；最多270条记录，飞书批量同步。运行中的旧服务在 trend_table 未创建前继续只同步核心指标。
+
+## 原生仪表盘
+
+`tools/setup_operations_dashboard.py --plan-only` 生成26个组件配置：19指标卡、2平台对比、1渠道对比、3每日趋势、1说明。使用官方 Lark CLI 1.0.96，通过应用身份操作已经创建的 Base。实际搭建需应用发布 `base:dashboard:read`、`base:dashboard:create`、`base:dashboard:update`、`base:table:read`、`base:field:read` 权限。当前数据同步沿用既有 bitable v1 权限，仪表盘授权是独立前置条件。令牌仅经环境注入CLI，不打印或落盘。
+
+```bash
+python3 tools/setup_operations_dashboard.py --cli /tmp/operations-lark-cli
+```
+
+组件配置已准备不等于仪表盘已创建；必须确认命令成功并核验计算数据及实际页面后交付。
