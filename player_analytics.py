@@ -112,10 +112,10 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
         snapshots AS (SELECT user_id,client_platform,release_version,MAX(occurred_at) latest
         FROM e0 WHERE event_type='player_state_snapshot' GROUP BY 1,2,3)
         SELECT v.client_platform 平台,v.release_version 版本,COUNT(*) 玩家数,COUNT(st.user_id) 有状态快照玩家数,
-        COUNT(*)-COUNT(st.user_id) 未收到状态快照玩家数,MAX(st.latest) 最近快照时间
+        COUNT(*)-COUNT(st.user_id) 未收到状态快照玩家数,datetime(MAX(st.latest),'+8 hours') 最近快照时间
         FROM versions v LEFT JOIN snapshots st ON st.user_id=v.user_id AND st.client_platform=v.client_platform
         AND st.release_version IS v.release_version GROUP BY 1,2""",
-        '按平台与版本分别核对状态采集覆盖，同一玩家可能使用多个版本，各行不可相加。缺快照只表示此版本未收到快照，不推断玩家没有猫或金币。')
+        '按平台与版本分别核对状态采集覆盖，同一玩家可能使用多个版本，各行不可相加。快照时间为北京时间；缺快照只表示此版本未收到快照，不推断玩家没有猫或金币。')
     detail_types="'cat_skill_allocated','cat_level_up','fishing_started','fishing_finished','cat_adopted','shop_purchase','shop_freeze_changed','cat_housing_changed','player_typing_started','player_typing_finished','theater_view','theater_choice','theater_exit','theater_line'"
     base.append(q(160,'行为细节（加点、升级、钓鱼、招募、商店、猫舍、输入、小剧场）',f"SELECT occurred_at 时间,event_type 类型,metadata_json metadata,payload_json payload FROM events WHERE event_type IN ({detail_types}) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC"+limit))
     # Keep dedicated theater panels, their invitation denominators and sample threshold unchanged.
@@ -208,6 +208,10 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                 p['fieldConfig'].setdefault('overrides',[]).append({
                     'matcher':{'id':'byName','options':field},
                     'properties':[{'id':'noValue','value':label}]})
+            if p['id']==155:
+                for field,width in {'平台':100,'版本':440,'玩家数':100,'有状态快照玩家数':180,'未收到状态快照玩家数':200,'最近快照时间':200}.items():
+                    p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':field},
+                        'properties':[{'id':'custom.width','value':width}]})
             if p['type']=='table':p['fieldConfig']['defaults'].setdefault('custom',{})['inspect']=True
             for override in p['fieldConfig'].get('overrides',[]):
                 for prop in override.get('properties',[]):
