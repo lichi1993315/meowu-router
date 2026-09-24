@@ -86,10 +86,10 @@ class Feishu:
     def call(self, path, body=None, method='POST'):
         response = self.client.request(method, API + path, json=body,
             headers={'Authorization': 'Bearer ' + self.token} if self.token else {})
-        response.raise_for_status()
         result = response.json()
         if result.get('code') != 0:
             raise RuntimeError(f"Feishu code={result.get('code')}")
+        response.raise_for_status()
         return result
 
     def items(self, path):
@@ -126,10 +126,6 @@ def provision(api, state, path):
                 'name': '核心指标', 'default_view_name': '全部指标', 'fields': FIELDS}})['data']
         state['table'] = table['table_id']
         save(path, state)
-    admin = os.environ['FEISHU_ADMIN_ID']
-    member_type = os.getenv('FEISHU_ADMIN_MEMBER_TYPE') or ('openid' if admin.startswith('ou_') else 'openchat' if admin.startswith('oc_') else 'userid')
-    api.call(f'/drive/v1/permissions/{app}/members?type=bitable&need_notification=false',
-             {'member_type': member_type, 'member_id': admin, 'perm': 'edit'})
     fields = api.items(f"/bitable/v1/apps/{app}/tables/{state['table']}/fields")
     platform_id = next(f['field_id'] for f in fields if f['field_name'] == '平台')
     view_path = f"/bitable/v1/apps/{app}/tables/{state['table']}/views"
@@ -140,6 +136,10 @@ def provision(api, state, path):
             view = api.call(view_path, {'view_name': label, 'view_type': 'grid'})['data']['view']
         api.call(view_path + '/' + view['view_id'], {'property': {'filter_info': {
             'conjunction': 'and', 'conditions': [{'field_id': platform_id, 'operator': 'is', 'value': json.dumps([label])}]}}}, 'PATCH')
+    admin = os.getenv('FEISHU_OPERATIONS_MEMBER_ID') or os.environ['FEISHU_ADMIN_ID']
+    member_type = os.getenv('FEISHU_ADMIN_MEMBER_TYPE') or ('openid' if admin.startswith('ou_') else 'openchat' if admin.startswith('oc_') else 'email' if '@' in admin else 'userid')
+    api.call(f'/drive/v1/permissions/{app}/members?type=bitable&need_notification=false',
+             {'member_type': member_type, 'member_id': admin, 'perm': 'edit'})
     return state
 
 

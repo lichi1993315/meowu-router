@@ -8,6 +8,7 @@ services:
       FEISHU_BOT_API_SECRET: ${FEISHU_BOT_API_SECRET}
       FEISHU_ADMIN_ID: ${FEISHU_ADMIN_ID}
       FEISHU_ADMIN_MEMBER_TYPE: ${FEISHU_ADMIN_MEMBER_TYPE:-}
+      FEISHU_OPERATIONS_MEMBER_ID: ${FEISHU_OPERATIONS_MEMBER_ID:-}
       DB_PATH: /app/data/conversations.db
     volumes:
       - ./data:/app/data:ro
