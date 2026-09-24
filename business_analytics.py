@@ -6,7 +6,7 @@ def panels(q):
     # retained only in lifetime mode. Scene identities are island scoped, not viewer scoped.
     prefix = """, business AS (SELECT *,
       COALESCE(NULLIF(json_extract(payload_json,'$.flow_id'),''),NULLIF(json_extract(payload_json,'$.theater_event_id'),'')) flow,
-      COALESCE(json_extract(payload_json,'$.theater_type'),'未采集') template,
+      json_extract(payload_json,'$.theater_type') template,
       json_extract(payload_json,'$.phase') phase,
       json_extract(payload_json,'$.participant_count') actors,
       json_extract(payload_json,'$.result') result,
@@ -19,7 +19,7 @@ def panels(q):
     flow_keys AS MATERIALIZED (SELECT DISTINCT island,flow FROM business WHERE flow IS NOT NULL),
     business_history AS (SELECT f.*,
       COALESCE(NULLIF(json_extract(f.payload_json,'$.flow_id'),''),NULLIF(json_extract(f.payload_json,'$.theater_event_id'),'')) flow,
-      COALESCE(json_extract(f.payload_json,'$.theater_type'),'未采集') template,
+      json_extract(f.payload_json,'$.theater_type') template,
       json_extract(f.payload_json,'$.phase') phase,
       json_extract(f.payload_json,'$.participant_count') actors,
       json_extract(f.payload_json,'$.result') result,
@@ -84,7 +84,9 @@ def panels(q):
         CASE WHEN EXISTS(SELECT 1 FROM business WHERE event_type IN ('theater_lifecycle','ai_adventure_state')) THEN ROUND(100.0*SUM(offered IS NOT NULL AND started IS NOT NULL AND completed IS NOT NULL)/NULLIF(SUM(offered IS NOT NULL AND started IS NOT NULL),0),2) END 开演完成率
         FROM flows""",'按存档和剧情 ID 去重，包含建筑冒险；期间模式按发起时间选场次，关联截至所选结束时的结果。无发起证据的历史单列且不进入完成率分母。'),
       p(302,'小剧场 · 类别与参演猫数',"""SELECT COALESCE(business_group,'未采集') 业务组,template 类型,
-        CASE WHEN actual_actors IS NULL THEN '未采集' WHEN actual_actors>=4 THEN '4只及以上' ELSE CAST(actual_actors AS TEXT)||'只' END 实际参演猫数,
+        CASE WHEN template='pet_truth_question' THEN '不适用（问答）'
+          WHEN actual_actors IS NULL AND started IS NULL THEN '尚未观察到开演'
+          WHEN actual_actors IS NULL THEN '未采集' WHEN actual_actors>=4 THEN '4只及以上' ELSE CAST(actual_actors AS TEXT)||'只' END 实际参演猫数,
         COUNT(*) 观察到场次,CASE WHEN MAX(lifecycle)=1 THEN SUM(offered IS NOT NULL) END 已记录发起,
         SUM(started IS NOT NULL) 已记录开演,CASE WHEN MAX(lifecycle)=1 THEN SUM(completed IS NOT NULL) END 已记录完成
         FROM flows GROUP BY 1,2,3 ORDER BY 观察到场次 DESC""",'猫数来自实际播放请求演员集合；不是携带猫数。缺真实演员记录的旧场次保留未知。'),
@@ -104,7 +106,7 @@ def panels(q):
         (SELECT SUM(uses) FROM words) 实际使用次数,(SELECT SUM(created IS NOT NULL AND used IS NOT NULL) FROM words) 新增后已使用词条,
         (SELECT SUM(created IS NOT NULL AND used IS NULL) FROM words) 新增后未观察到使用词条""",'提交按决策 ID 去重，分类点击不重复算提交；词汇使用来自共享使用记录器。未观察到使用不代表永远不会使用。'),
       p(306,'岛屿词汇 · 入库分类与来源',"SELECT json_extract(payload_json,'$.category') 分类,result 入库结果,COUNT(*) 操作次数,COUNT(DISTINCT user_id) 玩家数 FROM business WHERE event_type='island_lexicon_result' GROUP BY 1,2",'成功新增与重复复用分列；原问题和其他占比仍见现有小剧场问题分类面板。'),
-      p(307,'岛屿词汇 · 实际使用明细',"SELECT content 词汇,category 分类,created 创建时间,used 首次观察到使用,uses 使用次数,ROUND((julianday(used)-julianday(created))*86400,2) 首次使用等待秒 FROM words ORDER BY uses DESC LIMIT 200",'只用明确关联的词条 ID；没有创建记录时不推算等待时间。'),
+      p(307,'岛屿词汇 · 实际使用明细',"SELECT content 词汇,category 分类,created 创建时间,used 首次观察到使用,uses 使用次数,ROUND((julianday(used)-julianday(created))*86400,2) 首次使用等待秒,CASE WHEN used IS NULL THEN '尚未观察到使用' WHEN created IS NULL THEN '缺创建记录，无法计算等待时间' ELSE '已观察到使用' END 采集状态 FROM words ORDER BY uses DESC LIMIT 200",'只用明确关联的词条 ID；没有创建记录时不推算等待时间。'),
       p(308,'AI 建筑 · 生成与建成',"""SELECT CASE WHEN COUNT(*)>0 THEN COUNT(*) END 生成流程数,COUNT(DISTINCT user_id) 生成玩家数,SUM(succeeded) 生成成功,SUM(failed) 生成失败,SUM(cancelled) 取消,
         SUM(succeeded=0 AND failed=0 AND cancelled=0) 未观察到结果,
         (SELECT COUNT(*) FROM (SELECT DISTINCT island,json_extract(payload_json,'$.building_instance_id') FROM business WHERE event_type='ai_building_created')) 新建建筑实例,
@@ -121,7 +123,12 @@ def panels(q):
       p(312,'建筑冒险 · 阶段与错误',"""SELECT phase 阶段,json_extract(payload_json,'$.error') 错误,reason 终止原因,
         COUNT(*) 状态变更次数,COUNT(DISTINCT json_array(island,flow)) 涉及冒险数,COUNT(DISTINCT user_id) 玩家数
         FROM business WHERE event_type='ai_adventure_state' GROUP BY 1,2,3 ORDER BY 状态变更次数 DESC""",'状态变化次数用于定位阶段问题，不当作新的冒险场次。'),
-      p(313,'AI／小剧场业务明细',"SELECT occurred_at 时间,user_id,event_type 类型,flow 流程ID,template 剧情类型,phase 阶段,actors 参演猫数,payload_json payload FROM business WHERE event_type IN ('theater_lifecycle','island_lexicon_result','island_lexicon_used','ai_building_generation','ai_building_created','ai_adventure_state') ORDER BY julianday(occurred_at) DESC LIMIT 200",'保留完整 payload，可对照游戏中的行为与最终结果。'),
+      p(313,'AI／小剧场业务明细',"""SELECT occurred_at 时间,user_id,event_type 类型,
+        CASE WHEN event_type='island_lexicon_used' AND flow IS NULL THEN '不适用' ELSE flow END 流程ID,
+        CASE WHEN event_type IN ('theater_lifecycle','ai_adventure_state') THEN template ELSE '不适用' END 剧情类型,
+        CASE WHEN event_type IN ('island_lexicon_result','island_lexicon_used','ai_building_created') THEN '不适用' ELSE phase END 阶段,
+        CASE WHEN event_type IN ('theater_lifecycle','ai_adventure_state') THEN actors ELSE '不适用' END 参演猫数,
+        payload_json payload FROM business WHERE event_type IN ('theater_lifecycle','island_lexicon_result','island_lexicon_used','ai_building_generation','ai_building_created','ai_adventure_state') ORDER BY julianday(occurred_at) DESC LIMIT 200""",'保留完整 payload，可对照游戏中的行为与最终结果；不属于该事件契约的字段显示不适用。'),
       p(314,'AI · 业务调用、耗时与已知费用',"""SELECT COALESCE(business_group,'未关联') 业务,COUNT(*) 请求数,SUM(completed) 完成请求,SUM(failed) 失败请求,SUM(cancelled) 取消请求,
         SUM(completed=0 AND failed=0 AND cancelled=0) 尚无结果,SUM(usd) 已知费用USD,SUM(completed=1 AND usd IS NULL) 缺计价请求数,
         SUM(upper_bound=1) 费用上限请求数,ROUND(AVG(elapsed_ms),2) 平均全程毫秒,ROUND(AVG(ttfb_ms),2) 平均首字节毫秒,
@@ -152,7 +159,7 @@ def panels(q):
       p(320,'岛屿词汇 · 问题与其他分类占比',""", choices AS (
         SELECT DISTINCT user_id,session_id,json_extract(payload_json,'$.decision_id') decision_id,template,
         json_extract(payload_json,'$.prompt_text') question,json_extract(payload_json,'$.vocab_type') category
-        FROM business WHERE event_type='theater_choice' AND phase='vocab_category')
+        FROM business WHERE event_type='theater_choice' AND phase='vocab_category' AND json_extract(payload_json,'$.action')='pick_draft_type')
         SELECT template 类型,question 原问题,COUNT(*) 分类选择次数,COUNT(DISTINCT user_id) 玩家数,
         SUM(category='person') 人物,SUM(category='activity') 活动,SUM(category='object') 物品,SUM(category='other') 其他,
         ROUND(100.0*SUM(category='other')/COUNT(*),2) 其他占比 FROM choices GROUP BY 1,2 ORDER BY 分类选择次数 DESC""",'仅统计明确分类操作；默认 Other 不视为玩家选择，按决策 ID 去重。'),

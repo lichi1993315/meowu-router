@@ -44,6 +44,7 @@ def apply_player_layout(boards):
                 'reduceOptions': {'calcs': ['lastNotNull'], 'fields': '', 'values': False},
             }
             defaults = p['fieldConfig']['defaults']
+            defaults['noValue'] = '无有效样本'
             defaults.pop('custom', None)
             defaults['color'] = {'mode': 'fixed', 'fixedColor': color}
             # Sample coverage remains visible, but is visually secondary to the metric.
@@ -105,6 +106,7 @@ def apply_player_layout(boards):
             line([100,101],6)
             line([102,103,104],6)
             line([153,30],6)
+            line([155],7)
             line([31],9)
             line([999],4)
         elif uid == 'gameplay-player-detail':

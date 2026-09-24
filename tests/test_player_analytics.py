@@ -41,6 +41,14 @@ class PlayerAnalyticsTests(unittest.TestCase):
         self.assertEqual(tuple(self.query('gameplay-overview',104)[0]),(2,2,2))
         self.assertEqual(self.query('gameplay-overview',152)[0][0:2],('耳环','珍珠耳环'))
 
+    def test_snapshot_coverage_preserves_missing_players_and_real_zero(self):
+        self.snapshot('a',0)
+        self.emit('b','fishing_catch',{})
+        rows=self.query('gameplay-overview',155)
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0][2:5],(2,1,1))
+        self.assertEqual(self.query('gameplay-overview',101)[0][0],0)
+
     def test_days_deduplicate_same_day_and_separate_archives(self):
         self.snapshot('a',0,day=1);self.snapshot('a',0,day=1);self.snapshot('a',0,day=2)
         self.snapshot('a',0,day=1,archive='island-b')

@@ -18,6 +18,27 @@ class BusinessAnalyticsTests(unittest.TestCase):
         self.assertEqual(breakdown[2],'未采集')
         self.assertIsNone(breakdown[4]);self.assertIsNone(breakdown[6])
 
+    def test_inapplicable_fields_and_unused_words_are_not_missing_collection(self):
+        self.emit('a','island_lexicon_result',{'entry_id':'word','result':'created','content':'猫','category':'object'})
+        row=self.query('gameplay-overview',307)[0]
+        self.assertIsNone(row[3]);self.assertIsNone(row[5])
+        self.assertEqual(row[6],'尚未观察到使用')
+        detail=self.query('gameplay-overview',313)[0]
+        self.assertEqual(detail[4:7],('不适用','不适用','不适用'))
+        self.emit('a','theater_lifecycle',{'flow_id':'question','theater_type':'pet_truth_question','phase':'offered','participant_count':1})
+        self.assertEqual(self.query('gameplay-overview',302)[0][2],'不适用（问答）')
+
+    def test_missing_template_does_not_override_real_template_when_flows_merge(self):
+        self.emit('a','theater_lifecycle',{'flow_id':'f','theater_type':'pair','phase':'offered'})
+        self.emit('a','theater_line',{'flow_id':'f','participant_count':2})
+        self.assertEqual(self.query('gameplay-overview',302)[0][1],'pair')
+
+    def test_only_explicit_category_selection_is_counted(self):
+        self.emit('a','theater_choice',{'flow_id':'f','phase':'vocab_category','action':'submit_draft_text'})
+        self.assertEqual(self.query('gameplay-overview',320),[])
+        self.emit('a','theater_choice',{'flow_id':'f','phase':'vocab_category','action':'pick_draft_type','vocab_type':'object'})
+        self.assertEqual(self.query('gameplay-overview',320)[0][4:8],(0,0,1,0))
+
     def test_multiplayer_lines_are_one_scene_and_uid_zero_is_in_actor_count(self):
         self.emit('a','theater_lifecycle',{'flow_id':'f','theater_type':'pair','phase':'offered','participant_count':2})
         for user in ('a','b'):

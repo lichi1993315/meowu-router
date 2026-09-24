@@ -106,6 +106,16 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
             FROM players,json_each(state,'$.outfits') c GROUP BY json_extract(c.value,'$.slot_id'),json_extract(c.value,'$.item_id')) WHERE n<=5 ORDER BY 部位,n"""),
         q(153,'采集覆盖与历史限制',"SELECT COUNT(*) 玩家数,COUNT(state) 完整状态玩家数,COUNT(play_days) 可去重游戏日玩家数,(SELECT COUNT(*) FROM e0 WHERE occurred_at IS NULL) 缺真实时间事件数 FROM players")]
     overview.append(q(154,'钓鱼尝试覆盖（含未观察到结算）',"SELECT json_extract(payload_json,'$.region') 区域,COUNT(*) 抛竿次数,SUM(EXISTS(SELECT 1 FROM e0 f WHERE f.user_id=events.user_id AND f.session_id=events.session_id AND f.event_type='fishing_finished' AND json_extract(f.payload_json,'$.operation_id')=json_extract(events.payload_json,'$.operation_id'))) 已观察到结算 FROM events WHERE event_type='fishing_started' GROUP BY 1"))
+    state_coverage = q(155,'状态采集覆盖 · 平台与版本',""", versions AS (
+        SELECT user_id,client_platform,release_version FROM s
+        UNION SELECT user_id,client_platform,release_version FROM e0),
+        snapshots AS (SELECT user_id,client_platform,release_version,MAX(occurred_at) latest
+        FROM e0 WHERE event_type='player_state_snapshot' GROUP BY 1,2,3)
+        SELECT v.client_platform 平台,v.release_version 版本,COUNT(*) 玩家数,COUNT(st.user_id) 有状态快照玩家数,
+        COUNT(*)-COUNT(st.user_id) 未收到状态快照玩家数,MAX(st.latest) 最近快照时间
+        FROM versions v LEFT JOIN snapshots st ON st.user_id=v.user_id AND st.client_platform=v.client_platform
+        AND st.release_version IS v.release_version GROUP BY 1,2""",
+        '按平台与版本分别核对状态采集覆盖，同一玩家可能使用多个版本，各行不可相加。缺快照只表示此版本未收到快照，不推断玩家没有猫或金币。')
     detail_types="'cat_skill_allocated','cat_level_up','fishing_started','fishing_finished','cat_adopted','shop_purchase','shop_freeze_changed','cat_housing_changed','player_typing_started','player_typing_finished','theater_view','theater_choice','theater_exit','theater_line'"
     base.append(q(160,'行为细节（加点、升级、钓鱼、招募、商店、猫舍、输入、小剧场）',f"SELECT occurred_at 时间,event_type 类型,metadata_json metadata,payload_json payload FROM events WHERE event_type IN ({detail_types}) ORDER BY julianday(occurred_at) DESC,sequence DESC,event_id DESC"+limit))
     # Keep dedicated theater panels, their invitation denominators and sample threshold unchanged.
@@ -118,6 +128,7 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                 for key in ('queryText','rawQueryText'):
                     t[key]=t[key].replace(time_range('occurred_at'),"('${behavior_period}'='all' OR ("+time_range('occurred_at')+"))")
             dest.append(clone)
+    overview.append(state_coverage)
     old_overview = result['gameplay-overview.json']
     # Untimed raw history remains reachable and retains its existing contract/panel id.
     overview += [copy.deepcopy(p) for p in old_overview['panels'] if p['id'] in (30,31)]
@@ -185,6 +196,18 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
                         sql="SELECT * FROM ("+sql+") WHERE "+selected
                     t[key]=sql
             p.setdefault('fieldConfig',{}).setdefault('defaults',{}).update(noValue='未采集',unit='none')
+            # Empty aggregates and inapplicable fields are not missing telemetry.
+            if p['type']=='stat':
+                p['fieldConfig']['defaults']['noValue']='无有效样本'
+            missing_labels = {
+                307: {'首次观察到使用':'尚未观察到使用', '首次使用等待秒':'无法计算'},
+                314: {'已回报缓存命中率':'未回报有效缓存用量'},
+                155: {'最近快照时间':'未收到状态快照'},
+            }
+            for field,label in missing_labels.get(p['id'],{}).items():
+                p['fieldConfig'].setdefault('overrides',[]).append({
+                    'matcher':{'id':'byName','options':field},
+                    'properties':[{'id':'noValue','value':label}]})
             if p['type']=='table':p['fieldConfig']['defaults'].setdefault('custom',{})['inspect']=True
             for override in p['fieldConfig'].get('overrides',[]):
                 for prop in override.get('properties',[]):
