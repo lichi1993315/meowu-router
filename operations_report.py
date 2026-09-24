@@ -24,6 +24,15 @@ FIELDS = [
         ('发行渠道', 1), ('发布版本', 1), ('测试批次', 1), ('统计口径', 1)]]
 
 
+def substitutions(platforms, now, days=7):
+    """仅允许固定统计范围；未知 Dashboard 变量失败退出。"""
+    return {'client_platform:sqlstring': ','.join("'" + p + "'" for p in platforms),
+                      'distribution_channel:sqlstring': "'__all__'", 'release_version:sqlstring': "'__all__'",
+                      'playtest_id': 'all', 'test_data': 'auto', 'behavior_period': 'all',
+                      '__from': str(int((now - dt.timedelta(days=days)).timestamp() * 1000)),
+                      '__to': str(int(now.timestamp() * 1000))}
+
+
 def collect(db, dashboard, now):
     """三个固定范围，SQL 按文本复用；整次查询限时 90 秒，全部成功后才写飞书。"""
     deadline = time.monotonic() + 90
@@ -34,11 +43,7 @@ def collect(db, dashboard, now):
         db.execute('BEGIN')
         for label, platforms in SCOPES.items():
             cache = {}
-            values = {'client_platform:sqlstring': ','.join("'" + p + "'" for p in platforms),
-                      'distribution_channel:sqlstring': "'__all__'", 'release_version:sqlstring': "'__all__'",
-                      'playtest_id': 'all', 'test_data': 'auto', 'behavior_period': 'all',
-                      '__from': str(int((now - dt.timedelta(days=7)).timestamp() * 1000)),
-                      '__to': str(int(now.timestamp() * 1000))}
+            values = substitutions(platforms, now)
             for panel in dashboard['panels']:
                 if panel.get('type') != 'stat':
                     continue
@@ -73,6 +78,46 @@ def collect(db, dashboard, now):
     finally:
         db.rollback()
         db.set_progress_handler(None, 0)
+
+
+def collect_trends(db, overview, retention, now):
+    """最近30个北京时间自然日，固定270行滚动窗口；仅统计实际入库记录。"""
+    deadline = time.monotonic() + 60
+    db.set_progress_handler(lambda: int(time.monotonic() > deadline), 10000)
+    db.row_factory = sqlite3.Row
+    records = []
+    try:
+        db.execute('BEGIN')
+        ai_panel = next(p for p in overview['panels'] if p['id'] == 27)
+        dau_panel = next(p for p in retention['panels'] if p['id'] == 1)
+        for label, platforms in SCOPES.items():
+            values = substitutions(platforms, now, 30)
+            values['behavior_period'] = 'range'
+            # 使用自然日起点，确保首日完整；今日在口径里标注未结束。
+            start = dt.datetime.combine(now.astimezone(TZ).date() - dt.timedelta(days=29), dt.time(), TZ)
+            values['__from'] = str(int(start.timestamp() * 1000))
+            rows = []
+            for panel in (dau_panel, ai_panel):
+                sql = re.sub(r'\$\{([^}]+)\}', lambda m: values[m[1]], panel['targets'][0]['queryText'])
+                rows.append({r['日期']: dict(r) for r in db.execute(sql).fetchall()})
+            for offset in range(30):
+                day = now.astimezone(TZ).date() - dt.timedelta(days=offset)
+                date = day.isoformat()
+                for title, source, field, unit in [('每日活跃玩家',0,'DAU','人'),('每日AI Tokens',1,'TotalTokens','Token'),('每日AI成本',1,'CostUSD','USD')]:
+                    row = rows[source].get(date, {})
+                    value = row.get(field, 0 if source == 0 else None)
+                    fields = {'指标键': f'{label}:{title}:day{offset}', '指标': title, '平台': label,
+                              '数值': value, '单位': unit, '统计日期': int(dt.datetime.combine(day,dt.time(),TZ).timestamp()*1000),
+                              '数据状态': '无有效样本' if value is None else '已同步',
+                              '更新时间（北京时间）': now.astimezone(TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                              '发行渠道':'全部', '发布版本':'全部', '测试批次':'全部',
+                              '样本说明':'DAU按登录/前台心跳去重；AI按具有真实日期的调用明细统计。',
+                              '统计口径':'最近30天滚动窗口，今日未结束。仅WebGL/Windows，排除开发包和开发者。仅统计已入库数据；AI明细与会话快照覆盖不同，不强行对齐累计卡片。'}
+                    records.append({'fields':fields})
+        return records
+    finally:
+        db.rollback()
+        db.set_progress_handler(None,0)
 
 
 class Feishu:
@@ -127,6 +172,15 @@ def provision(api, state, path):
                 'name': '核心指标', 'default_view_name': '全部指标', 'fields': FIELDS}})['data']
         state['table'] = table['table_id']
         save(path, state)
+    if not state.get('trend_table'):
+        tables = api.items(f'/bitable/v1/apps/{app}/tables')
+        table = next((t for t in tables if t['name'] == '每日趋势'), None)
+        if table is None:
+            table = api.call(f'/bitable/v1/apps/{app}/tables', {'table': {
+                'name':'每日趋势', 'default_view_name':'最近30天',
+                'fields':FIELDS + [{'field_name':'统计日期','type':5,'property':{'date_formatter':'yyyy/MM/dd'}}]}})['data']
+        state['trend_table'] = table['table_id']
+        save(path,state)
     fields = api.items(f"/bitable/v1/apps/{app}/tables/{state['table']}/fields")
     platform_id = next(f['field_id'] for f in fields if f['field_name'] == '平台')
     view_path = f"/bitable/v1/apps/{app}/tables/{state['table']}/views"
@@ -206,6 +260,11 @@ def run(args):
                 records = collect(db, dashboard, dt.datetime.now(TZ))
             query_seconds = time.monotonic() - started
             count = sync(api, state, records)
+            if state.get('trend_table'):
+                retention = json.loads(Path('/app/gameplay-retention.json').read_text())
+                with sqlite3.connect(db_path.as_uri() + '?mode=ro', uri=True, timeout=5) as db:
+                    trends = collect_trends(db, dashboard, retention, dt.datetime.now(TZ))
+                state['trend_records'] = sync(api, dict(state, table=state['trend_table']), trends)
             state.update(last_success=dt.datetime.now(TZ).isoformat(), records=count, query_seconds=round(query_seconds, 3))
             save(state_path, state)
             print(json.dumps(state, ensure_ascii=False), flush=True)

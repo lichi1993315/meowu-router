@@ -2,7 +2,7 @@ import datetime as dt
 import sqlite3
 import unittest
 
-from operations_report import collect, sync, Feishu, TZ
+from operations_report import collect, collect_trends, sync, Feishu, TZ
 
 
 class ReportTests(unittest.TestCase):
@@ -28,6 +28,20 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(records[1]['fields']['数据状态'], '无有效样本')
         self.assertEqual(records[2]['fields']['数值'], 0)
         self.assertEqual(records[2]['fields']['数据状态'], '已同步')
+
+    def test_trend_window_dates_and_missing_ai_remain_null(self):
+        db = sqlite3.connect(':memory:')
+        dau = {'panels':[{'id':1,'targets':[{'queryText':"SELECT '2026-09-25' 日期, 2 DAU"}]}]}
+        ai = {'panels':[{'id':27,'targets':[{'queryText':"SELECT '2026-09-25' 日期, 15 TotalTokens, NULL CostUSD"}]}]}
+        records = collect_trends(db, ai, dau, dt.datetime(2026,9,25,12,tzinfo=TZ))
+        self.assertEqual(len(records),270)
+        self.assertEqual(len({r['fields']['指标键'] for r in records}),270)
+        self.assertEqual(records[0]['fields']['数值'],2)
+        self.assertEqual(records[1]['fields']['数值'],15)
+        self.assertIsNone(records[2]['fields']['数值'])
+        self.assertEqual(records[3]['fields']['数值'],0)
+        self.assertIsNone(records[4]['fields']['数值'])
+        self.assertEqual(records[0]['fields']['统计日期'] - records[3]['fields']['统计日期'],86400000)
 
     def test_unknown_variable_fails_closed(self):
         db = sqlite3.connect(':memory:')
