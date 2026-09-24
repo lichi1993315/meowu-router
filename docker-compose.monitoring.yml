@@ -163,13 +163,11 @@ services:
       - FEISHU_BOT_API_SECRET=${FEISHU_BOT_API_SECRET}
       - FEISHU_CHAT_ID=${FEISHU_CHAT_ID}
       - FEISHU_RECEIVE_ID_TYPE=chat_id
-      - GRAFANA_URL=http://20.198.242.101:9001/
-      - GRAFANA_TOKEN=${GRAFANA_TOKEN}
-      # 渲染整个 Dashboard
-      - GRAFANA_RENDER_PATH=render/d/llm-router-dashboard/dashboard?orgId=1&width=1200&height=800&kiosk
+      - DB_PATH=/app/data/conversations.db
       - REPORT_TIMEZONE=Asia/Shanghai
     volumes:
       - ./output:/app/output
+      - ./data:/app/data:ro
     depends_on:
       - grafana
     logging: *default-logging

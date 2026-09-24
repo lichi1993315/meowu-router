@@ -20,3 +20,18 @@
 5. 记录提交号、容器镜像 ID、健康检查和必要的功能验证结果。修改源码不等于运行中的镜像已经更新。
 
 `.env`、`.secrets/`、运行数据和备份不提交。服务器备份放在 `/root/router-backups/`，本地工具私有配置使用 `.git/info/exclude` 排除；不要用忽略规则隐藏尚未合并的源码。
+
+## 每日用户日报
+
+`grafana-report` 容器每日北京时间 09:00 运行 `daily_user_report.py`，统计前一天完整自然日并发送到现有 `FEISHU_CHAT_ID` 报表群。09:10、09:20 为有限重试；`output/user-reports/` 保存统计结果和发送回执，成功后同一天同一群跳过重复发送。三次都失败时检查 `output/report_cron.log`，修复后用 `--date YYYY-MM-DD` 补发；不自动补发停机期间的历史日期。
+
+数据来自只读挂载的 `data/conversations.db`，复用 Grafana 的 `analytics_activity`、`analytics_first_entry` 和 `analytics_sessions` 视图，无需通过公网 Grafana 或截图服务。日活按登录/前台心跳跨平台去重；新增按正式用户首次入岛；排除 Editor、开发包、开发者及匿名身份，保留未知平台。次日留存为统计日前一天新增用户在统计日的回访。统计仅反映已入库数据，不推断未上报行为。
+
+验证及手动补发（均作为一次性 Docker 服务运行）：
+
+```bash
+docker compose -f docker-compose.monitoring.yml run --rm --no-deps grafana-report python /app/daily_user_report.py --dry-run
+docker compose -f docker-compose.monitoring.yml run --rm --no-deps grafana-report python /app/daily_user_report.py --date YYYY-MM-DD
+```
+
+每次运行复用两张连接内临时表，历史首次入岛需要读取历史会话；查询总计设置 30 秒 SQLite 指令级超时，失败不发送半份数据。成功回执按日期和接收群持久化，飞书请求使用稳定 UUID 辅助短期重试去重。保留回执目录；跨飞书 UUID 有效期的“已发送但未落回执”故障仍须人工核对群消息，不能保证跨系统绝对仅一次投递。

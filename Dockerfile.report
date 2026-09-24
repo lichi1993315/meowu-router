@@ -9,6 +9,7 @@ RUN apt-get update \
 RUN pip install --no-cache-dir httpx
 
 COPY send_report.py /app/send_report.py
+COPY daily_user_report.py /app/daily_user_report.py
 COPY report_entrypoint.sh /app/report_entrypoint.sh
 
 RUN mkdir -p /app/output \
