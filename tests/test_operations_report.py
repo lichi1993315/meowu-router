@@ -2,10 +2,15 @@ import datetime as dt
 import sqlite3
 import unittest
 
-from operations_report import collect, sync, TZ
+from operations_report import collect, sync, Feishu, TZ
 
 
 class ReportTests(unittest.TestCase):
+    def test_new_empty_feishu_table_returns_null_items(self):
+        api = object.__new__(Feishu)
+        api.call = lambda *args, **kwargs: {"data": {"items": None, "has_more": False}}
+        self.assertEqual(api.items("/records"), [])
+
     def test_platform_dedup_null_and_zero(self):
         db = sqlite3.connect(':memory:')
         db.execute('CREATE TABLE visits(user_id TEXT, platform TEXT)')

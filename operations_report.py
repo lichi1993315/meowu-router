@@ -97,7 +97,7 @@ class Feishu:
         items, cursor = [], ''
         for _ in range(20):
             result = self.call(path + '?page_size=100' + ('&page_token=' + cursor if cursor else ''), method='GET')['data']
-            items.extend(result.get('items', []))
+            items.extend(result.get('items') or [])
             if not result.get('has_more'):
                 return items
             cursor = result['page_token']
@@ -176,7 +176,7 @@ def sync(api, state, records):
     for expected in records:
         f = expected['fields']
         remote = by_key.get(f['指标键'], {})
-        if remote.get('数值') != f['数值']:
+        if f['指标键'] not in by_key or remote.get('数值') != f['数值']:
             raise RuntimeError('Read-back value mismatch')
     return len(records)
 
