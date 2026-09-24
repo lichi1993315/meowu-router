@@ -1,0 +1,22 @@
+services:
+  operations-report:
+    build:
+      context: .
+      dockerfile: Dockerfile.operations-report
+    environment:
+      FEISHU_BOT_API_KEY: ${FEISHU_BOT_API_KEY}
+      FEISHU_BOT_API_SECRET: ${FEISHU_BOT_API_SECRET}
+      FEISHU_ADMIN_ID: ${FEISHU_ADMIN_ID}
+      FEISHU_ADMIN_MEMBER_TYPE: ${FEISHU_ADMIN_MEMBER_TYPE:-}
+      DB_PATH: /app/data/conversations.db
+    volumes:
+      - ./data:/app/data:ro
+      - ./output/operations-report:/app/output/operations-report
+    cpus: 0.5
+    mem_limit: 512m
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

@@ -1,0 +1,7 @@
+FROM python:3.11-slim
+WORKDIR /app
+RUN pip install --no-cache-dir httpx==0.28.1
+COPY operations_report.py /app/operations_report.py
+COPY grafana/provisioning/dashboards/gameplay-overview.json /app/gameplay-overview.json
+ENTRYPOINT ["python", "-u", "/app/operations_report.py"]
+CMD ["--loop"]
