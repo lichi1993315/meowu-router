@@ -50,3 +50,27 @@ class DistributionChannelTests(unittest.TestCase):
         accept_batch(self.path,{'user_id':'same','session_id':'live-web','distribution_channel':'web','events':[event]}, {})
         rows=self.db.execute('SELECT session_id,distribution_channel FROM analytics_session_channels WHERE user_id=?',('same',)).fetchall()
         self.assertEqual(dict(rows),{'login-steam':'steam','snapshot-taptap':'taptap','live-web':'web'})
+
+    def test_overview_channel_counts_deduplicate_and_respect_filters(self):
+        self.db.execute("INSERT INTO analytics_playtests VALUES ('中秋playtest','2026-09-23T16:00:00Z')")
+        for user, sid, channel, sent in [
+            ('a','steam-1','steam','2026-09-24T00:00:00Z'),
+            ('a','steam-2','steam','2026-09-24T01:00:00Z'),
+            ('a','taptap-1','taptap','2026-09-24T02:00:00Z'),
+            ('b','unknown','unknown','2026-09-24T03:00:00Z'),
+            ('old','old','steam','2026-09-23T00:00:00Z')]:
+            record_play_session_event(self.db,payload={'user_id':user,'session_id':sid,
+                'client_platform':'windows','distribution_channel':channel,'timestamp':sent},
+                headers={},event_type='login',received_at=sent)
+        self.db.commit()
+        filters={'playtest_id':'中秋playtest'}
+        self.assertEqual(self.query('gameplay-overview',40,**filters)[0][0],1)
+        self.assertEqual(self.query('gameplay-overview',41,**filters)[0][0],1)
+        self.assertEqual(self.query('gameplay-overview',42,**filters)[0][0],1)
+        self.assertEqual([tuple(r) for r in self.query('gameplay-overview',43,**filters)],
+            [('Steam',1,2),('TapTap',1,1),('网页版',0,0),('内部版',0,0),('未知／历史未上报',1,1)])
+        self.assertEqual(self.query('gameplay-overview',40,**{'distribution_channel:sqlstring':"'taptap'",**filters})[0][0],0)
+        self.assertEqual(self.query('gameplay-overview',40,**{'client_platform:sqlstring':"'webgl'",**filters})[0][0],0)
+        self.assertEqual(self.query('gameplay-overview',40,**{'release_version:sqlstring':"'missing-version'",**filters})[0][0],0)
+        self.assertEqual(self.query('gameplay-overview',40,**{'__to':'1',**filters})[0][0],0)
+        self.assertEqual(self.query('gameplay-overview',40,**{'test_data':'only',**filters})[0][0],0)

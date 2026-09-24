@@ -757,6 +757,458 @@
       ]
     },
     {
+      "id": 40,
+      "title": "Steam · 期间入岛玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按所选时间内开始的会话统计，遵守批次、平台、版本、发行渠道和测试数据筛选；各渠道内按玩家去重，同一玩家跨渠道可分别计数，人数不可直接相加。仅使用明确上报的渠道，不按版本名推断；0 表示当前筛选下没有已识别记录。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='steam'",
+          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='steam'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(有效玩家数|有效快照数|样本数)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 13,
+          "valueSize": 32
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "id": 41,
+      "title": "TapTap · 期间入岛玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按所选时间内开始的会话统计，遵守批次、平台、版本、发行渠道和测试数据筛选；各渠道内按玩家去重，同一玩家跨渠道可分别计数，人数不可直接相加。仅使用明确上报的渠道，不按版本名推断；0 表示当前筛选下没有已识别记录。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='taptap'",
+          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='taptap'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(有效玩家数|有效快照数|样本数)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 13,
+          "valueSize": 32
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "id": 42,
+      "title": "渠道未上报 · 期间入岛玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按所选时间内开始的会话统计，遵守批次、平台、版本、发行渠道和测试数据筛选；各渠道内按玩家去重，同一玩家跨渠道可分别计数，人数不可直接相加。仅使用明确上报的渠道，不按版本名推断；0 表示当前筛选下没有已识别记录。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='unknown'",
+          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='unknown'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(有效玩家数|有效快照数|样本数)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 13,
+          "valueSize": 32
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "id": 43,
+      "title": "发行渠道明细 · 期间入岛玩家与会话",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按所选时间内开始的会话统计，遵守批次、平台、版本、发行渠道和测试数据筛选；各渠道内按玩家去重，同一玩家跨渠道可分别计数，人数不可直接相加。仅使用明确上报的渠道，不按版本名推断；0 表示当前筛选下没有已识别记录。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) \n        , channels(channel,label,sort) AS (VALUES ('steam','Steam',1),('taptap','TapTap',2),\n          ('web','网页版',3),('internal','内部版',4),('unknown','未知／历史未上报',5))\n        SELECT c.label 发行渠道,COUNT(DISTINCT s.user_id) 玩家数,COUNT(s.session_id) 会话数\n        FROM channels c LEFT JOIN channel_sessions s ON s.channel=c.channel\n        GROUP BY c.channel,c.label,c.sort ORDER BY c.sort\n        ",
+          "rawQueryText": "WITH s AS (SELECT * FROM analytics_sessions WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(started_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(started_at) < julianday(${__to}/1000,'unixepoch') ), channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) \n        , channels(channel,label,sort) AS (VALUES ('steam','Steam',1),('taptap','TapTap',2),\n          ('web','网页版',3),('internal','内部版',4),('unknown','未知／历史未上报',5))\n        SELECT c.label 发行渠道,COUNT(DISTINCT s.user_id) 玩家数,COUNT(s.session_id) 会话数\n        FROM channels c LEFT JOIN channel_sessions s ON s.channel=c.channel\n        GROUP BY c.channel,c.label,c.sort ORDER BY c.sort\n        "
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 7
+      }
+    },
+    {
       "id": 5,
       "title": "时长中位数（分钟）",
       "type": "stat",
@@ -869,7 +1321,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -999,7 +1451,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -1129,7 +1581,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -1259,7 +1711,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -1389,7 +1841,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -1519,7 +1971,7 @@
       },
       "gridPos": {
         "x": 20,
-        "y": 5,
+        "y": 16,
         "w": 4,
         "h": 4
       },
@@ -1649,7 +2101,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 20,
         "w": 12,
         "h": 4
       },
@@ -1779,7 +2231,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 20,
         "w": 12,
         "h": 4
       },
@@ -1883,7 +2335,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 13,
+        "y": 24,
         "w": 8,
         "h": 8
       }
@@ -1973,7 +2425,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 13,
+        "y": 24,
         "w": 8,
         "h": 8
       }
@@ -2065,7 +2517,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 13,
+        "y": 24,
         "w": 8,
         "h": 8
       }
@@ -2157,7 +2609,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 32,
         "w": 8,
         "h": 8
       }
@@ -2249,7 +2701,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 21,
+        "y": 32,
         "w": 8,
         "h": 8
       }
@@ -2341,7 +2793,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 21,
+        "y": 32,
         "w": 8,
         "h": 8
       }
@@ -2354,7 +2806,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 29,
+        "y": 40,
         "w": 24,
         "h": 1
       }
@@ -2476,7 +2928,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 30,
+        "y": 41,
         "w": 6,
         "h": 4
       }
@@ -2598,7 +3050,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 30,
+        "y": 41,
         "w": 6,
         "h": 4
       }
@@ -2721,7 +3173,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 30,
+        "y": 41,
         "w": 6,
         "h": 4
       }
@@ -2844,7 +3296,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 30,
+        "y": 41,
         "w": 6,
         "h": 4
       }
@@ -2936,7 +3388,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 34,
+        "y": 45,
         "w": 12,
         "h": 8
       }
@@ -3028,7 +3480,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 34,
+        "y": 45,
         "w": 12,
         "h": 8
       }
@@ -3120,7 +3572,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 53,
         "w": 12,
         "h": 8
       }
@@ -3212,7 +3664,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 42,
+        "y": 53,
         "w": 12,
         "h": 8
       }
@@ -3225,7 +3677,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 50,
+        "y": 61,
         "w": 24,
         "h": 1
       }
@@ -3317,7 +3769,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 51,
+        "y": 62,
         "w": 12,
         "h": 8
       }
@@ -3409,7 +3861,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 51,
+        "y": 62,
         "w": 12,
         "h": 8
       }
@@ -3565,7 +4017,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 59,
+        "y": 70,
         "w": 24,
         "h": 12
       }
@@ -3578,7 +4030,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 71,
+        "y": 82,
         "w": 24,
         "h": 1
       }
@@ -3670,7 +4122,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 72,
+        "y": 83,
         "w": 12,
         "h": 8
       }
@@ -3762,7 +4214,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 72,
+        "y": 83,
         "w": 12,
         "h": 8
       }
@@ -3775,7 +4227,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 80,
+        "y": 91,
         "w": 24,
         "h": 1
       }
@@ -3867,7 +4319,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 81,
+        "y": 92,
         "w": 8,
         "h": 8
       }
@@ -3959,7 +4411,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 81,
+        "y": 92,
         "w": 8,
         "h": 8
       }
@@ -4051,7 +4503,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 81,
+        "y": 92,
         "w": 8,
         "h": 8
       }
@@ -4143,7 +4595,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 89,
+        "y": 100,
         "w": 8,
         "h": 8
       }
@@ -4235,7 +4687,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 89,
+        "y": 100,
         "w": 8,
         "h": 8
       }
@@ -4248,7 +4700,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 97,
+        "y": 108,
         "w": 24,
         "h": 1
       }
@@ -4339,7 +4791,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 98,
+        "y": 109,
         "w": 14,
         "h": 8
       }
@@ -4431,7 +4883,7 @@
       },
       "gridPos": {
         "x": 14,
-        "y": 98,
+        "y": 109,
         "w": 10,
         "h": 8
       }
@@ -4444,7 +4896,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 106,
+        "y": 117,
         "w": 24,
         "h": 1
       }
@@ -4536,7 +4988,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 107,
+        "y": 118,
         "w": 8,
         "h": 8
       }
@@ -4628,7 +5080,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 107,
+        "y": 118,
         "w": 8,
         "h": 8
       }
@@ -4720,7 +5172,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 107,
+        "y": 118,
         "w": 8,
         "h": 8
       }
@@ -4811,7 +5263,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 115,
+        "y": 126,
         "w": 24,
         "h": 6
       }
@@ -4824,7 +5276,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 121,
+        "y": 132,
         "w": 24,
         "h": 1
       }
@@ -4915,7 +5367,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 122,
+        "y": 133,
         "w": 14,
         "h": 10
       }
@@ -5007,7 +5459,7 @@
       },
       "gridPos": {
         "x": 14,
-        "y": 122,
+        "y": 133,
         "w": 10,
         "h": 10
       }
@@ -5098,7 +5550,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 132,
+        "y": 143,
         "w": 24,
         "h": 9
       }
@@ -5111,7 +5563,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 141,
+        "y": 152,
         "w": 24,
         "h": 1
       }
@@ -5203,7 +5655,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 142,
+        "y": 153,
         "w": 12,
         "h": 6
       }
@@ -5295,7 +5747,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 142,
+        "y": 153,
         "w": 12,
         "h": 6
       }
@@ -5387,7 +5839,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 148,
+        "y": 159,
         "w": 8,
         "h": 6
       }
@@ -5479,7 +5931,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 148,
+        "y": 159,
         "w": 8,
         "h": 6
       }
@@ -5571,7 +6023,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 148,
+        "y": 159,
         "w": 8,
         "h": 6
       }
@@ -5663,7 +6115,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 154,
+        "y": 165,
         "w": 12,
         "h": 6
       }
@@ -5755,7 +6207,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 154,
+        "y": 165,
         "w": 12,
         "h": 6
       }
@@ -5846,7 +6298,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 160,
+        "y": 171,
         "w": 24,
         "h": 9
       }
@@ -5861,7 +6313,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 169,
+        "y": 180,
         "w": 24,
         "h": 4
       },
@@ -5880,7 +6332,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 173,
+        "y": 184,
         "w": 24,
         "h": 1
       }
@@ -5971,7 +6423,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 174,
+        "y": 185,
         "w": 24,
         "h": 5
       }
@@ -6062,7 +6514,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 179,
+        "y": 190,
         "w": 24,
         "h": 8
       }
@@ -6153,7 +6605,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 187,
+        "y": 198,
         "w": 24,
         "h": 7
       }
@@ -6244,7 +6696,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 194,
+        "y": 205,
         "w": 24,
         "h": 7
       }
@@ -6257,7 +6709,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 201,
+        "y": 212,
         "w": 24,
         "h": 1
       }
@@ -6348,7 +6800,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 202,
+        "y": 213,
         "w": 24,
         "h": 5
       }
@@ -6440,7 +6892,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 207,
+        "y": 218,
         "w": 12,
         "h": 8
       }
@@ -6532,7 +6984,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 207,
+        "y": 218,
         "w": 12,
         "h": 8
       }
@@ -6623,7 +7075,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 215,
+        "y": 226,
         "w": 24,
         "h": 8
       }
@@ -6636,7 +7088,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 223,
+        "y": 234,
         "w": 24,
         "h": 1
       }
@@ -6727,7 +7179,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 224,
+        "y": 235,
         "w": 24,
         "h": 5
       }
@@ -6819,7 +7271,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 229,
+        "y": 240,
         "w": 12,
         "h": 8
       }
@@ -6911,7 +7363,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 229,
+        "y": 240,
         "w": 12,
         "h": 8
       }
@@ -6924,7 +7376,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 237,
+        "y": 248,
         "w": 24,
         "h": 1
       }
@@ -7015,7 +7467,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 238,
+        "y": 249,
         "w": 24,
         "h": 8
       }
@@ -7106,7 +7558,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 246,
+        "y": 257,
         "w": 24,
         "h": 7
       }
@@ -7197,7 +7649,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 253,
+        "y": 264,
         "w": 24,
         "h": 7
       }
@@ -7288,7 +7740,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 260,
+        "y": 271,
         "w": 24,
         "h": 5
       }
@@ -7379,7 +7831,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 265,
+        "y": 276,
         "w": 24,
         "h": 7
       }
@@ -7471,7 +7923,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 272,
+        "y": 283,
         "w": 12,
         "h": 8
       }
@@ -7563,7 +8015,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 272,
+        "y": 283,
         "w": 12,
         "h": 8
       }
@@ -7576,7 +8028,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 280,
+        "y": 291,
         "w": 24,
         "h": 1
       }
@@ -7667,7 +8119,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 281,
+        "y": 292,
         "w": 24,
         "h": 8
       }
@@ -7759,7 +8211,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 289,
+        "y": 300,
         "w": 12,
         "h": 8
       }
@@ -7851,7 +8303,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 289,
+        "y": 300,
         "w": 12,
         "h": 8
       }
@@ -7864,7 +8316,7 @@
       "panels": [],
       "gridPos": {
         "x": 0,
-        "y": 297,
+        "y": 308,
         "w": 24,
         "h": 1
       }
@@ -7955,7 +8407,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 298,
+        "y": 309,
         "w": 24,
         "h": 7
       }
@@ -8046,7 +8498,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 305,
+        "y": 316,
         "w": 24,
         "h": 10
       }
