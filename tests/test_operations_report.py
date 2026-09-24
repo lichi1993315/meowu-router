@@ -60,6 +60,12 @@ class ReportTests(unittest.TestCase):
             sync(api, {'app':'app','table':'table'}, [])
         self.assertEqual(api.calls, [])
 
+    def test_feishu_number_string_readback(self):
+        api = FakeApi()
+        api.records = [{"record_id":"1", "fields":{"指标键":"a", "数值":"0.123456"}}]
+        api.call = lambda *args: None
+        self.assertEqual(sync(api, {"app":"app","table":"table"}, [{"fields":{"指标键":"a","数值":0.123456}}]), 1)
+
     def test_readback_mismatch_is_failure(self):
         api = FakeApi()
         api.call = lambda *args: None

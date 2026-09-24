@@ -1,6 +1,7 @@
 """将已发布 Grafana 核心指标同步到飞书；只读分析库，不发送群消息。"""
 import argparse
 import datetime as dt
+from decimal import Decimal
 import fcntl
 import json
 import logging
@@ -176,7 +177,11 @@ def sync(api, state, records):
     for expected in records:
         f = expected['fields']
         remote = by_key.get(f['指标键'], {})
-        if f['指标键'] not in by_key or remote.get('数值') != f['数值']:
+        # 飞书数字字段的读取接口会返回十进制字符串。
+        expected_value, actual_value = f['数值'], remote.get('数值')
+        same = actual_value is None if expected_value is None else (
+            actual_value is not None and Decimal(str(actual_value)) == Decimal(str(expected_value)))
+        if f['指标键'] not in by_key or not same:
             raise RuntimeError('Read-back value mismatch')
     return len(records)
 
