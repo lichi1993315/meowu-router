@@ -977,5 +977,4 @@ def record_play_session_event_to_db(
             payload_size_bytes=payload_size_bytes,
             ensure_schema=False,
         )
-        conn.commit()
     return rollup
