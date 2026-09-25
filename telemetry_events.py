@@ -6,6 +6,7 @@ from telemetry_platform import client_metadata, ensure_channel_schema, record_se
 from analytics_facts import ensure_facts, upsert_fact
 from version_utils import release_version_from_client_version
 from telemetry_time import parse_timestamp
+from sqlite_runtime import connection, transaction, mark_schema, require_schema
 
 
 def ensure_event_schema(conn):
@@ -17,6 +18,8 @@ def ensure_event_schema(conn):
         is_development_build INTEGER NOT NULL DEFAULT 0, occurred_at TEXT NOT NULL,
         received_at TEXT NOT NULL, event_type TEXT NOT NULL, event_json TEXT NOT NULL)""")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_live_time_platform ON gameplay_live_events(occurred_at,client_platform)")
+
+    mark_schema(conn, "events")
 
 
 def accept_batch(db_path, payload, headers):
@@ -47,8 +50,8 @@ def accept_batch(db_path, payload, headers):
                      payload.get("client_version"), metadata["is_development_build"],
                      stamp.astimezone(timezone.utc).isoformat(), received, kind,
                      json.dumps(event, ensure_ascii=False)))
-    with sqlite3.connect(db_path, timeout=10) as conn:
-        ensure_event_schema(conn)
+    with connection(db_path) as conn, transaction(conn, "events.batch", request_id=headers.get("x-outbox-id")):
+        require_schema(conn, "events")
         # A conflicting identity is a permanent validation error, never a silent dedupe.
         for row in rows:
             existing = conn.execute("SELECT user_id,session_id FROM gameplay_live_events WHERE event_id=?", (row[0],)).fetchone()

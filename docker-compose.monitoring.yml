@@ -44,8 +44,11 @@ services:
       # 渲染整个 Dashboard
       - GRAFANA_RENDER_PATH=render/d/llm-router-dashboard/dashboard?orgId=1&width=1200&height=800&kiosk
       - REPORT_TIMEZONE=Asia/Shanghai
-    depends_on:
-      - grafana
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
     networks:
       - default
       - edge-shared
@@ -147,8 +150,12 @@ services:
       - ./data:/var/lib/grafana/sqlite:ro
       - grafana_data:/var/lib/grafana
     depends_on:
-      - prometheus
-      - renderer
+      router-api:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
+      renderer:
+        condition: service_started
     logging: *default-logging
     restart: unless-stopped
 

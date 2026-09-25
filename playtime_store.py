@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import threading
+from sqlite_runtime import connection, transaction, mark_schema, require_schema
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,8 +13,6 @@ from telemetry_platform import client_metadata, ensure_platform_columns, ensure_
 
 
 HEARTBEAT_STALE_AFTER_SEC = 180
-_SCHEMA_READY: set[str] = set()
-_SCHEMA_LOCK = threading.Lock()
 
 
 PLAYTIME_SCHEMA_SQL = """
@@ -272,16 +270,11 @@ def ensure_playtime_schema(conn: sqlite3.Connection) -> None:
         """
     )
     conn.executescript(PLAYTIME_VIEW_SQL)
+    mark_schema(conn, "playtime")
 
 
 def ensure_playtime_schema_once(conn: sqlite3.Connection, db_path: str | Path) -> None:
-    cache_key = str(db_path)
-    with _SCHEMA_LOCK:
-        if cache_key in _SCHEMA_READY:
-            return
-        ensure_playtime_schema(conn)
-        conn.commit()
-        _SCHEMA_READY.add(cache_key)
+    require_schema(conn, "playtime")
 
 
 def now_iso() -> str:
@@ -613,6 +606,13 @@ def _last_event_at(rows: list[sqlite3.Row], event_type: str) -> str | None:
     return None
 
 
+def _logical_timestamp(value):
+    parsed = _parse_iso(value)
+    if parsed is None:
+        return float('-inf')
+    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)).timestamp()
+
+
 def recompute_play_session_rollup(
     conn: sqlite3.Connection,
     *,
@@ -682,21 +682,27 @@ def recompute_play_session_rollup(
         confidence = "low"
         end_reason = "single_event"
 
+    # Replayed old heartbeats must not replace newer activity/UI state. Receipt
+    # time remains an audit field; logoff remains the terminal session event.
+    logical_rows = sorted(rows, key=lambda row: (
+        row["event_type"] == "logoff",
+        _logical_timestamp(row["client_sent_at"] or row["received_at"]),
+        row["sequence"] if row["sequence"] is not None else -1, row["id"]))
     rollup = {
         "user_id": user_id,
         "session_id": session_id,
-        "player_session_id": _latest_nonempty(rows, "player_session_id"),
-        "player_id": _latest_nonempty(rows, "player_id"),
-        "client_version": _latest_nonempty(rows, "client_version"),
+        "player_session_id": _latest_nonempty(logical_rows, "player_session_id"),
+        "player_id": _latest_nonempty(logical_rows, "player_id"),
+        "client_version": _latest_nonempty(logical_rows, "client_version"),
         "client_platform": next((row["client_platform"] for row in rows if row["client_platform"] != "unknown"), "unknown"),
         "is_development_build": max(row["is_development_build"] or 0 for row in rows),
-        "release_version": _latest_nonempty(rows, "release_version"),
-        "country": _latest_nonempty(rows, "country"),
+        "release_version": _latest_nonempty(logical_rows, "release_version"),
+        "country": _latest_nonempty(logical_rows, "country"),
         "first_seen_at": first_seen_at,
         "last_seen_at": last_seen_at,
         "login_at": login_at,
         "logoff_at": logoff_at,
-        "last_client_sent_at": _latest_nonempty(rows, "client_sent_at"),
+        "last_client_sent_at": _latest_nonempty(logical_rows, "client_sent_at"),
         "heartbeat_count": heartbeat_count,
         "event_count": event_count,
         "max_sequence": max_sequence,
@@ -709,20 +715,20 @@ def recompute_play_session_rollup(
         "status": status,
         "confidence": confidence,
         "end_reason": end_reason,
-        "app_state": _latest_nonempty(rows, "app_state"),
-        "last_gameplay_event_at": _latest_nonempty(rows, "last_gameplay_event_at"),
-        "activity_state": _latest_nonempty(rows, "activity_state"),
-        "current_activity": _latest_nonempty(rows, "current_activity"),
-        "current_ui": _latest_nonempty(rows, "current_ui"),
+        "app_state": _latest_nonempty(logical_rows, "app_state"),
+        "last_gameplay_event_at": _latest_nonempty(logical_rows, "last_gameplay_event_at"),
+        "activity_state": _latest_nonempty(logical_rows, "activity_state"),
+        "current_activity": _latest_nonempty(logical_rows, "current_activity"),
+        "current_ui": _latest_nonempty(logical_rows, "current_ui"),
         "idle_duration_sec": _max_nonnegative(rows, "idle_duration_sec"),
         "afk_duration_sec": _max_nonnegative(rows, "afk_duration_sec"),
         "input_active_duration_sec": _max_nonnegative(rows, "input_active_duration_sec"),
         "movement_duration_sec": _max_nonnegative(rows, "movement_duration_sec"),
         "gameplay_active_duration_sec": _max_nonnegative(rows, "gameplay_active_duration_sec"),
         "ui_active_duration_sec": _max_nonnegative(rows, "ui_active_duration_sec"),
-        "last_input_at": _latest_nonempty(rows, "last_input_at"),
-        "last_player_action_at": _latest_nonempty(rows, "last_player_action_at"),
-        "last_movement_at": _latest_nonempty(rows, "last_movement_at"),
+        "last_input_at": _latest_nonempty(logical_rows, "last_input_at"),
+        "last_player_action_at": _latest_nonempty(logical_rows, "last_player_action_at"),
+        "last_movement_at": _latest_nonempty(logical_rows, "last_movement_at"),
         "activity_reported_window_sec": _sum_nonnegative(rows, "activity_window_sec"),
         "activity_input_event_count": _sum_nonnegative_int(rows, "activity_input_event_count"),
         "activity_movement_start_count": _sum_nonnegative_int(rows, "activity_movement_start_count"),
@@ -731,9 +737,9 @@ def recompute_play_session_rollup(
         "activity_fishing_action_count": _sum_nonnegative_int(rows, "activity_fishing_action_count"),
         "activity_ui_open_count": _sum_nonnegative_int(rows, "activity_ui_open_count"),
         "activity_ui_click_count": _sum_nonnegative_int(rows, "activity_ui_click_count"),
-        "activity_threshold_idle_sec": _latest_nonempty(rows, "activity_threshold_idle_sec"),
-        "activity_threshold_afk_sec": _latest_nonempty(rows, "activity_threshold_afk_sec"),
-        "last_event_type": rows[-1]["event_type"],
+        "activity_threshold_idle_sec": _latest_nonempty(logical_rows, "activity_threshold_idle_sec"),
+        "activity_threshold_afk_sec": _latest_nonempty(logical_rows, "activity_threshold_afk_sec"),
+        "last_event_type": logical_rows[-1]["event_type"],
         "updated_at": updated_at,
     }
     conn.execute(
@@ -897,7 +903,7 @@ def record_play_session_event(
             :payload_size_bytes, :payload_json, CURRENT_TIMESTAMP
         )
         ON CONFLICT(dedupe_key) DO UPDATE SET
-            received_at = excluded.received_at,
+            received_at = play_session_events.received_at,
             player_session_id = excluded.player_session_id,
             player_id = excluded.player_id,
             client_version = excluded.client_version,
@@ -958,7 +964,8 @@ def record_play_session_event_to_db(
 ) -> dict[str, Any]:
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(db_path, timeout=10) as conn:
+    with connection(db_path) as conn, transaction(conn, "session." + event_type,
+            request_id=_header_value(headers, "x-outbox-id")):
         conn.row_factory = sqlite3.Row
         ensure_playtime_schema_once(conn, db_path)
         rollup = record_play_session_event(

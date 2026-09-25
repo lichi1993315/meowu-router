@@ -16,6 +16,7 @@ import re
 import json
 import time
 import sqlite3
+from sqlite_runtime import connection, transaction, require_schema
 import logging
 import jieba
 from pathlib import Path
@@ -170,10 +171,13 @@ class MetricsState:
         self.user_activity: dict = {}  # user_id -> {"first_seen", "last_seen", "country", "requests"}
         self.recent_activity: dict = {}  # user_id -> last_activity_timestamp
         self.preset_phrases: set = set()
+        self.file_retry_after = {}
+        self._next_session_stats_at = 0
         self.lock = Lock()
         
         self._load_state()
-        self._init_db()
+        with connection(self._db_file(), background=True) as conn:
+            require_schema(conn, "importer")
         self._load_presets()
 
     def _state_file(self) -> Path:
@@ -193,6 +197,7 @@ class MetricsState:
             self.processed_files = set(data.get("processed_files", []))
             self.processed_file_mtimes = data.get("processed_file_mtimes", {})
             self.user_activity = data.get("user_activity", {})
+            self.file_retry_after = data.get("file_retry_after", {})
             logger.info(f"Loaded state: {len(self.processed_files)} processed files")
         except Exception as e:
             logger.warning(f"Failed to load state: {e}")
@@ -205,6 +210,7 @@ class MetricsState:
                     "processed_files": list(self.processed_files),
                     "processed_file_mtimes": self.processed_file_mtimes,
                     "user_activity": self.user_activity,
+                    "file_retry_after": self.file_retry_after,
                 }, f)
         except Exception as e:
             logger.warning(f"Failed to save state: {e}")
@@ -375,43 +381,52 @@ class MetricsState:
 
     def _load_presets(self):
         """加载预设对话到内存"""
+        conn = None
         try:
-            conn = sqlite3.connect(self._db_file())
+            conn = sqlite3.connect(self._db_file(), timeout=1)
             c = conn.cursor()
             c.execute("SELECT phrase FROM preset_phrases")
             self.preset_phrases = {row[0] for row in c.fetchall()}
-            conn.close()
         except Exception as e:
             logger.warning(f"Failed to load presets: {e}")
+        finally:
+            if conn is not None:
+                conn.close()
 
     def add_preset(self, phrase: str):
         """添加预设对话"""
         if not phrase: return
+        conn = None
         try:
-            conn = sqlite3.connect(self._db_file())
+            conn = sqlite3.connect(self._db_file(), timeout=1)
             c = conn.cursor()
             c.execute("INSERT OR IGNORE INTO preset_phrases (phrase) VALUES (?)", (phrase,))
             conn.commit()
-            conn.close()
             with self.lock:
                 self.preset_phrases.add(phrase)
         except Exception as e:
             logger.error(f"Failed to add preset: {e}")
+        finally:
+            if conn is not None:
+                conn.close()
 
     def remove_preset(self, phrase: str):
         """移除预设对话"""
+        conn = None
         try:
-            conn = sqlite3.connect(self._db_file())
+            conn = sqlite3.connect(self._db_file(), timeout=1)
             c = conn.cursor()
             c.execute("DELETE FROM preset_phrases WHERE phrase = ?", (phrase,))
             conn.commit()
-            conn.close()
             with self.lock:
                 if phrase in self.preset_phrases:
                     self.preset_phrases.remove(phrase)
         except Exception as e:
             logger.error(f"Failed to remove preset: {e}")
-    
+        finally:
+            if conn is not None:
+                conn.close()
+
     def get_presets(self) -> list:
         return list(self.preset_phrases)
     
@@ -433,127 +448,126 @@ class MetricsState:
     def save_conversation(self, record: dict):
         """保存对话记录到SQLite"""
         try:
-            conn = sqlite3.connect(self._db_file())
-            cursor = conn.cursor()
+            with connection(self._db_file(), background=True) as conn, transaction(conn, "metrics.conversation", budget=1):
+                cursor = conn.cursor()
 
-            file_path = record.get("file_path")
-            user_id = record.get("user_id") or "anonymous"
-            timestamp = record.get("timestamp") or datetime.now().isoformat()
-            user_query = record.get("user_query", "")
-            is_preset = 1 if user_query in self.preset_phrases else 0
-            client_version = record.get("client_version")
-            release_version = release_version_from_client_version(client_version)
-            existing = cursor.execute(
-                "SELECT 1 FROM conversations WHERE file_path = ?",
-                (file_path,),
-            ).fetchone()
-            request_increment = 0 if existing else 1
+                file_path = record.get("file_path")
+                user_id = record.get("user_id") or "anonymous"
+                timestamp = record.get("timestamp") or datetime.now().isoformat()
+                user_query = record.get("user_query", "")
+                is_preset = 1 if user_query in self.preset_phrases else 0
+                client_version = record.get("client_version")
+                release_version = release_version_from_client_version(client_version)
+                existing = cursor.execute(
+                    "SELECT 1 FROM conversations WHERE file_path = ?",
+                    (file_path,),
+                ).fetchone()
+                request_increment = 0 if existing else 1
 
-            cursor.execute('''
-                INSERT INTO conversations
-                (timestamp, user_id, country, user_query, ai_response, ai_action, 
-                 duration_ms, prompt_tokens, completion_tokens, cached_tokens, file_path, 
-                 message_type, session_id, client_version, release_version, session_duration_sec, is_preset)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(file_path) DO UPDATE SET
-                    timestamp = excluded.timestamp,
-                    user_id = excluded.user_id,
-                    country = excluded.country,
-                    user_query = excluded.user_query,
-                    ai_response = excluded.ai_response,
-                    ai_action = excluded.ai_action,
-                    duration_ms = excluded.duration_ms,
-                    prompt_tokens = excluded.prompt_tokens,
-                    completion_tokens = excluded.completion_tokens,
-                    cached_tokens = excluded.cached_tokens,
-                    message_type = excluded.message_type,
-                    session_id = excluded.session_id,
-                    client_version = excluded.client_version,
-                    release_version = excluded.release_version,
-                    session_duration_sec = excluded.session_duration_sec,
-                    is_preset = excluded.is_preset
-            ''', (
-                timestamp,
-                user_id,
-                record.get("country"),
-                user_query,
-                record.get("ai_response"),
-                record.get("ai_action"),
-                record.get("duration_ms"),
-                record.get("prompt_tokens", 0),
-                record.get("completion_tokens", 0),
-                record.get("cached_tokens", 0),
-                record.get("file_path"),
-                record.get("message_type", "chat"),
-                record.get("session_id"),
-                client_version,
-                release_version,
-                record.get("session_duration_sec"),
-                is_preset,
-            ))
-
-            metadata = client_metadata(record)
-            cursor.execute("UPDATE conversations SET client_platform=?, is_development_build=?, llm_request_id=?, attempt_id=?, player_session_id=?, decision_id=? WHERE file_path=?",
-                           (metadata["client_platform"], metadata["is_development_build"], record.get("llm_request_id"), record.get("attempt_id"), record.get("player_session_id"), record.get("decision_id"), file_path))
-            cursor.execute('''
-                INSERT INTO user_sessions (user_id, first_seen, last_seen, total_requests, country)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    first_seen = CASE
-                        WHEN excluded.first_seen < first_seen THEN excluded.first_seen
-                        ELSE first_seen
-                    END,
-                    last_seen = CASE
-                        WHEN excluded.last_seen > last_seen THEN excluded.last_seen
-                        ELSE last_seen
-                    END,
-                    total_requests = total_requests + excluded.total_requests,
-                    country = COALESCE(excluded.country, country)
-            ''', (
-                user_id,
-                timestamp,
-                timestamp,
-                request_increment,
-                record.get("country"),
-            ))
-
-            player_name = record.get("player_name")
-            if player_name:
                 cursor.execute('''
-                    UPDATE user_sessions
-                    SET player_name = ?
-                    WHERE user_id = ? AND (last_seen = ? OR player_name IS NULL)
-                ''', (player_name, user_id, timestamp))
-
-            total_money = record.get("total_money")
-            if total_money is not None:
-                cursor.execute('''
-                    UPDATE user_sessions
-                    SET money = ?,
-                        island_level = COALESCE(?, island_level),
-                        tasks_completed = COALESCE(?, tasks_completed),
-                        tasks_total = COALESCE(?, tasks_total),
-                        current_task_title = COALESCE(?, current_task_title),
-                        current_task_status = COALESCE(?, current_task_status),
-                        achievements_unlocked = COALESCE(?, achievements_unlocked),
-                        achievements_total = COALESCE(?, achievements_total)
-                    WHERE user_id = ?
+                    INSERT INTO conversations
+                    (timestamp, user_id, country, user_query, ai_response, ai_action,
+                     duration_ms, prompt_tokens, completion_tokens, cached_tokens, file_path,
+                     message_type, session_id, client_version, release_version, session_duration_sec, is_preset)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(file_path) DO UPDATE SET
+                        timestamp = excluded.timestamp,
+                        user_id = excluded.user_id,
+                        country = excluded.country,
+                        user_query = excluded.user_query,
+                        ai_response = excluded.ai_response,
+                        ai_action = excluded.ai_action,
+                        duration_ms = excluded.duration_ms,
+                        prompt_tokens = excluded.prompt_tokens,
+                        completion_tokens = excluded.completion_tokens,
+                        cached_tokens = excluded.cached_tokens,
+                        message_type = excluded.message_type,
+                        session_id = excluded.session_id,
+                        client_version = excluded.client_version,
+                        release_version = excluded.release_version,
+                        session_duration_sec = excluded.session_duration_sec,
+                        is_preset = excluded.is_preset
                 ''', (
-                    total_money,
-                    record.get("island_level"),
-                    record.get("tasks_completed"),
-                    record.get("tasks_total"),
-                    record.get("current_task_title"),
-                    record.get("current_task_status"),
-                    record.get("achievements_unlocked"),
-                    record.get("achievements_total"),
+                    timestamp,
                     user_id,
+                    record.get("country"),
+                    user_query,
+                    record.get("ai_response"),
+                    record.get("ai_action"),
+                    record.get("duration_ms"),
+                    record.get("prompt_tokens", 0),
+                    record.get("completion_tokens", 0),
+                    record.get("cached_tokens", 0),
+                    record.get("file_path"),
+                    record.get("message_type", "chat"),
+                    record.get("session_id"),
+                    client_version,
+                    release_version,
+                    record.get("session_duration_sec"),
+                    is_preset,
                 ))
 
-            conn.commit()
-            conn.close()
+                metadata = client_metadata(record)
+                cursor.execute("UPDATE conversations SET client_platform=?, is_development_build=?, llm_request_id=?, attempt_id=?, player_session_id=?, decision_id=? WHERE file_path=?",
+                               (metadata["client_platform"], metadata["is_development_build"], record.get("llm_request_id"), record.get("attempt_id"), record.get("player_session_id"), record.get("decision_id"), file_path))
+                cursor.execute('''
+                    INSERT INTO user_sessions (user_id, first_seen, last_seen, total_requests, country)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        first_seen = CASE
+                            WHEN excluded.first_seen < first_seen THEN excluded.first_seen
+                            ELSE first_seen
+                        END,
+                        last_seen = CASE
+                            WHEN excluded.last_seen > last_seen THEN excluded.last_seen
+                            ELSE last_seen
+                        END,
+                        total_requests = total_requests + excluded.total_requests,
+                        country = COALESCE(excluded.country, country)
+                ''', (
+                    user_id,
+                    timestamp,
+                    timestamp,
+                    request_increment,
+                    record.get("country"),
+                ))
+
+                player_name = record.get("player_name")
+                if player_name:
+                    cursor.execute('''
+                        UPDATE user_sessions
+                        SET player_name = ?
+                        WHERE user_id = ? AND (last_seen = ? OR player_name IS NULL)
+                    ''', (player_name, user_id, timestamp))
+
+                total_money = record.get("total_money")
+                if total_money is not None:
+                    cursor.execute('''
+                        UPDATE user_sessions
+                        SET money = ?,
+                            island_level = COALESCE(?, island_level),
+                            tasks_completed = COALESCE(?, tasks_completed),
+                            tasks_total = COALESCE(?, tasks_total),
+                            current_task_title = COALESCE(?, current_task_title),
+                            current_task_status = COALESCE(?, current_task_status),
+                            achievements_unlocked = COALESCE(?, achievements_unlocked),
+                            achievements_total = COALESCE(?, achievements_total)
+                        WHERE user_id = ?
+                    ''', (
+                        total_money,
+                        record.get("island_level"),
+                        record.get("tasks_completed"),
+                        record.get("tasks_total"),
+                        record.get("current_task_title"),
+                        record.get("current_task_status"),
+                        record.get("achievements_unlocked"),
+                        record.get("achievements_total"),
+                        user_id,
+                    ))
+
         except Exception as e:
             logger.warning(f"Failed to save conversation: {e}")
+            raise
 
     def recalculate_user_sessions(self):
         """
@@ -562,8 +576,11 @@ class MetricsState:
         2. 有 session_id 但无 logoff 的 session：使用首尾时间差
         3. 无 session_id 的历史数据：使用 5 分钟间隔规则
         """
+        if time.monotonic() < self._next_session_stats_at:
+            return
+        self._next_session_stats_at = time.monotonic() + 300
+        conn = sqlite3.connect(self._db_file(), timeout=1)
         try:
-            conn = sqlite3.connect(self._db_file())
             cursor = conn.cursor()
 
             cursor.execute('SELECT DISTINCT user_id FROM conversations WHERE user_id IS NOT NULL AND user_id != ""')
@@ -670,28 +687,25 @@ class MetricsState:
 
                 user_stats[user_id] = (total_sessions, total_play_seconds)
 
-            for user_id, (session_count, play_seconds) in user_stats.items():
-                cursor.execute('''
-                    UPDATE user_sessions
-                    SET session_count = ?, total_play_seconds = ?
-                    WHERE user_id = ?
-                ''', (session_count, play_seconds, user_id))
-
-            cursor.execute('''
-                UPDATE user_sessions
-                SET is_fake_user = CASE WHEN total_requests < 2 THEN 1 ELSE 0 END
-            ''')
-
-            conn.commit()
-            conn.close()
+            entries = list(user_stats.items())
+            for offset in range(0, len(entries), 100):
+                with transaction(conn, "metrics.session_totals", budget=1):
+                    conn.executemany("""UPDATE user_sessions
+                        SET session_count=?,total_play_seconds=?,
+                            is_fake_user=CASE WHEN total_requests<2 THEN 1 ELSE 0 END
+                        WHERE user_id=?""",
+                        [(count,seconds,user) for user,(count,seconds) in entries[offset:offset+100]])
             logger.debug(f"Recalculated sessions for {len(user_stats)} users")
         except Exception as e:
             logger.warning(f"Failed to recalculate user sessions: {e}")
+        finally:
+            conn.close()
 
     def update_user_gauges(self):
         """更新用户统计Gauge"""
+        conn = None
         try:
-            conn = sqlite3.connect(self._db_file())
+            conn = sqlite3.connect(self._db_file(), timeout=1)
             cursor = conn.cursor()
 
             cursor.execute('''
@@ -732,9 +746,11 @@ class MetricsState:
                 cursor.execute('SELECT COUNT(*) FROM conversations')
                 total_requests_global.set(cursor.fetchone()[0])
 
-            conn.close()
         except Exception as e:
             logger.warning(f"Failed to update user gauges: {e}")
+        finally:
+            if conn is not None:
+                conn.close()
 
 def _parse_int(value, default=0) -> int:
     try:
@@ -858,13 +874,6 @@ def _process_session_file(session_record: dict, filepath: Path, state: MetricsSt
         content_length_in = _parse_int(headers.get("content-length"), 0)
         content_length_out = 0
 
-        requests_total.labels(
-            user_id=user_id, country=country, model=model, status=status_str
-        ).inc()
-        bandwidth_bytes.labels(user_id=user_id, direction="in").inc(content_length_in)
-        bandwidth_bytes.labels(user_id=user_id, direction="out").inc(content_length_out)
-        state.update_user_activity(user_id, timestamp, country)
-
         state.save_conversation({
             "timestamp": timestamp,
             "user_id": user_id,
@@ -892,6 +901,13 @@ def _process_session_file(session_record: dict, filepath: Path, state: MetricsSt
             "achievements_unlocked": payload.get("achievements_unlocked") if event_type == "logoff" else None,
             "achievements_total": payload.get("achievements_total") if event_type == "logoff" else None,
         })
+
+        requests_total.labels(
+            user_id=user_id, country=country, model=model, status=status_str
+        ).inc()
+        bandwidth_bytes.labels(user_id=user_id, direction="in").inc(content_length_in)
+        bandwidth_bytes.labels(user_id=user_id, direction="out").inc(content_length_out)
+        state.update_user_activity(user_id, timestamp, country)
 
         logger.debug(
             "Processed session event: %s | user=%s | session=%s | source=%s",
@@ -972,16 +988,16 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             lines = [line.strip() for line in f if line.strip()]
 
         if not lines:
-            return
+            return False
 
         # session 聚合日志（单行）
         line1_data = json.loads(lines[0])
         if line1_data.get("type") == "session":
             _process_session_file(line1_data, filepath, state)
-            return
+            return True
 
         if len(lines) < 2:
-            return
+            return False
 
         # 解析两行 request/response 数据
         line2_data = json.loads(lines[1])
@@ -996,7 +1012,7 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             response_data = line1_data
         else:
             # 无法识别的格式
-            return
+            return False
         
         # 提取基本信息
         user_id = request_data.get("user_id", "anonymous")
@@ -1085,6 +1101,38 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             ai_response, ai_action = extract_ai_response(response_body)
             player_name = extract_player_name(body)
         
+        state.save_conversation({
+            "timestamp": timestamp,
+            "user_id": user_id,
+            "country": country,
+            "user_query": user_query,
+            "ai_response": ai_response,
+            "ai_action": ai_action,
+            "duration_ms": duration_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "cached_tokens": cached_tokens,
+            "file_path": str(filepath),
+            "player_name": player_name,
+            "message_type": message_type,
+            "session_id": session_id,
+            "client_version": client_version,
+        **client_metadata(body, headers),
+        "llm_request_id": headers.get("x-llm-request-id") or headers.get("X-LLM-Request-ID"),
+        "attempt_id": headers.get("x-attempt-id") or headers.get("X-Attempt-ID"),
+        "player_session_id": headers.get("x-player-session-id") or headers.get("X-Player-Session-ID"),
+        "decision_id": headers.get("x-decision-id") or headers.get("X-Decision-ID"),
+            "session_duration_sec": session_duration_sec,
+            "total_money": total_money if message_type == "logoff" else None,
+            "island_level": island_level if message_type == "logoff" else None,
+            "tasks_completed": tasks_completed if message_type == "logoff" else None,
+            "tasks_total": tasks_total if message_type == "logoff" else None,
+            "current_task_title": current_task_title if message_type == "logoff" else None,
+            "current_task_status": current_task_status if message_type == "logoff" else None,
+            "achievements_unlocked": achievements_unlocked if message_type == "logoff" else None,
+            "achievements_total": achievements_total if message_type == "logoff" else None
+        })
+
         # 更新Prometheus指标 (只对 chat 消息统计 tokens)
         status_str = str(status_code)
         requests_total.labels(
@@ -1123,43 +1171,12 @@ def parse_jsonl_file(filepath: Path, state: MetricsState):
             total_completion_tokens_global.inc(completion_tokens)
             total_cached_tokens_global.inc(cached_tokens)
         
-        # 保存对话到SQLite
-        state.save_conversation({
-            "timestamp": timestamp,
-            "user_id": user_id,
-            "country": country,
-            "user_query": user_query,
-            "ai_response": ai_response,
-            "ai_action": ai_action,
-            "duration_ms": duration_ms,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "cached_tokens": cached_tokens,
-            "file_path": str(filepath),
-            "player_name": player_name,
-            "message_type": message_type,
-            "session_id": session_id,
-            "client_version": client_version,
-        **client_metadata(body, headers),
-        "llm_request_id": headers.get("x-llm-request-id") or headers.get("X-LLM-Request-ID"),
-        "attempt_id": headers.get("x-attempt-id") or headers.get("X-Attempt-ID"),
-        "player_session_id": headers.get("x-player-session-id") or headers.get("X-Player-Session-ID"),
-        "decision_id": headers.get("x-decision-id") or headers.get("X-Decision-ID"),
-            "session_duration_sec": session_duration_sec,
-            "total_money": total_money if message_type == "logoff" else None,
-            "island_level": island_level if message_type == "logoff" else None,
-            "tasks_completed": tasks_completed if message_type == "logoff" else None,
-            "tasks_total": tasks_total if message_type == "logoff" else None,
-            "current_task_title": current_task_title if message_type == "logoff" else None,
-            "current_task_status": current_task_status if message_type == "logoff" else None,
-            "achievements_unlocked": achievements_unlocked if message_type == "logoff" else None,
-            "achievements_total": achievements_total if message_type == "logoff" else None
-        })
-        
         logger.debug(f"Processed: {filepath.name} | user={user_id} | type={message_type} | session={session_id}")
         
+        return True
     except Exception as e:
         logger.warning(f"Failed to parse {filepath}: {e}")
+        return False
 
 
 def scan_output_directory(state: MetricsState):
@@ -1182,10 +1199,16 @@ def scan_output_directory(state: MetricsState):
             if is_session_file:
                 mtime_ns = jsonl_file.stat().st_mtime_ns
 
+            if state.file_retry_after.get(filepath_str, 0) > time.time():
+                continue
             if state.is_processed(filepath_str, mtime_ns):
                 continue
             
-            parse_jsonl_file(jsonl_file, state)
+            if not parse_jsonl_file(jsonl_file, state):
+                state.file_retry_after[filepath_str] = time.time() + 300
+                state._save_state()
+                continue
+            state.file_retry_after.pop(filepath_str, None)
             state.mark_processed(filepath_str, mtime_ns)
             new_files += 1
     

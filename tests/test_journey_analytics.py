@@ -43,6 +43,7 @@ class JourneyTests(unittest.TestCase):
         self.emit('journey_world_ready',32,island_level=1)
 
     def project(self):
+        self.db.commit()
         refresh_journeys(self.db)
 
     def node(self,nid):
@@ -75,6 +76,7 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(self.node('task:3508')['world_effective'],30)
         self.assertEqual(self.node('task:3508')['cumulative_effective'],62)
         before=self.db.execute('SELECT * FROM journey_nodes ORDER BY node_id').fetchall()
+        self.db.commit()
         refresh_journeys(self.db);self.assertEqual(before,self.db.execute('SELECT * FROM journey_nodes ORDER BY node_id').fetchall())
 
     def test_cross_session_does_not_count_offline(self):
@@ -197,7 +199,7 @@ class JourneyTests(unittest.TestCase):
         with self.assertRaises(ValueError):parse_timestamp('2026-09-24T17:56:52')
 
     def test_limit_is_explicit_and_intake_is_bounded(self):
-        self.flow();refresh_journeys(self.db,max_points=2)
+        self.flow();self.db.commit();refresh_journeys(self.db,max_points=2)
         self.assertEqual(self.db.execute('SELECT status FROM journey_projection_status WHERE user_id=?',('u',)).fetchone()[0],'history_limit')
         self.assertEqual(self.db.execute('SELECT COUNT(*) FROM journey_players').fetchone()[0],0)
 
@@ -209,6 +211,7 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT user_id FROM journey_run_owners WHERE run_id=?',('r',)).fetchone(),('u',))
         self.assertEqual(self.db.execute('SELECT user_id FROM journey_dirty').fetchone(),('u',))
         self.assertEqual(backfill_existing_journeys(self.db),0)
+        self.db.commit()
         refresh_journeys(self.db)
         self.assertEqual(self.db.execute('SELECT user_id FROM journey_players').fetchone(),('u',))
 

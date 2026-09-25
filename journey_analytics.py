@@ -8,13 +8,15 @@ import json
 import math
 import sqlite3
 import time
+import logging
+from sqlite_runtime import transaction, is_busy, TransactionBudgetExceeded
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from telemetry_time import parse_timestamp
 
 FLOW_VERSION = 'journey-v1'
-SCHEMA_MIGRATION = 'journey_schema_v1'
+SCHEMA_MIGRATION = 'journey_schema_v2'
 BACKFILL_MIGRATION = 'journey_projection_v1'
 METRICS = ('effective', 'foreground', 'waiting', 'single', 'multiplayer_alone', 'multiplayer_together', 'unknown_mode')
 CATALOG = json.loads(Path(__file__).with_name('journey_catalog.json').read_text())
@@ -62,6 +64,13 @@ def ensure_journey_schema(conn):
         if statement.strip(): conn.execute(statement)
     if 'island_level' not in {r[1] for r in conn.execute('PRAGMA table_info(journey_exits)')}:
         conn.execute('ALTER TABLE journey_exits ADD COLUMN island_level INTEGER')
+    dirty_columns={r[1] for r in conn.execute('PRAGMA table_info(journey_dirty)')}
+    for name, definition in (('revision','INTEGER NOT NULL DEFAULT 1'),
+                             ('pending','INTEGER NOT NULL DEFAULT 1'),
+                             ('retry_after','REAL NOT NULL DEFAULT 0')):
+        if name not in dirty_columns:
+            conn.execute('ALTER TABLE journey_dirty ADD COLUMN '+name+' '+definition)
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_journey_dirty_pending ON journey_dirty(pending,retry_after)')
     columns={r[1] for r in conn.execute('PRAGMA table_info(journey_intervals)')}
     for name in ('node_id','page_id'):
         if name not in columns: conn.execute('ALTER TABLE journey_intervals ADD COLUMN '+name+' TEXT')
@@ -71,6 +80,13 @@ def ensure_journey_schema(conn):
     conn.execute('INSERT OR IGNORE INTO analytics_migrations(name) VALUES (?)',(SCHEMA_MIGRATION,))
 
 
+def _mark_dirty(conn, user):
+    # Keep the generation after publishing: concurrent workers cannot mistake a
+    # deleted/recreated dirty row for the snapshot they originally read (ABA).
+    conn.execute("""INSERT INTO journey_dirty(user_id) VALUES (?) ON CONFLICT(user_id)
+        DO UPDATE SET revision=revision+1,pending=1""",(user,))
+
+
 def mark_dirty(conn, event, user, run):
     if not str(event.get('event_type','')).startswith('journey_'):
         return
@@ -78,9 +94,9 @@ def mark_dirty(conn, event, user, run):
     # A run can link its own pre-login events; never map an entire shared installation.
     owner = user if not user.startswith('anon:') or not old else old[0]
     conn.execute('INSERT INTO journey_run_owners VALUES (?,?) ON CONFLICT(run_id) DO UPDATE SET user_id=excluded.user_id',(run,owner))
-    conn.execute('INSERT OR IGNORE INTO journey_dirty VALUES (?)',(owner,))
+    _mark_dirty(conn, owner)
     if old and old[0] != owner:
-        conn.execute('INSERT OR IGNORE INTO journey_dirty VALUES (?)',(old[0],))
+        _mark_dirty(conn, old[0])
 
 
 def backfill_existing_journeys(conn):
@@ -102,9 +118,9 @@ def backfill_existing_journeys(conn):
     for run,owner in owners.items():
         old=conn.execute('SELECT user_id FROM journey_run_owners WHERE run_id=?',(run,)).fetchone()
         if old and old[0] != owner:
-            conn.execute('INSERT OR IGNORE INTO journey_dirty VALUES (?)',(old[0],))
+            _mark_dirty(conn, old[0])
         conn.execute('INSERT INTO journey_run_owners VALUES (?,?) ON CONFLICT(run_id) DO UPDATE SET user_id=excluded.user_id',(run,owner))
-        conn.execute('INSERT OR IGNORE INTO journey_dirty VALUES (?)',(owner,))
+        _mark_dirty(conn, owner)
     conn.execute('INSERT INTO analytics_migrations(name) VALUES (?)',(BACKFILL_MIGRATION,))
     return len(owners)
 
@@ -277,47 +293,82 @@ def project(points):
 
 def refresh_journeys(conn, limit=16, max_points=100000):
     """Called by importer, not by ingestion. Idempotent and bounded per refresh."""
-    users=[r[0] for r in conn.execute('SELECT user_id FROM journey_dirty ORDER BY rowid LIMIT ?',(limit,))]
+    if conn.in_transaction:
+        raise RuntimeError('commit intake before journey computation')
+    users=conn.execute('SELECT user_id,revision FROM journey_dirty WHERE pending=1 AND retry_after<=? ORDER BY rowid LIMIT ?',
+                       (time.time(),limit)).fetchall()
     started=time.monotonic(); processed=0
-    for user in users:
+    for user, revision in users:
         if processed and time.monotonic()-started >= 2: break
         processed += 1
         rows=conn.execute('''SELECT f.* FROM journey_run_owners o JOIN analytics_event_facts f ON f.session_id=o.run_id
             WHERE o.user_id=? AND f.event_type GLOB 'journey_*' ORDER BY f.occurred_at,f.sequence LIMIT ?''',(user,max_points+1))
         cols=[c[0] for c in rows.description]; events=[dict(zip(cols,r)) for r in rows]
-        if len(events)>max_points:
-            for table in ('journey_players','journey_nodes','journey_exits','journey_intervals'):
-                conn.execute('DELETE FROM '+table+' WHERE user_id=?',(user,))
-            conn.execute('INSERT OR REPLACE INTO journey_projection_status VALUES (?,?,?,?)',(user,'history_limit',len(events),iso(datetime.now(timezone.utc).timestamp())))
-            conn.execute('DELETE FROM journey_dirty WHERE user_id=?',(user,));continue
         points=[]
         for e in events:
             e['t']=stamp(e['occurred_at']);e['p']=json.loads(e['payload_json'])
             if e['t'] is not None: points.append(e)
-        for table in ('journey_players','journey_nodes','journey_exits','journey_intervals'):
-            conn.execute('DELETE FROM '+table+' WHERE user_id=?',(user,))
+        if len(events)>max_points:
+            with transaction(conn, 'journey.history_limit', budget=1):
+                conn.execute('UPDATE journey_dirty SET retry_after=? WHERE user_id=?',(time.time()+300,user))
+                conn.execute('INSERT OR REPLACE INTO journey_projection_status VALUES (?,?,?,?)',
+                             (user,'history_limit',len(events),iso(time.time())))
+            continue
+        prepared = {}
         if points:
             nodes,intervals,exits,totals,quality,creation=project(points)
-            points.sort(key=lambda e:e['t']); first=points[0];last=points[-1]
+            # Serialize the complete replacement outside the writer lease.
+            points.sort(key=lambda e:e['t']); first=points[0]
             single=totals['single']>0;multi=totals['multiplayer_alone']+totals['multiplayer_together']>0
             group='mixed' if single and multi else 'single' if single else 'multiplayer' if multi else 'unknown'
             last_activity=max((x['occurred_at'] for x in exits),default=first['t'])
             server_session=next((e['p']['server_session_id'] for e in points if e['p'].get('server_session_id')),first['session_id'])
-            values=(user,first['occurred_at'],iso(last_activity),first['client_platform'],first['release_version'],
+            prepared['journey_players']=[(user,first['occurred_at'],iso(last_activity),first['client_platform'],first['release_version'],
                     first['is_development_build'],server_session,first['p'].get('flow_version',FLOW_VERSION),
                     'new' if creation else 'existing' if any(n['status'].startswith('baseline') for n in nodes.values()) else 'unclassified',
-                    *(totals[m] for m in METRICS),group,quality,iso(datetime.now(timezone.utc).timestamp()))
-            conn.execute('INSERT INTO journey_players VALUES ('+','.join('?' for _ in values)+')',values)
-            for n in nodes.values():
-                values=(user,n['archive_id'],n['flow_version'],n['node_id'],n['title'],n['sort_order'],iso(n['start']),iso(n['end']),iso(n['claim']),iso(n['last']),n['status'],n['quality'],
-                        *(n[m] for m in METRICS),n['cumulative_effective'],n['world_effective'],n['natural_seconds'],n['progress_value'],n['target_value'])
-                conn.execute('INSERT INTO journey_nodes VALUES ('+','.join('?' for _ in values)+')',values)
-            for iv in intervals:
-                values=(iv['event_id'],user,iv['run_id'],iv['archive_id'],iso(iv['start']),iso(iv['end']),iv['mode'],iv['humans'],*(iv[m] for m in METRICS),iv['quality'],iv['node_id'],iv['page_id'])
-                conn.execute('INSERT INTO journey_intervals VALUES ('+','.join('?' for _ in values)+')',values)
-            for x in exits:
-                values=(x['event_id'],user,x['run_id'],x['archive_id'],x['node_id'],x['page_id'],iso(x['occurred_at']),x['reason'],x['effective'],x['node_effective'],x['mode'],x['quality'],x['is_final'],x['island_level'])
-                conn.execute('INSERT OR IGNORE INTO journey_exits VALUES ('+','.join('?' for _ in values)+')',values)
-        conn.execute('INSERT OR REPLACE INTO journey_projection_status VALUES (?,?,?,?)',(user,'ready',len(events),iso(datetime.now(timezone.utc).timestamp())))
-        conn.execute('DELETE FROM journey_dirty WHERE user_id=?',(user,))
+                    *(totals[m] for m in METRICS),group,quality,iso(time.time()))]
+            prepared['journey_nodes']=[(user,n['archive_id'],n['flow_version'],n['node_id'],n['title'],n['sort_order'],iso(n['start']),iso(n['end']),iso(n['claim']),iso(n['last']),n['status'],n['quality'],
+                    *(n[m] for m in METRICS),n['cumulative_effective'],n['world_effective'],n['natural_seconds'],n['progress_value'],n['target_value']) for n in nodes.values()]
+            prepared['journey_intervals']=[(iv['event_id'],user,iv['run_id'],iv['archive_id'],iso(iv['start']),iso(iv['end']),iv['mode'],iv['humans'],*(iv[m] for m in METRICS),iv['quality'],iv['node_id'],iv['page_id']) for iv in intervals]
+            prepared['journey_exits']=[(x['event_id'],user,x['run_id'],x['archive_id'],x['node_id'],x['page_id'],iso(x['occurred_at']),x['reason'],x['effective'],x['node_effective'],x['mode'],x['quality'],x['is_final'],x['island_level']) for x in exits]
+        # A growing session normally changes only its new interval and summary.
+        # Diff outside BEGIN so historical rows are not rewritten on every refresh.
+        keys={'journey_players':('user_id',), 'journey_nodes':('user_id','archive_id','flow_version','node_id'),
+              'journey_exits':('event_id',), 'journey_intervals':('event_id',)}
+        changes={}
+        for table, key_columns in keys.items():
+            old_cursor=conn.execute('SELECT * FROM '+table+' WHERE user_id=?',(user,))
+            columns=[c[0] for c in old_cursor.description]
+            indexes=[columns.index(c) for c in key_columns]
+            def key(row): return tuple(row[i] for i in indexes)
+            previous={key(row):tuple(row) for row in old_cursor}
+            desired={key(row):row for row in prepared.get(table,())}
+            removed=[k for k in previous if k not in desired]
+            changed=[row for k,row in desired.items() if previous.get(k)!=row]
+            changes[table]=(removed,changed)
+        try:
+            with transaction(conn, 'journey.publish', budget=1):
+                current=conn.execute('SELECT revision,pending FROM journey_dirty WHERE user_id=?',(user,)).fetchone()
+                if not current or tuple(current)!=(revision,1):
+                    continue
+                for table, (removed, changed) in changes.items():
+                    if removed:
+                        conn.executemany('DELETE FROM '+table+' WHERE '+
+                            ' AND '.join(c+'=?' for c in keys[table]),removed)
+                    if changed:
+                        conn.executemany('INSERT OR REPLACE INTO '+table+' VALUES ('+
+                            ','.join('?' for _ in changed[0])+')',changed)
+                conn.execute('INSERT OR REPLACE INTO journey_projection_status VALUES (?,?,?,?)',(user,'ready',len(events),iso(datetime.now(timezone.utc).timestamp())))
+                conn.execute('UPDATE journey_dirty SET pending=0,retry_after=0 WHERE user_id=? AND revision=?',(user,revision))
+        except (sqlite3.OperationalError, TransactionBudgetExceeded) as error:
+            if not is_busy(error) and not isinstance(error,TransactionBudgetExceeded):
+                raise
+            logging.getLogger(__name__).warning('Journey remains pending user=%s reason=%s',user,type(error).__name__)
+            # Importer runs every 300 seconds. If the DB is still busy, leave the
+            # persisted generation untouched and let that normal interval retry.
+            try:
+                with transaction(conn, 'journey.defer', budget=1):
+                    conn.execute('UPDATE journey_dirty SET retry_after=? WHERE user_id=?',(time.time()+300,user))
+            except sqlite3.OperationalError as defer_error:
+                if not is_busy(defer_error): raise
     return processed
