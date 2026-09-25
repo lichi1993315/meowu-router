@@ -169,6 +169,8 @@ def build():
     result['gameplay-overview.json']['panels'].extend(channel_panels)
     from player_analytics_layout import apply_player_layout
     apply_player_layout(result)
+    from journey_dashboards import extend_dashboards as extend_journeys
+    extend_journeys(result, dashboard, panel, FILTER, time_range)
     return result
 
 if __name__=='__main__':

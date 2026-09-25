@@ -191,6 +191,27 @@
       "type": "link",
       "url": "/d/gameplay-overview-legacy",
       "keepTime": true
+    },
+    {
+      "title": "流程耗时与流失",
+      "type": "link",
+      "url": "/d/gameplay-journey-flow",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "流失时间分布",
+      "type": "link",
+      "url": "/d/gameplay-journey-loss",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "岛屿成长与单人多人",
+      "type": "link",
+      "url": "/d/gameplay-journey-modes",
+      "includeVars": true,
+      "keepTime": true
     }
   ],
   "panels": [

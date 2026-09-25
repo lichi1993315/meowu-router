@@ -35,3 +35,6 @@ CMD ["python", "metrics_exporter.py"]
 
 # Canonical analytics projection shared by incremental intake and snapshot importer.
 COPY analytics_facts.py player_analytics.py /app/
+
+# Journey projection and versioned node catalog.
+COPY journey_analytics.py journey_catalog.json telemetry_time.py /app/

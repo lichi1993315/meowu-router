@@ -1,0 +1,363 @@
+[
+  {
+    "node_id": "startup",
+    "title": "启动与进入主菜单",
+    "sort_order": -1
+  },
+  {
+    "node_id": "loading",
+    "title": "连接与加载世界",
+    "sort_order": 0
+  },
+  {
+    "node_id": "player_create",
+    "title": "创建玩家角色",
+    "sort_order": 1
+  },
+  {
+    "node_id": "cat_create",
+    "title": "创建初始猫",
+    "sort_order": 2
+  },
+  {
+    "node_id": "task:3508",
+    "task_id": 3508,
+    "title": "新的伙伴",
+    "prerequisite": "world",
+    "sort_order": 6
+  },
+  {
+    "node_id": "task:3508:claim",
+    "title": "新的伙伴 · 领奖",
+    "sort_order": 7,
+    "prerequisite": "task:3508"
+  },
+  {
+    "node_id": "task:3601",
+    "task_id": 3601,
+    "title": "你还会说话？",
+    "prerequisite": "task:3508",
+    "sort_order": 8
+  },
+  {
+    "node_id": "task:3601:claim",
+    "title": "你还会说话？ · 领奖",
+    "sort_order": 9,
+    "prerequisite": "task:3601"
+  },
+  {
+    "node_id": "task:3501",
+    "task_id": 3501,
+    "title": "钓鱼",
+    "prerequisite": "task:3601",
+    "sort_order": 10
+  },
+  {
+    "node_id": "task:3501:claim",
+    "title": "钓鱼 · 领奖",
+    "sort_order": 11,
+    "prerequisite": "task:3501"
+  },
+  {
+    "node_id": "task:3803",
+    "task_id": 3803,
+    "title": "餐厅开业",
+    "prerequisite": "task:3501",
+    "sort_order": 12
+  },
+  {
+    "node_id": "task:3803:claim",
+    "title": "餐厅开业 · 领奖",
+    "sort_order": 13,
+    "prerequisite": "task:3803"
+  },
+  {
+    "node_id": "task:3806",
+    "task_id": 3806,
+    "title": "做菜",
+    "prerequisite": "task:3803",
+    "sort_order": 14
+  },
+  {
+    "node_id": "task:3806:claim",
+    "title": "做菜 · 领奖",
+    "sort_order": 15,
+    "prerequisite": "task:3806"
+  },
+  {
+    "node_id": "task:3807",
+    "task_id": 3807,
+    "title": "上菜",
+    "prerequisite": "task:3806",
+    "sort_order": 16
+  },
+  {
+    "node_id": "task:3807:claim",
+    "title": "上菜 · 领奖",
+    "sort_order": 17,
+    "prerequisite": "task:3807"
+  },
+  {
+    "node_id": "task:3824",
+    "task_id": 3824,
+    "title": "提升爱好等级",
+    "prerequisite": "task:3807",
+    "sort_order": 18
+  },
+  {
+    "node_id": "task:3824:claim",
+    "title": "提升爱好等级 · 领奖",
+    "sort_order": 19,
+    "prerequisite": "task:3824"
+  },
+  {
+    "node_id": "task:3502",
+    "task_id": 3502,
+    "title": "购买鱼饵",
+    "prerequisite": "task:3824",
+    "sort_order": 20
+  },
+  {
+    "node_id": "task:3502:claim",
+    "title": "购买鱼饵 · 领奖",
+    "sort_order": 21,
+    "prerequisite": "task:3502"
+  },
+  {
+    "node_id": "task:3509",
+    "task_id": 3509,
+    "title": "一起钓鱼",
+    "prerequisite": "task:3502",
+    "sort_order": 22
+  },
+  {
+    "node_id": "task:3509:claim",
+    "title": "一起钓鱼 · 领奖",
+    "sort_order": 23,
+    "prerequisite": "task:3509"
+  },
+  {
+    "node_id": "task:3816",
+    "task_id": 3816,
+    "title": "猫猫成长",
+    "prerequisite": "task:3509",
+    "sort_order": 24
+  },
+  {
+    "node_id": "task:3816:claim",
+    "title": "猫猫成长 · 领奖",
+    "sort_order": 25,
+    "prerequisite": "task:3816"
+  },
+  {
+    "node_id": "task:3819",
+    "task_id": 3819,
+    "title": "购买种子",
+    "prerequisite": "task:3816",
+    "sort_order": 26
+  },
+  {
+    "node_id": "task:3819:claim",
+    "title": "购买种子 · 领奖",
+    "sort_order": 27,
+    "prerequisite": "task:3819"
+  },
+  {
+    "node_id": "task:3812",
+    "task_id": 3812,
+    "title": "第一块田",
+    "prerequisite": "task:3819",
+    "sort_order": 28
+  },
+  {
+    "node_id": "task:3812:claim",
+    "title": "第一块田 · 领奖",
+    "sort_order": 29,
+    "prerequisite": "task:3812"
+  },
+  {
+    "node_id": "task:3813",
+    "task_id": 3813,
+    "title": "第一粒种子",
+    "prerequisite": "task:3812",
+    "sort_order": 30
+  },
+  {
+    "node_id": "task:3813:claim",
+    "title": "第一粒种子 · 领奖",
+    "sort_order": 31,
+    "prerequisite": "task:3813"
+  },
+  {
+    "node_id": "task:3814",
+    "task_id": 3814,
+    "title": "第一次浇水",
+    "prerequisite": "task:3813",
+    "sort_order": 32
+  },
+  {
+    "node_id": "task:3814:claim",
+    "title": "第一次浇水 · 领奖",
+    "sort_order": 33,
+    "prerequisite": "task:3814"
+  },
+  {
+    "node_id": "task:3504",
+    "task_id": 3504,
+    "title": "一觉睡到天亮",
+    "prerequisite": "task:3814",
+    "sort_order": 34
+  },
+  {
+    "node_id": "task:3504:claim",
+    "title": "一觉睡到天亮 · 领奖",
+    "sort_order": 35,
+    "prerequisite": "task:3504"
+  },
+  {
+    "node_id": "task:3820",
+    "task_id": 3820,
+    "title": "收获",
+    "prerequisite": "task:3504",
+    "sort_order": 36
+  },
+  {
+    "node_id": "task:3820:claim",
+    "title": "收获 · 领奖",
+    "sort_order": 37,
+    "prerequisite": "task:3820"
+  },
+  {
+    "node_id": "task:3821",
+    "task_id": 3821,
+    "title": "制作蔬菜三明治",
+    "prerequisite": "task:3820",
+    "sort_order": 38
+  },
+  {
+    "node_id": "task:3821:claim",
+    "title": "制作蔬菜三明治 · 领奖",
+    "sort_order": 39,
+    "prerequisite": "task:3821"
+  },
+  {
+    "node_id": "task:3827",
+    "task_id": 3827,
+    "title": "完成招募进度",
+    "prerequisite": "task:3821",
+    "sort_order": 40
+  },
+  {
+    "node_id": "task:3827:claim",
+    "title": "完成招募进度 · 领奖",
+    "sort_order": 41,
+    "prerequisite": "task:3827"
+  },
+  {
+    "node_id": "task:3825",
+    "task_id": 3825,
+    "title": "购买建筑",
+    "prerequisite": "task:3827",
+    "sort_order": 42
+  },
+  {
+    "node_id": "task:3825:claim",
+    "title": "购买建筑 · 领奖",
+    "sort_order": 43,
+    "prerequisite": "task:3825"
+  },
+  {
+    "node_id": "task:3801",
+    "task_id": 3801,
+    "title": "建造建筑",
+    "prerequisite": "task:3825",
+    "sort_order": 44
+  },
+  {
+    "node_id": "task:3801:claim",
+    "title": "建造建筑 · 领奖",
+    "sort_order": 45,
+    "prerequisite": "task:3801"
+  },
+  {
+    "node_id": "task:3826",
+    "task_id": 3826,
+    "title": "提升爱好等级",
+    "prerequisite": "task:3801",
+    "sort_order": 46
+  },
+  {
+    "node_id": "task:3826:claim",
+    "title": "提升爱好等级 · 领奖",
+    "sort_order": 47,
+    "prerequisite": "task:3826"
+  },
+  {
+    "node_id": "task:3506",
+    "task_id": 3506,
+    "title": "提升岛屿等级",
+    "prerequisite": "task:3826",
+    "sort_order": 48
+  },
+  {
+    "node_id": "task:3506:claim",
+    "title": "提升岛屿等级 · 领奖",
+    "sort_order": 49,
+    "prerequisite": "task:3506"
+  },
+  {
+    "node_id": "task:3810",
+    "task_id": 3810,
+    "title": "再添伙伴",
+    "prerequisite": "task:3506",
+    "sort_order": 50
+  },
+  {
+    "node_id": "task:3810:claim",
+    "title": "再添伙伴 · 领奖",
+    "sort_order": 51,
+    "prerequisite": "task:3810"
+  },
+  {
+    "node_id": "level:2",
+    "title": "岛屿等级 2",
+    "sort_order": 102,
+    "prerequisite": "level:1"
+  },
+  {
+    "node_id": "level:3",
+    "title": "岛屿等级 3",
+    "sort_order": 103,
+    "prerequisite": "level:2"
+  },
+  {
+    "node_id": "level:4",
+    "title": "岛屿等级 4",
+    "sort_order": 104,
+    "prerequisite": "level:3"
+  },
+  {
+    "node_id": "level:5",
+    "title": "岛屿等级 5",
+    "sort_order": 105,
+    "prerequisite": "level:4"
+  },
+  {
+    "node_id": "level:6",
+    "title": "岛屿等级 6",
+    "sort_order": 106,
+    "prerequisite": "level:5"
+  },
+  {
+    "node_id": "level:7",
+    "title": "岛屿等级 7",
+    "sort_order": 107,
+    "prerequisite": "level:6"
+  },
+  {
+    "node_id": "level:8",
+    "title": "岛屿等级 8",
+    "sort_order": 108,
+    "prerequisite": "level:7"
+  }
+]

@@ -1,0 +1,891 @@
+{
+  "uid": "gameplay-journey-modes",
+  "title": "岛屿成长与单人多人",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "tags": [
+    "PawFishing",
+    "analytics-v2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_SQLITE",
+        "type": "datasource",
+        "query": "frser-sqlite-datasource",
+        "current": {
+          "text": "SQLite",
+          "value": "SQLite"
+        },
+        "hide": 2
+      },
+      {
+        "name": "client_platform",
+        "label": "客户端平台",
+        "type": "custom",
+        "query": "WebGL : webgl,Windows Player : windows,Unity Editor : editor,其他客户端 : other,未知/历史未上报 : unknown,无客户端归属 : unattributed",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": [
+            "WebGL",
+            "Windows Player",
+            "未知/历史未上报"
+          ],
+          "value": [
+            "webgl",
+            "windows",
+            "unknown"
+          ]
+        }
+      },
+      {
+        "name": "distribution_channel",
+        "label": "发行渠道",
+        "type": "custom",
+        "query": "内部版 : internal,Steam : steam,TapTap : taptap,网页版 : web,未知／历史未上报 : unknown",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "release_version",
+        "label": "发布版本",
+        "type": "query",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "playtest_id",
+        "label": "Playtest 批次",
+        "type": "custom",
+        "query": "全部 : all,中秋playtest : 中秋playtest,历史／未标记 : legacy",
+        "current": {
+          "text": "中秋playtest",
+          "value": "中秋playtest"
+        }
+      },
+      {
+        "name": "test_data",
+        "label": "测试数据",
+        "type": "custom",
+        "query": "按平台自动 : auto,排除 : exclude,包含 : include,仅测试 : only",
+        "current": {
+          "text": "按平台自动",
+          "value": "auto"
+        }
+      },
+      {
+        "name": "user_id",
+        "label": "玩家 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "churn_days",
+        "label": "未回访天数",
+        "type": "custom",
+        "query": "1,3,7",
+        "current": {
+          "text": "7",
+          "value": "7"
+        }
+      },
+      {
+        "name": "cohort_kind",
+        "label": "玩家范围",
+        "type": "custom",
+        "query": "首次新玩家与启动期 : new,含存量基线 : all",
+        "current": {
+          "text": "首次新玩家与启动期",
+          "value": "new"
+        }
+      },
+      {
+        "name": "mode_group",
+        "label": "玩家模式类型",
+        "type": "custom",
+        "query": "全部 : all,仅单人 : single,仅多人 : multiplayer,两者都玩 : mixed,未采集 : unknown",
+        "current": {
+          "text": "全部",
+          "value": "all"
+        }
+      },
+      {
+        "name": "flow_version",
+        "label": "流程版本",
+        "type": "custom",
+        "query": "journey-v1",
+        "current": {
+          "text": "journey-v1",
+          "value": "journey-v1"
+        }
+      },
+      {
+        "name": "node_id",
+        "label": "节点 ID",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "经营总览",
+      "type": "link",
+      "url": "/d/gameplay-overview",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "新手与留存",
+      "type": "link",
+      "url": "/d/gameplay-retention",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "猫与 AI 体验",
+      "type": "link",
+      "url": "/d/llm-conversations",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家旅程",
+      "type": "link",
+      "url": "/d/gameplay-player-detail",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "服务与成本",
+      "type": "link",
+      "url": "/d/llm-router-dashboard",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "数据质量",
+      "type": "link",
+      "url": "/d/gameplay-quality",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家小剧场",
+      "type": "link",
+      "url": "/d/gameplay-theater",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "查看原版报表",
+      "type": "link",
+      "url": "/d/gameplay-overview-legacy",
+      "keepTime": true
+    },
+    {
+      "title": "流程耗时与流失",
+      "type": "link",
+      "url": "/d/gameplay-journey-flow",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "流失时间分布",
+      "type": "link",
+      "url": "/d/gameplay-journey-loss",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "岛屿成长与单人多人",
+      "type": "link",
+      "url": "/d/gameplay-journey-modes",
+      "includeVars": true,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 999,
+      "title": "统计口径与历史数据",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "按首次被观察到的旅程时间选人，后续进度读取到观察截止时间。默认 7 天未回访；观察不足单列。有效时间=前台扣除 120 秒后的 AFK；短暂停顿计入。P50/P90 只统计时间证据完整的样本。多人模式只有一人仍属于多人；同玩时长要求至少两位真人。退出位置不代表退出原因。\n\n时间筛选是首次旅程批次。存量玩家、断档、并发客户端和历史未采集字段单列。七日完成率只纳入已观察满七日的玩家；流失率按所选 1/3/7 日成熟节点为分母。当前节点仅用于定位，不能证明流失原因。"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      }
+    },
+    {
+      "id": 1,
+      "title": "玩家类型与模式时长",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按首次被观察到的旅程时间选人，后续进度读取到观察截止时间。默认 7 天未回访；观察不足单列。有效时间=前台扣除 120 秒后的 AFK；短暂停顿计入。P50/P90 只统计时间证据完整的样本。多人模式只有一人仍属于多人；同玩时长要求至少两位真人。退出位置不代表退出原因。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT c.mode_group 玩家类型,COUNT(*) 玩家数,\n      ROUND(SUM(c.single)/60,2) 单人有效分钟,\n      ROUND(SUM(c.multiplayer_alone+c.multiplayer_together)/60,2) 多人有效分钟,\n      ROUND(SUM(c.multiplayer_alone)/60,2) 多人独自在线分钟,\n      ROUND(SUM(c.multiplayer_together)/60,2) 多人同玩分钟,\n      ROUND(SUM(c.unknown_mode)/60,2) 模式未采集分钟,\n      ROUND(SUM(c.foreground)/60,2) 前台分钟,ROUND(SUM(c.waiting)/60,2) 系统等待分钟,\n      SUM(CASE WHEN x.churned=1 THEN 1 ELSE 0 END) 未回访玩家数\n      FROM cohort c LEFT JOIN final_exit x USING(user_id) GROUP BY c.mode_group",
+          "rawQueryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT c.mode_group 玩家类型,COUNT(*) 玩家数,\n      ROUND(SUM(c.single)/60,2) 单人有效分钟,\n      ROUND(SUM(c.multiplayer_alone+c.multiplayer_together)/60,2) 多人有效分钟,\n      ROUND(SUM(c.multiplayer_alone)/60,2) 多人独自在线分钟,\n      ROUND(SUM(c.multiplayer_together)/60,2) 多人同玩分钟,\n      ROUND(SUM(c.unknown_mode)/60,2) 模式未采集分钟,\n      ROUND(SUM(c.foreground)/60,2) 前台分钟,ROUND(SUM(c.waiting)/60,2) 系统等待分钟,\n      SUM(CASE WHEN x.churned=1 THEN 1 ELSE 0 END) 未回访玩家数\n      FROM cohort c LEFT JOIN final_exit x USING(user_id) GROUP BY c.mode_group"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "completed": {
+                  "text": "已完成"
+                },
+                "in_progress": {
+                  "text": "进行中"
+                },
+                "observed": {
+                  "text": "完整观测"
+                },
+                "missing_start": {
+                  "text": "缺少开始时间"
+                },
+                "incomplete": {
+                  "text": "证据不完整"
+                },
+                "single": {
+                  "text": "仅单人"
+                },
+                "multiplayer": {
+                  "text": "仅多人"
+                },
+                "mixed": {
+                  "text": "两者都玩"
+                },
+                "unknown": {
+                  "text": "未采集"
+                },
+                "baseline_open": {
+                  "text": "已有任务进行中"
+                },
+                "baseline_completed": {
+                  "text": "已有任务待领奖"
+                },
+                "baseline_claimed": {
+                  "text": "已有任务已领奖"
+                },
+                "joined_existing": {
+                  "text": "加入时已有"
+                },
+                "observed_on_return": {
+                  "text": "回访才观察到"
+                },
+                "skipped": {
+                  "text": "主动跳过"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-user_id=${__value.raw}&var-cohort_kind=all&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看此节点玩家",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-node_id=${__value.raw}&var-cohort_kind=${cohort_kind:percentencode}&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 2,
+      "title": "岛屿 2～8 级 · 玩家经历",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按首次被观察到的旅程时间选人，后续进度读取到观察截止时间。默认 7 天未回访；观察不足单列。有效时间=前台扣除 120 秒后的 AFK；短暂停顿计入。P50/P90 只统计时间证据完整的样本。多人模式只有一人仍属于多人；同玩时长要求至少两位真人。退出位置不代表退出原因。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT cat.node_id,cat.title 节点,COUNT(o.user_id) 已观察人数,\n      SUM(o.completed_at IS NOT NULL) 亲历升级人数,SUM(o.status='joined_existing') 加入时已有,\n      SUM(o.status='observed_on_return') 回访才观察到,SUM(CASE WHEN o.matured_churn THEN o.churned_here ELSE 0 END) 流失人数,\n      SUM(CASE WHEN o.matured_churn THEN 1 ELSE 0 END) 流失率分母,\n      ROUND(100.0*SUM(CASE WHEN o.matured_churn THEN o.churned_here ELSE 0 END)/NULLIF(SUM(CASE WHEN o.matured_churn THEN 1 ELSE 0 END),0),1) 流失率,\n      ROUND(q.world_p50,2) 入岛至升级分钟P50,ROUND(q.world_p90,2) 入岛至升级分钟P90,\n      ROUND(q.p50,2) 本级分钟P50,ROUND(q.p90,2) 本级分钟P90,q.samples 耗时样本数,\n      ROUND(SUM(o.single)/60,2) 单人分钟,ROUND(SUM(o.multiplayer_alone)/60,2) 多人独自分钟,\n      ROUND(SUM(o.multiplayer_together)/60,2) 多人同玩分钟\n      FROM journey_catalog cat LEFT JOIN outcomes o ON o.node_id=cat.node_id AND o.flow_version=cat.flow_version LEFT JOIN quantiles q ON q.node_id=cat.node_id WHERE cat.flow_version='journey-v1' AND cat.node_id LIKE 'level:%' GROUP BY cat.node_id ORDER BY cat.sort_order",
+          "rawQueryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT cat.node_id,cat.title 节点,COUNT(o.user_id) 已观察人数,\n      SUM(o.completed_at IS NOT NULL) 亲历升级人数,SUM(o.status='joined_existing') 加入时已有,\n      SUM(o.status='observed_on_return') 回访才观察到,SUM(CASE WHEN o.matured_churn THEN o.churned_here ELSE 0 END) 流失人数,\n      SUM(CASE WHEN o.matured_churn THEN 1 ELSE 0 END) 流失率分母,\n      ROUND(100.0*SUM(CASE WHEN o.matured_churn THEN o.churned_here ELSE 0 END)/NULLIF(SUM(CASE WHEN o.matured_churn THEN 1 ELSE 0 END),0),1) 流失率,\n      ROUND(q.world_p50,2) 入岛至升级分钟P50,ROUND(q.world_p90,2) 入岛至升级分钟P90,\n      ROUND(q.p50,2) 本级分钟P50,ROUND(q.p90,2) 本级分钟P90,q.samples 耗时样本数,\n      ROUND(SUM(o.single)/60,2) 单人分钟,ROUND(SUM(o.multiplayer_alone)/60,2) 多人独自分钟,\n      ROUND(SUM(o.multiplayer_together)/60,2) 多人同玩分钟\n      FROM journey_catalog cat LEFT JOIN outcomes o ON o.node_id=cat.node_id AND o.flow_version=cat.flow_version LEFT JOIN quantiles q ON q.node_id=cat.node_id WHERE cat.flow_version='journey-v1' AND cat.node_id LIKE 'level:%' GROUP BY cat.node_id ORDER BY cat.sort_order"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "completed": {
+                  "text": "已完成"
+                },
+                "in_progress": {
+                  "text": "进行中"
+                },
+                "observed": {
+                  "text": "完整观测"
+                },
+                "missing_start": {
+                  "text": "缺少开始时间"
+                },
+                "incomplete": {
+                  "text": "证据不完整"
+                },
+                "single": {
+                  "text": "仅单人"
+                },
+                "multiplayer": {
+                  "text": "仅多人"
+                },
+                "mixed": {
+                  "text": "两者都玩"
+                },
+                "unknown": {
+                  "text": "未采集"
+                },
+                "baseline_open": {
+                  "text": "已有任务进行中"
+                },
+                "baseline_completed": {
+                  "text": "已有任务待领奖"
+                },
+                "baseline_claimed": {
+                  "text": "已有任务已领奖"
+                },
+                "joined_existing": {
+                  "text": "加入时已有"
+                },
+                "observed_on_return": {
+                  "text": "回访才观察到"
+                },
+                "skipped": {
+                  "text": "主动跳过"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-user_id=${__value.raw}&var-cohort_kind=all&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看此节点玩家",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-node_id=${__value.raw}&var-cohort_kind=${cohort_kind:percentencode}&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 3,
+      "title": "等级与任务逐人明细",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按首次被观察到的旅程时间选人，后续进度读取到观察截止时间。默认 7 天未回访；观察不足单列。有效时间=前台扣除 120 秒后的 AFK；短暂停顿计入。P50/P90 只统计时间证据完整的样本。多人模式只有一人仍属于多人；同玩时长要求至少两位真人。退出位置不代表退出原因。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT o.user_id,o.archive_id,o.title 节点,o.status 状态,o.quality 时间证据,\n      o.started_at 开始,o.completed_at 完成,o.claimed_at 领奖,\n      ROUND(o.effective/60,2) 有效分钟,ROUND(o.foreground/60,2) 前台分钟,\n      ROUND(o.natural_seconds/3600,2) 自然小时,ROUND(o.waiting/60,2) 等待分钟,\n      ROUND(o.single/60,2) 单人分钟,ROUND((o.multiplayer_alone+o.multiplayer_together)/60,2) 多人分钟,\n      o.progress_value 任务进度,o.target_value 目标,o.player_last_at 最后回访,\n      x.node_id 最后节点,x.page_id 最后页面,x.reason 离开证据,x.churned 已流失\n      FROM outcomes o LEFT JOIN final_exit x USING(user_id)\n      WHERE (${node_id:sqlstring}='' OR o.node_id=${node_id:sqlstring}) ORDER BY o.user_id,o.sort_order LIMIT 500",
+          "rawQueryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT o.user_id,o.archive_id,o.title 节点,o.status 状态,o.quality 时间证据,\n      o.started_at 开始,o.completed_at 完成,o.claimed_at 领奖,\n      ROUND(o.effective/60,2) 有效分钟,ROUND(o.foreground/60,2) 前台分钟,\n      ROUND(o.natural_seconds/3600,2) 自然小时,ROUND(o.waiting/60,2) 等待分钟,\n      ROUND(o.single/60,2) 单人分钟,ROUND((o.multiplayer_alone+o.multiplayer_together)/60,2) 多人分钟,\n      o.progress_value 任务进度,o.target_value 目标,o.player_last_at 最后回访,\n      x.node_id 最后节点,x.page_id 最后页面,x.reason 离开证据,x.churned 已流失\n      FROM outcomes o LEFT JOIN final_exit x USING(user_id)\n      WHERE (${node_id:sqlstring}='' OR o.node_id=${node_id:sqlstring}) ORDER BY o.user_id,o.sort_order LIMIT 500"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "completed": {
+                  "text": "已完成"
+                },
+                "in_progress": {
+                  "text": "进行中"
+                },
+                "observed": {
+                  "text": "完整观测"
+                },
+                "missing_start": {
+                  "text": "缺少开始时间"
+                },
+                "incomplete": {
+                  "text": "证据不完整"
+                },
+                "single": {
+                  "text": "仅单人"
+                },
+                "multiplayer": {
+                  "text": "仅多人"
+                },
+                "mixed": {
+                  "text": "两者都玩"
+                },
+                "unknown": {
+                  "text": "未采集"
+                },
+                "baseline_open": {
+                  "text": "已有任务进行中"
+                },
+                "baseline_completed": {
+                  "text": "已有任务待领奖"
+                },
+                "baseline_claimed": {
+                  "text": "已有任务已领奖"
+                },
+                "joined_existing": {
+                  "text": "加入时已有"
+                },
+                "observed_on_return": {
+                  "text": "回访才观察到"
+                },
+                "skipped": {
+                  "text": "主动跳过"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-user_id=${__value.raw}&var-cohort_kind=all&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看此节点玩家",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-node_id=${__value.raw}&var-cohort_kind=${cohort_kind:percentencode}&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 4,
+      "title": "岛屿自身升级记录 · 含真实提交者",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按首次被观察到的旅程时间选人，后续进度读取到观察截止时间。默认 7 天未回访；观察不足单列。有效时间=前台扣除 120 秒后的 AFK；短暂停顿计入。P50/P90 只统计时间证据完整的样本。多人模式只有一人仍属于多人；同玩时长要求至少两位真人。退出位置不代表退出原因。 旧岛没有创建时间时留空；每次升级按确认 ID 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT *,ROUND((julianday(服务端升级时间)-julianday(岛屿创建时间))*24,2) 岛屿创建至升级小时 FROM (SELECT c.user_id,f.archive_id,\n      json_extract(f.payload_json,'$.business.after_level') 升至等级,\n      json_extract(f.payload_json,'$.submitted_by') 提交玩家,\n      json_extract(f.payload_json,'$.confirmed_at') 服务端升级时间,\n      (SELECT json_extract(g.payload_json,'$.island_created_at') FROM analytics_event_facts g\n        WHERE g.archive_id=f.archive_id AND g.event_type='journey_context'\n          AND json_extract(g.payload_json,'$.island_created_at') IS NOT NULL ORDER BY g.occurred_at LIMIT 1) 岛屿创建时间\n      FROM cohort c JOIN journey_run_owners r USING(user_id) JOIN analytics_event_facts f ON f.session_id=r.run_id\n      WHERE f.event_type='journey_business' AND json_extract(f.payload_json,'$.business_type')='island_level_up'\n      GROUP BY f.archive_id,json_extract(f.payload_json,'$.confirmation_id') ORDER BY f.occurred_at DESC LIMIT 500)",
+          "rawQueryText": "WITH settings AS (\n      SELECT CASE WHEN '${churn_days}' IN ('1','3','7') THEN CAST('${churn_days}' AS INTEGER) ELSE 7 END days,\n        julianday('now') cutoff),\n    candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j\n      LEFT JOIN user_sessions u USING(user_id)),\n    cohort AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND ('${cohort_kind}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${cohort_kind}'='new'))\n      AND ('${mode_group}'='all' OR mode_group='${mode_group}')\n      AND ('${flow_version}'='all' OR flow_version='${flow_version}')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (\n      SELECT user_id,last_at at FROM journey_players\n      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events\n       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'\n    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),\n    first_archive AS (SELECT user_id,archive_id FROM (\n      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn\n      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),\n    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)\n      WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),\n    departures AS (SELECT x.*,a.last_at,\n      CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned\n      FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)\n      WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)\n        AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),\n    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),\n    outcomes AS (SELECT n.*,a.last_at player_last_at,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,\n      ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,\n      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,\n      CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1\n        AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here\n      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),\n    duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY foreground) fr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY waiting) wr,\n      ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY world_effective) ir,\n      COUNT(*) OVER(PARTITION BY node_id) samples\n      FROM outcomes WHERE quality='observed' AND effective IS NOT NULL AND completed_at IS NOT NULL AND julianday(completed_at)<=(SELECT cutoff FROM settings)),\n    quantiles AS (SELECT node_id,COUNT(*) samples,\n      MIN(CASE WHEN er>=samples*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN er>=samples*0.9 THEN effective END)/60 p90,\n      MIN(CASE WHEN cr>=samples*0.5 THEN cumulative_effective END)/60 cumulative_p50,\n      MIN(CASE WHEN cr>=samples*0.9 THEN cumulative_effective END)/60 cumulative_p90,\n      MIN(CASE WHEN fr>=samples*0.5 THEN foreground END)/60 foreground_p50,\n      MIN(CASE WHEN wr>=samples*0.5 THEN waiting END)/60 waiting_p50,\n      MIN(CASE WHEN ir>=samples*0.5 THEN world_effective END)/60 world_p50,\n      MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90\n      FROM duration_ranks GROUP BY node_id),\n    unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,\n      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),\n    unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,\n      MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)\n    SELECT *,ROUND((julianday(服务端升级时间)-julianday(岛屿创建时间))*24,2) 岛屿创建至升级小时 FROM (SELECT c.user_id,f.archive_id,\n      json_extract(f.payload_json,'$.business.after_level') 升至等级,\n      json_extract(f.payload_json,'$.submitted_by') 提交玩家,\n      json_extract(f.payload_json,'$.confirmed_at') 服务端升级时间,\n      (SELECT json_extract(g.payload_json,'$.island_created_at') FROM analytics_event_facts g\n        WHERE g.archive_id=f.archive_id AND g.event_type='journey_context'\n          AND json_extract(g.payload_json,'$.island_created_at') IS NOT NULL ORDER BY g.occurred_at LIMIT 1) 岛屿创建时间\n      FROM cohort c JOIN journey_run_owners r USING(user_id) JOIN analytics_event_facts f ON f.session_id=r.run_id\n      WHERE f.event_type='journey_business' AND json_extract(f.payload_json,'$.business_type')='island_level_up'\n      GROUP BY f.archive_id,json_extract(f.payload_json,'$.confirmation_id') ORDER BY f.occurred_at DESC LIMIT 500)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "completed": {
+                  "text": "已完成"
+                },
+                "in_progress": {
+                  "text": "进行中"
+                },
+                "observed": {
+                  "text": "完整观测"
+                },
+                "missing_start": {
+                  "text": "缺少开始时间"
+                },
+                "incomplete": {
+                  "text": "证据不完整"
+                },
+                "single": {
+                  "text": "仅单人"
+                },
+                "multiplayer": {
+                  "text": "仅多人"
+                },
+                "mixed": {
+                  "text": "两者都玩"
+                },
+                "unknown": {
+                  "text": "未采集"
+                },
+                "baseline_open": {
+                  "text": "已有任务进行中"
+                },
+                "baseline_completed": {
+                  "text": "已有任务待领奖"
+                },
+                "baseline_claimed": {
+                  "text": "已有任务已领奖"
+                },
+                "joined_existing": {
+                  "text": "加入时已有"
+                },
+                "observed_on_return": {
+                  "text": "回访才观察到"
+                },
+                "skipped": {
+                  "text": "主动跳过"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-user_id=${__value.raw}&var-cohort_kind=all&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看此节点玩家",
+                    "url": "/d/gameplay-journey-flow?${__url_time_range}&var-node_id=${__value.raw}&var-cohort_kind=${cohort_kind:percentencode}&${DS_SQLITE:queryparam}&${client_platform:queryparam}&${distribution_channel:queryparam}&${release_version:queryparam}&${playtest_id:queryparam}&${test_data:queryparam}&${churn_days:queryparam}&${mode_group:queryparam}&${flow_version:queryparam}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 9
+      }
+    }
+  ]
+}

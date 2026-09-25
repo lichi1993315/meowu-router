@@ -14,6 +14,10 @@ def ensure_facts(conn):
         occurred_at TEXT,received_at TEXT,event_type TEXT,actor_id TEXT,actor_is_player INTEGER,
         game_day INTEGER,sequence INTEGER,payload_json TEXT,metadata_json TEXT,energy_cost REAL,
         archive_id TEXT,schema_version INTEGER,behavior_stat INTEGER)''')
+    from journey_analytics import ensure_journey_schema
+    ensure_journey_schema(conn)
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_archive_kind_time ON analytics_event_facts(archive_id,event_type,occurred_at)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_session_kind ON analytics_event_facts(session_id,event_type)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_user_kind_time ON analytics_event_facts(user_id,event_type,occurred_at)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_kind_time ON analytics_event_facts(event_type,occurred_at)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_archive_day ON analytics_event_facts(user_id,archive_id,game_day)')
@@ -33,6 +37,8 @@ def upsert_fact(conn, event, user, session, metadata, received, player_session=N
         else f'{c}=COALESCE(excluded.{c},analytics_event_facts.{c})' if c in ('archive_id','schema_version','behavior_stat','occurred_at')
         else f'{c}=excluded.{c}' for c in COLUMNS[1:])
     conn.execute(f"INSERT INTO analytics_event_facts ({','.join(COLUMNS)}) VALUES ({','.join('?' for _ in COLUMNS)}) ON CONFLICT(event_id) DO UPDATE SET {assignments}",values)
+    from journey_analytics import mark_dirty
+    mark_dirty(conn, event, user, session)
 
 
 def project_imported(conn, where='1', args=()):

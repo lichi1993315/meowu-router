@@ -1987,6 +1987,9 @@ def run_import_once() -> int:
     force_reimport = state.schema_version < STATE_SCHEMA_VERSION
     with sqlite3.connect(DB_PATH) as conn:
         ensure_schema(conn)
+        from journey_analytics import backfill_existing_journeys, refresh_journeys
+        backfill_existing_journeys(conn)
+        refresh_journeys(conn)
         files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)
         if not files:
             logger.info("No gameplay telemetry sources found under %s or %s", TELEMETRY_DIR, OUTPUT_DIR)

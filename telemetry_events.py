@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from telemetry_platform import client_metadata, ensure_channel_schema, record_session_channel
 from analytics_facts import ensure_facts, upsert_fact
 from version_utils import release_version_from_client_version
+from telemetry_time import parse_timestamp
 
 
 def ensure_event_schema(conn):
@@ -39,7 +40,7 @@ def accept_batch(db_path, payload, headers):
         eid, occurred, kind = event.get("event_id"), event.get("event_real_time_iso"), event.get("event_type")
         if not all(isinstance(x, str) and x for x in (eid, occurred, kind)) or len(eid) > 128:
             raise ValueError("event id, timestamp and type required")
-        stamp = datetime.fromisoformat(occurred.replace("Z", "+00:00"))
+        stamp = parse_timestamp(occurred)
         if stamp.tzinfo is None:
             raise ValueError("timestamp timezone required")
         rows.append((eid, user, session, payload.get("player_session_id"), metadata["client_platform"],
