@@ -7,6 +7,8 @@ from typing import Any
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 
+from sqlite_runtime import is_busy
+
 from app.core.config import ERROR_LOG_DIR
 from app.core.logging import log
 from app.services import feishu_alerts, sessions
@@ -14,6 +16,13 @@ from app.services.leaderboard import get_leaderboard_data
 from app.utils.crypto import FernetConfigError, decrypt_payload
 
 router = APIRouter()
+
+
+def _busy_response(exc):
+    if is_busy(exc):
+        return JSONResponse(status_code=503, headers={"Retry-After": "15"}, content={
+            "detail": "telemetry store busy", "code": "telemetry_store_busy", "retryable": True})
+    return None
 
 
 @router.post("/v1/events/batch")
@@ -26,6 +35,11 @@ async def gameplay_event_batch(request: Request):
         return await asyncio.to_thread(accept_batch, DB_PATH, payload, dict(request.headers))
     except (ValueError, TypeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        response = _busy_response(exc)
+        if response is not None:
+            return response
+        raise
 
 
 def _log_game_telemetry_request(
@@ -160,6 +174,10 @@ async def login(request: Request):
             )
         except Exception as exc:
             log(f"[ERROR] Failed to persist login telemetry before response: {exc}")
+            response = _busy_response(exc)
+            if response is not None:
+                return JSONResponse(status_code=503, headers={"Retry-After": "15"}, content={
+                    "detail": "failed to persist login telemetry", "code": "telemetry_store_busy", "retryable": True})
             raise HTTPException(status_code=503, detail="failed to persist login telemetry") from exc
 
         return JSONResponse(content={"status": "ok"}, status_code=200)
@@ -194,6 +212,10 @@ async def session_heartbeat(request: Request):
             )
         except Exception as exc:
             log(f"[ERROR] Failed to persist session heartbeat before response: {exc}")
+            response = _busy_response(exc)
+            if response is not None:
+                return JSONResponse(status_code=503, headers={"Retry-After": "15"}, content={
+                    "detail": "failed to persist session heartbeat", "code": "telemetry_store_busy", "retryable": True})
             raise HTTPException(status_code=503, detail="failed to persist session heartbeat") from exc
 
         content: dict[str, Any] = {"status": "ok"}
@@ -245,6 +267,10 @@ async def logoff(request: Request):
             )
         except Exception as exc:
             log(f"[ERROR] Failed to persist logoff telemetry before response: {exc}")
+            response = _busy_response(exc)
+            if response is not None:
+                return JSONResponse(status_code=503, headers={"Retry-After": "15"}, content={
+                    "detail": "failed to persist logoff telemetry", "code": "telemetry_store_busy", "retryable": True})
             raise HTTPException(status_code=503, detail="failed to persist logoff telemetry") from exc
 
         asyncio.create_task(

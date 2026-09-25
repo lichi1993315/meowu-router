@@ -18,8 +18,9 @@ import json
 import logging
 import os
 import sqlite3
+from sqlite_runtime import connection, transaction, require_schema, mark_schema
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -708,6 +709,7 @@ GROUP BY s.user_id;
 class ImportState:
     files: dict[str, int]
     schema_version: int = 0
+    retry_after: dict[str, float] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> "ImportState":
@@ -728,7 +730,9 @@ class ImportState:
                 normalized[str(key)] = int(value)
             except Exception:
                 continue
-        return cls(files=normalized, schema_version=schema_version)
+        return cls(files=normalized, schema_version=schema_version,
+                   retry_after={str(k): float(v) for k,v in data.get("retry_after", {}).items()
+                                if isinstance(v, (int,float))})
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -736,8 +740,11 @@ class ImportState:
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "schema_version": self.schema_version,
             "files": self.files,
+            "retry_after": self.retry_after,
         }
-        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        pending = path.with_suffix(path.suffix + ".tmp")
+        pending.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        pending.replace(path)
 
 
 def now_iso() -> str:
@@ -1285,16 +1292,17 @@ def delete_existing_session_import(
         conn.execute(f"DELETE FROM {table} WHERE {where_sql}", params)
 
 
-def import_sample(
+def prepare_sample(
     conn: sqlite3.Connection,
     *,
     source_file: str,
     sample: dict[str, Any],
     imported_at: str,
-) -> int:
+):
+    """Build row tuples now; the returned closure publishes them in one transaction."""
     telemetry = sample.get("gameplay_telemetry")
     if not isinstance(telemetry, dict):
-        return 0
+        return None
 
     session_meta = telemetry.get("session_meta") or {}
     if not isinstance(session_meta, dict):
@@ -1314,12 +1322,7 @@ def import_sample(
     player_session_id = infer_player_session_id(sample, session_meta)
     if player_session_id and not session_meta.get("player_session_id"):
         session_meta = {**session_meta, "player_session_id": player_session_id}
-    delete_existing_session_import(
-        conn,
-        user_id=user_id,
-        session_id=session_id,
-        player_session_id=player_session_id,
-    )
+
     days = telemetry.get("days") or {}
     if not isinstance(days, dict):
         days = {}
@@ -1526,122 +1529,138 @@ def import_sample(
     if not ai_response_count and ai_token_record_count:
         ai_response_count = ai_token_record_count
 
-    conn.execute(
-        """
-        INSERT INTO gameplay_sessions (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, nickname, country,
-            real_time_started_iso, real_time_ended_iso, imported_at,
-            game_duration_sec, game_day_start, game_day_end, game_days_total,
-            island_level_max, money_start, money_end, money_total_earned,
-            money_total_spent, money_net_delta, money_reconciliation_ok,
-            pluma_luoqiu_total, new_player_task_progress_json, session_meta_json,
-            ai_usage_source, ai_request_count, ai_response_count, ai_token_record_count,
-            ai_input_tokens, ai_output_tokens, ai_total_tokens, ai_cached_input_tokens,
-            ai_cache_read_input_tokens, ai_cache_creation_input_tokens,
-            ai_billable_uncached_input_tokens, ai_billable_cached_input_tokens,
-            ai_cache_hit_ratio, ai_estimated_cost_usd, ai_archive_total_consumed_tokens,
-            ai_models, ai_pricing_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            source_file,
-            user_id,
-            session_id,
-            player_session_id,
-            is_dev,
-            client_version,
-            release_version,
-            nickname,
-            country,
-            session_meta.get("real_time_started_iso"),
-            session_meta.get("real_time_ended_iso"),
-            imported_at,
-            as_float(session_meta.get("game_duration_sec")) or 0.0,
-            as_int(session_meta.get("game_day_start")),
-            as_int(session_meta.get("game_day_end")),
-            as_int(session_meta.get("game_days_total")),
-            max(island_level_meta, island_level_events),
-            as_int(session_meta.get("money_start")),
-            as_int(session_meta.get("money_end")),
-            as_int(session_meta.get("money_total_earned")),
-            as_int(session_meta.get("money_total_spent")),
-            as_int(session_meta.get("money_net_delta")),
-            as_int(session_meta.get("money_reconciliation_ok")),
-            as_int(session_meta.get("pluma_luoqiu_total")),
-            as_json(session_meta.get("new_player_task_progress")),
-            as_json(session_meta),
-            session_ai_usage.get("source") or "",
-            ai_request_count,
-            ai_response_count,
-            ai_token_record_count,
-            int0(session_ai_usage.get("input_tokens")),
-            int0(session_ai_usage.get("output_tokens")),
-            int0(session_ai_usage.get("total_tokens")),
-            int0(session_ai_usage.get("cached_input_tokens")),
-            int0(session_ai_usage.get("cache_read_input_tokens")),
-            int0(session_ai_usage.get("cache_creation_input_tokens")),
-            int0(session_ai_usage.get("billable_uncached_input_tokens")),
-            int0(session_ai_usage.get("billable_cached_input_tokens")),
-            as_float(session_ai_usage.get("cache_hit_ratio")) or 0.0,
-            as_float(session_ai_usage.get("estimated_cost_usd")),
-            as_int(session_ai_usage.get("archive_total_consumed_tokens")),
-            ",".join(sorted(ai_models)),
-            as_json(ai_pricing),
-        ),
-    )
-
-    conn.executemany(
-        """
-        INSERT INTO gameplay_days (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, imported_at,
-            day_end_completed, energy_remaining_end, energy_total_end,
-            cats_count, cats_json, day_meta_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        day_rows,
-    )
-    conn.executemany(
-        """
-        INSERT INTO gameplay_events (
-            source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, event_index, imported_at,
-            event_type, event_game_minutes, event_real_time_iso, actor_id, actor_name,
-            actor_is_player, island_level, duration_minutes, energy_cost, meowu_output,
-            mounted_cats_count, rod_id, rod_name, fish_id, fish_name, fish_rarity,
-            fish_price, fish_size_cm, fish_size_label, seed_id, seed_name, crop_id,
-            crop_name, crop_rarity, crop_price, bug_id, bug_name, bug_rarity,
-            bug_price, recipe_id, recipe_name, building_id, building_name,
-            building_sub_type, item_id, item_name, money_spent, earned_money,
-            adopted_cat_id, adopted_cat_name, adopt_source, region, meta_json, payload_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        event_rows,
-    )
-    conn.executemany(
-        """
-        INSERT INTO gameplay_ai_calls (
-            source_file, user_id, session_id, player_session_id, event_index, is_dev, client_version, release_version,
-            game_day, event_game_minutes, event_real_time_iso, actor_id, actor_name,
-            model, mode, tag, toolset_version, prompt_cache_key,
-            input_tokens, output_tokens, total_tokens, cached_input_tokens,
-            cache_read_input_tokens, cache_creation_input_tokens,
-            billable_uncached_input_tokens, billable_cached_input_tokens,
-            cache_hit_ratio, input_usd_per_million_tokens, output_usd_per_million_tokens,
-            cached_input_usd_per_million_tokens, estimated_cost_usd,
-            request_message_count, message_content_chars, message_json_chars,
-            tool_count, tool_schema_json_chars, payload_json, imported_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        ai_call_rows,
-    )
     metadata = client_metadata(sample)
-    record_session_channel(conn, user_id, session_id, metadata)
-    for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
-        conn.execute(f"UPDATE {table} SET client_platform=?, is_development_build=? WHERE source_file=? AND user_id=? AND session_id=?",
-                     (metadata["client_platform"], metadata["is_development_build"], source_file, user_id, session_id))
-    from analytics_facts import project_imported
-    project_imported(conn, 'source_file=? AND user_id=? AND session_id=?', (source_file,user_id,session_id))
-    return 1
 
+    def publish():
+        delete_existing_session_import(
+            conn,
+            user_id=user_id,
+            session_id=session_id,
+            player_session_id=player_session_id,
+        )
+        conn.execute(
+            """
+            INSERT INTO gameplay_sessions (
+                source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, nickname, country,
+                real_time_started_iso, real_time_ended_iso, imported_at,
+                game_duration_sec, game_day_start, game_day_end, game_days_total,
+                island_level_max, money_start, money_end, money_total_earned,
+                money_total_spent, money_net_delta, money_reconciliation_ok,
+                pluma_luoqiu_total, new_player_task_progress_json, session_meta_json,
+                ai_usage_source, ai_request_count, ai_response_count, ai_token_record_count,
+                ai_input_tokens, ai_output_tokens, ai_total_tokens, ai_cached_input_tokens,
+                ai_cache_read_input_tokens, ai_cache_creation_input_tokens,
+                ai_billable_uncached_input_tokens, ai_billable_cached_input_tokens,
+                ai_cache_hit_ratio, ai_estimated_cost_usd, ai_archive_total_consumed_tokens,
+                ai_models, ai_pricing_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source_file,
+                user_id,
+                session_id,
+                player_session_id,
+                is_dev,
+                client_version,
+                release_version,
+                nickname,
+                country,
+                session_meta.get("real_time_started_iso"),
+                session_meta.get("real_time_ended_iso"),
+                imported_at,
+                as_float(session_meta.get("game_duration_sec")) or 0.0,
+                as_int(session_meta.get("game_day_start")),
+                as_int(session_meta.get("game_day_end")),
+                as_int(session_meta.get("game_days_total")),
+                max(island_level_meta, island_level_events),
+                as_int(session_meta.get("money_start")),
+                as_int(session_meta.get("money_end")),
+                as_int(session_meta.get("money_total_earned")),
+                as_int(session_meta.get("money_total_spent")),
+                as_int(session_meta.get("money_net_delta")),
+                as_int(session_meta.get("money_reconciliation_ok")),
+                as_int(session_meta.get("pluma_luoqiu_total")),
+                as_json(session_meta.get("new_player_task_progress")),
+                as_json(session_meta),
+                session_ai_usage.get("source") or "",
+                ai_request_count,
+                ai_response_count,
+                ai_token_record_count,
+                int0(session_ai_usage.get("input_tokens")),
+                int0(session_ai_usage.get("output_tokens")),
+                int0(session_ai_usage.get("total_tokens")),
+                int0(session_ai_usage.get("cached_input_tokens")),
+                int0(session_ai_usage.get("cache_read_input_tokens")),
+                int0(session_ai_usage.get("cache_creation_input_tokens")),
+                int0(session_ai_usage.get("billable_uncached_input_tokens")),
+                int0(session_ai_usage.get("billable_cached_input_tokens")),
+                as_float(session_ai_usage.get("cache_hit_ratio")) or 0.0,
+                as_float(session_ai_usage.get("estimated_cost_usd")),
+                as_int(session_ai_usage.get("archive_total_consumed_tokens")),
+                ",".join(sorted(ai_models)),
+                as_json(ai_pricing),
+            ),
+        )
+
+        conn.executemany(
+            """
+            INSERT INTO gameplay_days (
+                source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, imported_at,
+                day_end_completed, energy_remaining_end, energy_total_end,
+                cats_count, cats_json, day_meta_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            day_rows,
+        )
+        conn.executemany(
+            """
+            INSERT INTO gameplay_events (
+                source_file, user_id, session_id, player_session_id, is_dev, client_version, release_version, game_day, event_index, imported_at,
+                event_type, event_game_minutes, event_real_time_iso, actor_id, actor_name,
+                actor_is_player, island_level, duration_minutes, energy_cost, meowu_output,
+                mounted_cats_count, rod_id, rod_name, fish_id, fish_name, fish_rarity,
+                fish_price, fish_size_cm, fish_size_label, seed_id, seed_name, crop_id,
+                crop_name, crop_rarity, crop_price, bug_id, bug_name, bug_rarity,
+                bug_price, recipe_id, recipe_name, building_id, building_name,
+                building_sub_type, item_id, item_name, money_spent, earned_money,
+                adopted_cat_id, adopted_cat_name, adopt_source, region, meta_json, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            event_rows,
+        )
+        conn.executemany(
+            """
+            INSERT INTO gameplay_ai_calls (
+                source_file, user_id, session_id, player_session_id, event_index, is_dev, client_version, release_version,
+                game_day, event_game_minutes, event_real_time_iso, actor_id, actor_name,
+                model, mode, tag, toolset_version, prompt_cache_key,
+                input_tokens, output_tokens, total_tokens, cached_input_tokens,
+                cache_read_input_tokens, cache_creation_input_tokens,
+                billable_uncached_input_tokens, billable_cached_input_tokens,
+                cache_hit_ratio, input_usd_per_million_tokens, output_usd_per_million_tokens,
+                cached_input_usd_per_million_tokens, estimated_cost_usd,
+                request_message_count, message_content_chars, message_json_chars,
+                tool_count, tool_schema_json_chars, payload_json, imported_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            ai_call_rows,
+        )
+        record_session_channel(conn, user_id, session_id, metadata)
+        for table in ("gameplay_sessions", "gameplay_days", "gameplay_events", "gameplay_ai_calls"):
+            conn.execute(f"UPDATE {table} SET client_platform=?, is_development_build=? WHERE source_file=? AND user_id=? AND session_id=?",
+                         (metadata["client_platform"], metadata["is_development_build"], source_file, user_id, session_id))
+        from analytics_facts import project_imported
+        project_imported(conn, 'source_file=? AND user_id=? AND session_id=?', (source_file,user_id,session_id))
+        return 1
+
+
+    return publish
+
+
+def import_sample(conn, *, source_file, sample, imported_at):
+    """Compatibility entrypoint for explicit imports; runtime prepares before BEGIN."""
+    publish = prepare_sample(conn, source_file=source_file, sample=sample, imported_at=imported_at)
+    return publish() if publish is not None else 0
 
 def ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
     columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
@@ -1910,6 +1929,10 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         WHERE json_type(payload_json,'$.estimated_usd') IS NOT NULL
           AND estimated_cost_usd IS NOT json_extract(payload_json,'$.estimated_usd')""")
 
+    from journey_analytics import backfill_existing_journeys
+    backfill_existing_journeys(conn)
+    mark_schema(conn, "importer")
+
 
 def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:
     row = conn.execute(
@@ -1919,61 +1942,42 @@ def has_imported_source(conn: sqlite3.Connection, source_file: str) -> bool:
     return row is not None
 
 
-def import_file(conn: sqlite3.Connection, path: Path) -> tuple[int, int]:
+def prepare_import_file(conn: sqlite3.Connection, path: Path, *, payload=None):
+    """Parse, normalize and build row tuples without owning a writer transaction."""
     source_file = str(path.resolve())
     imported_at = now_iso()
-    is_ingest_file = False
-    payload: Any
-    if path.name.startswith("session-") and path.suffix == ".jsonl":
+    if payload is None:
         payload = json.loads(path.read_text(encoding="utf-8"))
+    is_ingest_file = False
+    if path.name.startswith("session-") and path.suffix == ".jsonl":
         sample = sample_from_session_record(payload)
         samples = [sample] if sample else []
     else:
-        payload = json.loads(path.read_text(encoding="utf-8"))
         is_ingest_file = is_gameplay_telemetry_ingest_payload(payload)
-        if is_ingest_file:
-            upsert_ingest_record(
-                conn,
-                source_file=source_file,
-                payload=payload,
-                import_status="pending",
-                imported_at=imported_at,
-            )
         samples = list(iter_samples(payload))
+    prepared = [prepare_sample(conn, source_file=source_file, sample=sample, imported_at=imported_at)
+                for sample in samples]
 
-    if not samples:
-        logger.debug("Skip %s: no gameplay telemetry samples found", path)
+    def publish():
+        if not samples:
+            if is_ingest_file:
+                upsert_ingest_record(conn, source_file=source_file, payload=payload,
+                    import_status="skipped", import_error="no gameplay telemetry samples found", imported_at=imported_at)
+            return 0, 0
+        for table in ("gameplay_ai_calls", "gameplay_events", "gameplay_days", "gameplay_sessions"):
+            conn.execute("DELETE FROM " + table + " WHERE source_file = ?", (source_file,))
+        session_count = sum(write() for write in prepared if write is not None)
         if is_ingest_file:
-            upsert_ingest_record(
-                conn,
-                source_file=source_file,
-                payload=payload,
-                import_status="skipped",
-                import_error="no gameplay telemetry samples found",
-                imported_at=imported_at,
-            )
-        return 0, 0
+            upsert_ingest_record(conn, source_file=source_file, payload=payload,
+                import_status="imported" if session_count > 0 else "skipped",
+                import_error="" if session_count > 0 else "no gameplay sessions imported",
+                sample_count=len(samples), session_count=session_count, imported_at=imported_at)
+        return session_count, len(samples)
+    return publish
 
-    conn.execute("DELETE FROM gameplay_ai_calls WHERE source_file = ?", (source_file,))
-    conn.execute("DELETE FROM gameplay_events WHERE source_file = ?", (source_file,))
-    conn.execute("DELETE FROM gameplay_days WHERE source_file = ?", (source_file,))
-    conn.execute("DELETE FROM gameplay_sessions WHERE source_file = ?", (source_file,))
 
-    session_count = 0
-    for sample in samples:
-        session_count += import_sample(conn, source_file=source_file, sample=sample, imported_at=imported_at)
-    if is_ingest_file:
-        upsert_ingest_record(
-            conn,
-            source_file=source_file,
-            payload=payload,
-            import_status="imported" if session_count > 0 else "skipped",
-            import_error="" if session_count > 0 else "no gameplay sessions imported",
-            sample_count=len(samples),
-            session_count=session_count,
-            imported_at=imported_at,
-        )
-    return session_count, len(samples)
+def import_file(conn: sqlite3.Connection, path: Path, *, payload=None) -> tuple[int, int]:
+    return prepare_import_file(conn, path, payload=payload)()
 
 
 def run_import_once() -> int:
@@ -1985,10 +1989,9 @@ def run_import_once() -> int:
     scanned_files = 0
     failed_files = 0
     force_reimport = state.schema_version < STATE_SCHEMA_VERSION
-    with sqlite3.connect(DB_PATH) as conn:
-        ensure_schema(conn)
-        from journey_analytics import backfill_existing_journeys, refresh_journeys
-        backfill_existing_journeys(conn)
+    with connection(DB_PATH, background=True) as conn:
+        require_schema(conn, "importer")
+        from journey_analytics import refresh_journeys
         refresh_journeys(conn)
         # Projection refresh must not hold a write transaction while filesystem imports run.
         conn.commit()
@@ -2002,22 +2005,25 @@ def run_import_once() -> int:
         for path in files:
             mtime_ns = path.stat().st_mtime_ns
             key = str(path.resolve())
+            if state.retry_after.get(key, 0) > time.time():
+                continue
             if not force_reimport and state.files.get(key) == mtime_ns:
                 continue
             scanned_files += 1
             logger.debug("Importing gameplay telemetry from %s", path)
-            savepoint = f"import_file_{scanned_files}"
-            conn.execute(f"SAVEPOINT {savepoint}")
             try:
-                session_count, sample_count = import_file(conn, path)
+                # Read and parse before BEGIN; a source is acknowledged only
+                # after the complete replacement transaction commits.
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                publish = prepare_import_file(conn, path, payload=payload)
+                with transaction(conn, "gameplay.import_file", budget=1):
+                    session_count, sample_count = publish()
             except Exception:
-                conn.execute(f"ROLLBACK TO {savepoint}")
-                conn.execute(f"RELEASE {savepoint}")
-                logger.exception("Failed to import %s", path)
-                record_ingest_import_failure(conn, path, str(exc))
+                logger.exception("Import deferred; source remains pending: %s", path)
                 failed_files += 1
+                state.retry_after[key] = time.time() + 300
                 continue
-            conn.execute(f"RELEASE {savepoint}")
+            state.retry_after.pop(key, None)
             state.files[key] = mtime_ns
             imported_files += 1
             imported_sessions += session_count

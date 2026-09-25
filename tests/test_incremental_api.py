@@ -13,6 +13,9 @@ class IncrementalApiTests(unittest.TestCase):
     def test_encrypted_batch_ack_is_durable_and_idempotent(self):
         key=Fernet.generate_key();cipher=Fernet(key)
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'PAW_FERNET_KEY':key.decode()}), patch('app.core.config.DB_PATH',str(Path(tmp)/'events.db')):
+            from telemetry_events import ensure_event_schema
+            with sqlite3.connect(str(Path(tmp)/"events.db")) as migrated:
+                ensure_event_schema(migrated)
             client=TestClient(create_app())
             payload={'user_id':'test-user','session_id':'test-session','client_platform':'webgl','events':[{'event_id':'test-event','event_type':'cat_tool_completed','event_real_time_iso':'2026-09-20T00:00:00Z','actor':{'agent_id':'0'}}]}
             body=cipher.encrypt(json.dumps(payload).encode()).decode()

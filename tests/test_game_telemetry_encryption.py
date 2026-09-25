@@ -192,6 +192,9 @@ class GameTelemetryEncryptionTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = str(Path(tmpdir) / "telemetry.db")
+            from playtime_store import ensure_playtime_schema
+            with sqlite3.connect(db_path) as migrated:
+                ensure_playtime_schema(migrated)
             with (
                 patch.dict(os.environ, {"DB_PATH": db_path}),
                 patch(
