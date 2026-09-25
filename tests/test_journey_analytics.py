@@ -7,7 +7,7 @@ from datetime import datetime,timezone,timedelta
 from pathlib import Path
 
 from analytics_facts import ensure_facts,upsert_fact
-from journey_analytics import backfill_existing_journeys,refresh_journeys,project,METRICS,stamp
+from journey_analytics import backfill_existing_journeys,ensure_journey_schema,refresh_journeys,project,METRICS,stamp
 from generate_analytics_dashboards import build
 
 BASE=datetime(2026,9,1,tzinfo=timezone.utc)
@@ -211,6 +211,12 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(backfill_existing_journeys(self.db),0)
         refresh_journeys(self.db)
         self.assertEqual(self.db.execute('SELECT user_id FROM journey_players').fetchone(),('u',))
+
+    def test_ready_schema_does_not_repeat_catalog_writes(self):
+        statements=[]
+        self.db.set_trace_callback(statements.append)
+        ensure_journey_schema(self.db)
+        self.assertFalse(any(statement.lstrip().upper().startswith(('CREATE ','ALTER ','INSERT ')) for statement in statements))
 
 
 if __name__=='__main__':unittest.main()

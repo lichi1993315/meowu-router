@@ -6,6 +6,7 @@ scan: intake only marks one indexed dirty key. The importer owns projection work
 """
 import json
 import math
+import sqlite3
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ from pathlib import Path
 from telemetry_time import parse_timestamp
 
 FLOW_VERSION = 'journey-v1'
+SCHEMA_MIGRATION = 'journey_schema_v1'
 BACKFILL_MIGRATION = 'journey_projection_v1'
 METRICS = ('effective', 'foreground', 'waiting', 'single', 'multiplayer_alone', 'multiplayer_together', 'unknown_mode')
 CATALOG = json.loads(Path(__file__).with_name('journey_catalog.json').read_text())
@@ -22,6 +24,12 @@ LABELS = {n['node_id']: n['title'] for n in CATALOG}
 
 
 def ensure_journey_schema(conn):
+    try:
+        if conn.execute('SELECT 1 FROM analytics_migrations WHERE name=?',(SCHEMA_MIGRATION,)).fetchone():
+            return
+    except sqlite3.OperationalError as error:
+        if 'no such table' not in str(error): raise
+
     schema = '''
     CREATE TABLE IF NOT EXISTS journey_run_owners(run_id TEXT PRIMARY KEY,user_id TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS idx_journey_owner ON journey_run_owners(user_id,run_id);
@@ -59,6 +67,8 @@ def ensure_journey_schema(conn):
         if name not in columns: conn.execute('ALTER TABLE journey_intervals ADD COLUMN '+name+' TEXT')
     conn.executemany('INSERT OR IGNORE INTO journey_catalog VALUES (?,?,?,?,?)',
                      [(FLOW_VERSION,n['node_id'],n['title'],n['sort_order'],n.get('prerequisite','')) for n in CATALOG])
+    conn.execute('CREATE TABLE IF NOT EXISTS analytics_migrations(name TEXT PRIMARY KEY)')
+    conn.execute('INSERT OR IGNORE INTO analytics_migrations(name) VALUES (?)',(SCHEMA_MIGRATION,))
 
 
 def mark_dirty(conn, event, user, run):
