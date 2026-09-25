@@ -65,7 +65,7 @@ def collect(db, dashboard, now):
                 unit = ('分钟' if pid in (5, 6) else '游戏日' if pid in (7, 8) else '级' if pid in (9, 10)
                         else '金币' if pid == 11 else '只' if pid == 12 else '次' if pid == 20
                         else 'Token' if pid == 21 else 'USD' if pid == 22 else '%' if pid == 23 else '人')
-                period = '近7天开始的会话，渠道人数不可相加。' if pid in (40, 41, 42) else '累计玩家/行为；状态取最新快照；新增按北京时间完整自然日。'
+                period = '近7天开始的会话，渠道人数不可相加。' if pid in (40, 41, 42, 44) else '累计玩家/行为；状态取最新快照；新增按北京时间完整自然日。'
                 fields = {'指标键': f'{label}:{pid}', '指标': panel['title'], '平台': label,
                           '数值': value, '单位': unit, '有效玩家数': sample,
                           '样本说明': '对应指标的非空玩家数' if sample is not None else '原指标未提供独立样本数',

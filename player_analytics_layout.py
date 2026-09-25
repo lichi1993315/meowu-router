@@ -70,9 +70,9 @@ def apply_player_layout(boards):
                 panels[pid]['options'].pop('text',None)
             section('总览')
             line([1,2,3,4],4)
-            for pid, color in [(40,'blue'),(41,'green'),(42,'orange')]:
+            for pid, color in [(40,'blue'),(41,'green'),(44,'purple'),(42,'orange')]:
                 stat(pid,color)
-            line([40,41,42],4)
+            line([40,41,44,42],4)
             line([43],7)
             line([5,6,7,8,9,10],4)
             line([11,12],4)

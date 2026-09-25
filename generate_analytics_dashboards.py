@@ -157,7 +157,7 @@ def build():
     channel_sessions = SESSIONS.rstrip() + ", channel_sessions AS (SELECT s.user_id,s.session_id,COALESCE(c.distribution_channel,'unknown') channel FROM s LEFT JOIN analytics_session_channels c USING(user_id,session_id)) "
     channel_description = '按所选时间内开始的会话统计，遵守批次、平台、版本、发行渠道和测试数据筛选；各渠道内按玩家去重，同一玩家跨渠道可分别计数，人数不可直接相加。仅使用明确上报的渠道，不按版本名推断；0 表示当前筛选下没有已识别记录。'
     channel_panels = []
-    for pid, channel, title in [(40,'steam','Steam · 期间入岛玩家'),(41,'taptap','TapTap · 期间入岛玩家'),(42,'unknown','渠道未上报 · 期间入岛玩家')]:
+    for pid, channel, title in [(40,'steam','Steam · 期间入岛玩家'),(41,'taptap','TapTap · 期间入岛玩家'),(44,'web','网页版 · 期间入岛玩家'),(42,'unknown','渠道未上报 · 期间入岛玩家')]:
         channel_panels.append(panel(pid,title,channel_sessions+f"SELECT COUNT(DISTINCT user_id) 玩家数 FROM channel_sessions WHERE channel='{channel}'",'stat',description=channel_description))
     channel_panels.append(panel(43,'发行渠道明细 · 期间入岛玩家与会话',channel_sessions+"""
         , channels(channel,label,sort) AS (VALUES ('steam','Steam',1),('taptap','TapTap',2),

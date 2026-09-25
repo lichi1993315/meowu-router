@@ -51,6 +51,33 @@ class DistributionChannelTests(unittest.TestCase):
         rows=self.db.execute('SELECT session_id,distribution_channel FROM analytics_session_channels WHERE user_id=?',('same',)).fetchall()
         self.assertEqual(dict(rows),{'login-steam':'steam','snapshot-taptap':'taptap','live-web':'web'})
 
+    def test_web_channel_card_and_feishu_preserve_platform_and_unknown_semantics(self):
+        import datetime as dt
+        from operations_report import collect, TZ
+        from tools.setup_operations_dashboard import plan
+
+        for user, sid, channel in [('browser','web-1','web'), ('browser','web-2','web'),
+                                   ('legacy-browser','legacy','unknown')]:
+            record_play_session_event(self.db, payload={'user_id':user,'session_id':sid,
+                'client_platform':'webgl','distribution_channel':channel,
+                'timestamp':'2026-09-24T00:00:00Z'}, headers={},event_type='login',
+                received_at='2026-09-24T00:00:00Z')
+        self.db.commit()
+        self.assertEqual(self.query('gameplay-overview',44)[0][0],1)
+        self.assertEqual(self.query('gameplay-overview',42)[0][0],1)
+        for filters in ({'client_platform:sqlstring':"'windows'"},
+                        {'distribution_channel:sqlstring':"'steam'"},
+                        {'release_version:sqlstring':"'missing-version'"},
+                        {'__to':'1'}, {'test_data':'only'}):
+            self.assertEqual(self.query('gameplay-overview',44,**filters)[0][0],0)
+        overview=build()['gameplay-overview.json']
+        web=next(p for p in overview['panels'] if p['id']==44)
+        records=collect(self.db,{'panels':[web]},dt.datetime(2026,9,25,tzinfo=TZ))
+        self.assertEqual([r['fields']['数值'] for r in records],[1,1,0])
+        self.assertTrue(all('近7天开始的会话' in r['fields']['统计口径'] for r in records))
+        card=next(b for b in plan(overview) if b['name']=='网页版 · 期间入岛玩家')
+        self.assertEqual(card['data_config']['filter']['conditions'][0]['value'],'汇总（跨平台去重）:44')
+
     def test_overview_channel_counts_deduplicate_and_respect_filters(self):
         self.db.execute("INSERT INTO analytics_playtests VALUES ('中秋playtest','2026-09-23T16:00:00Z')")
         for user, sid, channel, sent in [
