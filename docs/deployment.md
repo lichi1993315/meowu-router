@@ -21,6 +21,11 @@
 
 `.env`、`.secrets/`、运行数据和备份不提交。服务器备份放在 `/root/router-backups/`，本地工具私有配置使用 `.git/info/exclude` 排除；不要用忽略规则隐藏尚未合并的源码。
 
+Router 启动前会确认共享 SQLite 为 WAL 模式，使 Grafana 的长查询不阻塞心跳和事件提交。
+首次从 DELETE 切换需要短暂取得数据库锁；切换失败会阻止启动，不能带着错误模式接收请求。
+验收时回读 `PRAGMA journal_mode` 应为 `wal`，并验证只读 Grafana 数据源仍能查询。
+在线备份使用 SQLite backup API；运行中不能只复制 `.db` 而忽略尚未 checkpoint 的 WAL。
+
 ## 每日用户日报
 
 `grafana-report` 容器每日北京时间 09:00 运行 `daily_user_report.py`，统计前一天完整自然日并发送到现有 `FEISHU_CHAT_ID` 报表群。09:10、09:20 为有限重试；`output/user-reports/` 保存统计结果和发送回执，成功后同一天同一群跳过重复发送。三次都失败时检查 `output/report_cron.log`，修复后用 `--date YYYY-MM-DD` 补发；不自动补发停机期间的历史日期。

@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI
+from app.core.config import DB_PATH
+from app.core.database import initialize_database
 
 from app.services.blacklist import sync_blacklist_loop
 from app.services.diagnostic_reports import delivery_loop
@@ -11,6 +13,7 @@ from app.services.player_feedback import delivery_loop as feedback_delivery_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await asyncio.to_thread(initialize_database, DB_PATH)
     app.state.http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(120.0, connect=10.0),
         limits=httpx.Limits(max_connections=200, max_keepalive_connections=100),
