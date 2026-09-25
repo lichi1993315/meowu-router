@@ -1990,6 +1990,8 @@ def run_import_once() -> int:
         from journey_analytics import backfill_existing_journeys, refresh_journeys
         backfill_existing_journeys(conn)
         refresh_journeys(conn)
+        # Projection refresh must not hold a write transaction while filesystem imports run.
+        conn.commit()
         files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)
         if not files:
             logger.info("No gameplay telemetry sources found under %s or %s", TELEMETRY_DIR, OUTPUT_DIR)
