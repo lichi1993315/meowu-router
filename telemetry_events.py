@@ -52,6 +52,7 @@ def accept_batch(db_path, payload, headers):
                      json.dumps(event, ensure_ascii=False)))
     with connection(db_path) as conn, transaction(conn, "events.batch", request_id=headers.get("x-outbox-id")):
         require_schema(conn, "events")
+        require_schema(conn, "behavior")
         # A conflicting identity is a permanent validation error, never a silent dedupe.
         for row in rows:
             existing = conn.execute("SELECT user_id,session_id FROM gameplay_live_events WHERE event_id=?", (row[0],)).fetchone()

@@ -16,6 +16,8 @@ def ensure_facts(conn):
         archive_id TEXT,schema_version INTEGER,behavior_stat INTEGER)''')
     from journey_analytics import ensure_journey_schema
     ensure_journey_schema(conn)
+    from behavior_analytics import ensure_behavior_schema
+    ensure_behavior_schema(conn)
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_archive_kind_time ON analytics_event_facts(archive_id,event_type,occurred_at)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_session_kind ON analytics_event_facts(session_id,event_type)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_facts_user_kind_time ON analytics_event_facts(user_id,event_type,occurred_at)')
@@ -39,6 +41,13 @@ def upsert_fact(conn, event, user, session, metadata, received, player_session=N
     conn.execute(f"INSERT INTO analytics_event_facts ({','.join(COLUMNS)}) VALUES ({','.join('?' for _ in COLUMNS)}) ON CONFLICT(event_id) DO UPDATE SET {assignments}",values)
     from journey_analytics import mark_dirty
     mark_dirty(conn, event, user, session)
+    from behavior_analytics import mark_behavior_dirty, upsert_behavior_action
+    upsert_behavior_action(conn, identity, user, session, event)
+    mark_behavior_dirty(conn, user, event.get('event_type', ''))
+    if str(event.get('event_type', '')).startswith('journey_'):
+        owner = conn.execute('SELECT user_id FROM journey_run_owners WHERE run_id=?', (session,)).fetchone()
+        if owner and owner[0] != user:
+            mark_behavior_dirty(conn, owner[0], event.get('event_type', ''))
 
 
 def project_imported(conn, where='1', args=()):

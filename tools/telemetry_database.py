@@ -13,7 +13,7 @@ def inspect(path):
         result = {"journal_mode": conn.execute("PRAGMA journal_mode").fetchone()[0]}
         result["wal_bytes"] = Path(str(path) + "-wal").stat().st_size if Path(str(path) + "-wal").exists() else 0
         result["components"] = {}
-        for component in ("events", "playtime", "importer"):
+        for component in ("events", "playtime", "importer", "behavior"):
             try:
                 require_schema(conn, component)
                 result["components"][component] = "ready"
@@ -36,6 +36,12 @@ def migrate(path, mode):
     with connection(path) as conn:
         ensure_schema(conn)
         conn.commit()
+        from behavior_analytics import backfill_existing_behavior
+        while True:
+            _, done = backfill_existing_behavior(conn)
+            conn.commit()
+            if done:
+                break
         if mode == "delete":
             busy, _, _ = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
             if busy:

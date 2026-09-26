@@ -38,6 +38,7 @@ COPY analytics_facts.py player_analytics.py /app/
 
 # Journey projection and versioned node catalog.
 COPY journey_analytics.py journey_catalog.json telemetry_time.py /app/
+COPY behavior_analytics.py /app/
 
 # Explicit telemetry migration and shared bounded transaction policy.
 COPY sqlite_runtime.py /app/

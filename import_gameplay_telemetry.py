@@ -1993,6 +1993,8 @@ def run_import_once() -> int:
         require_schema(conn, "importer")
         from journey_analytics import refresh_journeys
         refresh_journeys(conn)
+        from behavior_analytics import refresh_behavior
+        refresh_behavior(conn)
         # Projection refresh must not hold a write transaction while filesystem imports run.
         conn.commit()
         files = discover_json_files(TELEMETRY_DIR) + discover_session_files(OUTPUT_DIR)

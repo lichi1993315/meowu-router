@@ -226,6 +226,34 @@
       "url": "/d/gameplay-journey-modes",
       "includeVars": true,
       "keepTime": true
+    },
+    {
+      "title": "玩家行为时间线",
+      "type": "link",
+      "url": "/d/gameplay-behavior-timeline",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家开局行为",
+      "type": "link",
+      "url": "/d/gameplay-behavior-opening",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家画像与留存",
+      "type": "link",
+      "url": "/d/gameplay-behavior-cohorts",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "行为数据质量",
+      "type": "link",
+      "url": "/d/gameplay-behavior-quality",
+      "includeVars": true,
+      "keepTime": true
     }
   ],
   "panels": [

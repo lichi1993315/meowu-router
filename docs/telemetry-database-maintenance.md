@@ -12,7 +12,7 @@
 
 1. 按部署规范提交并推送，服务器检查干净后快进到同一提交。保存旧镜像 ID、Git SHA、服务配置及数据库相关文件清单。
 2. 暂停所有共享数据库访问，包括 router-api、gameplay-importer、metrics-exporter、developer-admin、Grafana、日报及 operations-report。确认无其他连接；用 SQLite backup API 取得一致备份并在副本执行完整性检查。不得在 WAL 活跃时只复制主 db 文件。
-3. 使用新 metrics 镜像作为一次性容器，挂载完整 data 目录，执行 `python -m tools.telemetry_database --db /app/data/conversations.db --apply --journal-mode wal`。回读三个迁移组件均 ready、journal_mode=wal、quick_check=ok。
+3. 使用新 metrics 镜像作为一次性容器，挂载完整 data 目录，执行 `python -m tools.telemetry_database --db /app/data/conversations.db --apply --journal-mode wal`。行为画像历史玩家按每页 500 人入队并逐页提交，重复运行从已提交游标继续。回读四个迁移组件均 ready、journal_mode=wal、quick_check=ok。
 4. 先启动 router-api，健康检查成功后启动只读报表和导入服务。API 持有空闲连接，保持只读容器需要的 WAL/SHM 文件；Grafana 的启动依赖 API 健康状态。保留现有只读挂载，不使用 immutable 读取活动数据库。
 5. 核对镜像内源码、SHA、真实加密上报与数据库记录，再恢复游戏访问。新版游戏另按 7779 部署流程保存状态、验证隔离实例后切换。
 6. 观察至少 30 分钟：锁导致的 5xx、`sqlite_transaction`、`sqlite_checkpoint`、待补传数和失败导入文件。按原 outbox ID 核对积压，不能用新心跳成功代替旧记录补齐证据。
@@ -21,6 +21,7 @@
 
 - 实时写入只等待一次，最长 10 秒；后台锁等待最长 1 秒。后台事务 SQL VM 进度与提交前检查采用 1 秒软预算，超预算回滚，源文件/旧投影保留，至少 300 秒后重试。
 - 旅程每轮最多 16 个玩家、每玩家最多 100000 条事件；计算、行序列化和新旧差量比较在写事务外，发布前核对递增版本，仅提交变化行。超过历史上限保留旧结果并标记 `history_limit`，不得截断成看似完整的统计。
+- 行为画像每轮最多 8 个玩家、每玩家最多 20000 个相关点。计算在写事务外完成，发布前核对递增版本；超时或锁冲突回滚并保留待处理状态，至少 300 秒后重试。超过历史上限撤下旧画像并标记 `history_limit`，原始事件与行为时间线保留。
 - 文件导入按文件原子替换；文件解析及批量行构造在事务前完成。超预算的大文件不自动拆成半份统计，保留待处理并安排维护处理。
 - 指标会话统计每 300 秒运行，先读与计算，再每 100 个用户独立写入。事务目标 P95≤250ms、max≤1s；提交 fsync 和单个系统调用无法被 SQLite progress handler 硬中断，必须记录实际耗时。
 - `sqlite_transaction` 记录操作、请求/outbox ID、等待/事务/提交耗时及 SQLite 错误码，不包含正文或密钥。设置 `SQLITE_TRANSACTION_LOG_ALL=1` 可在隔离压测中记录所有事务，线上默认仅记录失败和 ≥250ms 操作。

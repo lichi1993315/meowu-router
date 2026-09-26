@@ -38,7 +38,7 @@ async def checkpoint_loop():
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(initialize_database, DB_PATH)
     with connection(DB_PATH) as conn:
-        for component in ("events", "playtime", "importer"):
+        for component in ("events", "playtime", "importer", "behavior"):
             require_schema(conn, component)
     app.state.http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(120.0, connect=10.0),

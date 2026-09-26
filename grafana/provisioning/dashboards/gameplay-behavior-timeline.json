@@ -1,0 +1,1375 @@
+{
+  "uid": "gameplay-behavior-timeline",
+  "title": "玩家行为时间线",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "tags": [
+    "PawFishing",
+    "analytics-v2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_SQLITE",
+        "type": "datasource",
+        "query": "frser-sqlite-datasource",
+        "current": {
+          "text": "SQLite",
+          "value": "SQLite"
+        },
+        "hide": 2
+      },
+      {
+        "name": "client_platform",
+        "label": "客户端平台",
+        "type": "custom",
+        "query": "WebGL : webgl,Windows Player : windows,Unity Editor : editor,其他客户端 : other,未知/历史未上报 : unknown,无客户端归属 : unattributed",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": [
+            "WebGL",
+            "Windows Player",
+            "未知/历史未上报"
+          ],
+          "value": [
+            "webgl",
+            "windows",
+            "unknown"
+          ]
+        }
+      },
+      {
+        "name": "distribution_channel",
+        "label": "发行渠道",
+        "type": "custom",
+        "query": "内部版 : internal,Steam : steam,TapTap : taptap,网页版 : web,未知／历史未上报 : unknown",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "release_version",
+        "label": "发布版本",
+        "type": "query",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "playtest_id",
+        "label": "Playtest 批次",
+        "type": "custom",
+        "query": "全部 : all,中秋playtest : 中秋playtest,历史／未标记 : legacy",
+        "current": {
+          "text": "中秋playtest",
+          "value": "中秋playtest"
+        }
+      },
+      {
+        "name": "test_data",
+        "label": "测试数据",
+        "type": "custom",
+        "query": "按平台自动 : auto,排除 : exclude,包含 : include,仅测试 : only",
+        "current": {
+          "text": "按平台自动",
+          "value": "auto"
+        }
+      },
+      {
+        "name": "user_id",
+        "label": "玩家 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "session_id",
+        "label": "会话 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "llm_request_id",
+        "label": "AI 请求 ID",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "page",
+        "label": "明细页（每页200条）",
+        "type": "custom",
+        "query": "0,1,2,3,4,5,6,7,8,9",
+        "current": {
+          "text": "0",
+          "value": "0"
+        }
+      },
+      {
+        "name": "behavior_cohort",
+        "label": "样本来源",
+        "type": "custom",
+        "query": "全部观察玩家 : all,亲历创建角色 : new",
+        "current": {
+          "text": "全部观察玩家",
+          "value": "all"
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "经营总览",
+      "type": "link",
+      "url": "/d/gameplay-overview",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "新手与留存",
+      "type": "link",
+      "url": "/d/gameplay-retention",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "猫与 AI 体验",
+      "type": "link",
+      "url": "/d/llm-conversations",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家旅程",
+      "type": "link",
+      "url": "/d/gameplay-player-detail",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "服务与成本",
+      "type": "link",
+      "url": "/d/llm-router-dashboard",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "数据质量",
+      "type": "link",
+      "url": "/d/gameplay-quality",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家小剧场",
+      "type": "link",
+      "url": "/d/gameplay-theater",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "查看原版报表",
+      "type": "link",
+      "url": "/d/gameplay-overview-legacy",
+      "keepTime": true
+    },
+    {
+      "title": "玩家行为时间线",
+      "type": "link",
+      "url": "/d/gameplay-behavior-timeline",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家开局行为",
+      "type": "link",
+      "url": "/d/gameplay-behavior-opening",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家画像与留存",
+      "type": "link",
+      "url": "/d/gameplay-behavior-cohorts",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "行为数据质量",
+      "type": "link",
+      "url": "/d/gameplay-behavior-quality",
+      "includeVars": true,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 999,
+      "title": "统计口径与历史数据",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "画像窗口固定为首次可操作入岛后 24 小时，规则 portrait-v1。主动时长为 15 秒操作窗口估算；观看、等待、前台无操作宽限、挂机、后台分别记录。无观察证据不补零。时间/平台/版本/渠道/批次筛选选择首次入岛 cohort，后续回访允许跨平台；显示实际样本数。第 2–7 天=[24h,168h)，D7=[168h,192h)。未成熟为空，相关性不代表因果。\n\n详细时间线请填写玩家 ID。旧数据无新版时长时显示证据不足。"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "id": 1,
+      "title": "逐条行为日志 · 请先选择玩家",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间、该事件会话平台/版本/渠道/批次筛选；无新版画像的旧玩家仍可查看原始行为。入岛时间未采集时相对秒为空。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH candidates AS (SELECT a.*,f.payload_json,f.metadata_json,f.client_platform,\n      f.release_version,f.is_development_build,COALESCE(u.is_developer,0) is_developer\n      FROM behavior_actions a JOIN analytics_event_facts f USING(event_id) LEFT JOIN user_sessions u ON u.user_id=a.user_id),\n      e AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') AND ${user_id:sqlstring}!=''\n        AND user_id=${user_id:sqlstring} AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}))\n      SELECT e.user_id,e.session_id,datetime(e.occurred_at,'+8 hours') 北京时间,\n      ROUND((julianday(e.occurred_at)-julianday(c.first_at))*86400) 入岛后秒,\n      CASE category WHEN 'ai' THEN 'AI 对话/内容' WHEN 'cat' THEN '猫亲密互动' WHEN 'fishing' THEN '钓鱼' WHEN 'farming' THEN '种田' WHEN 'restaurant' THEN '餐厅' ELSE '其他' END 玩法,e.label 行为,e.source 来源,e.outcome 结果,e.object_name 对象,e.operation_id,\n      e.payload_json 原始内容,e.metadata_json 原始元数据\n      FROM e LEFT JOIN behavior_players c USING(user_id)\n      ORDER BY julianday(e.occurred_at),e.sequence,e.event_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200",
+          "rawQueryText": "WITH candidates AS (SELECT a.*,f.payload_json,f.metadata_json,f.client_platform,\n      f.release_version,f.is_development_build,COALESCE(u.is_developer,0) is_developer\n      FROM behavior_actions a JOIN analytics_event_facts f USING(event_id) LEFT JOIN user_sessions u ON u.user_id=a.user_id),\n      e AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch') AND ${user_id:sqlstring}!=''\n        AND user_id=${user_id:sqlstring} AND (${session_id:sqlstring}='' OR session_id=${session_id:sqlstring}))\n      SELECT e.user_id,e.session_id,datetime(e.occurred_at,'+8 hours') 北京时间,\n      ROUND((julianday(e.occurred_at)-julianday(c.first_at))*86400) 入岛后秒,\n      CASE category WHEN 'ai' THEN 'AI 对话/内容' WHEN 'cat' THEN '猫亲密互动' WHEN 'fishing' THEN '钓鱼' WHEN 'farming' THEN '种田' WHEN 'restaurant' THEN '餐厅' ELSE '其他' END 玩法,e.label 行为,e.source 来源,e.outcome 结果,e.object_name 对象,e.operation_id,\n      e.payload_json 原始内容,e.metadata_json 原始元数据\n      FROM e LEFT JOIN behavior_players c USING(user_id)\n      ORDER BY julianday(e.occurred_at),e.sequence,e.event_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家行为时间线",
+                    "url": "/d/gameplay-behavior-timeline?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "北京时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "开始"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结束"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次观察入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "最早更新时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "发生时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "入岛后秒"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "玩法"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 145
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "来源"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结果"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "对象"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 2,
+      "title": "参与时段 · 请先选择玩家",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "画像窗口固定为首次可操作入岛后 24 小时，规则 portrait-v1。主动时长为 15 秒操作窗口估算；观看、等待、前台无操作宽限、挂机、后台分别记录。无观察证据不补零。时间/平台/版本/渠道/批次筛选选择首次入岛 cohort，后续回访允许跨平台；显示实际样本数。第 2–7 天=[24h,168h)，D7=[168h,192h)。未成熟为空，相关性不代表因果。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND (julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch') OR ${user_id:sqlstring}!='')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) SELECT i.user_id,i.session_id,datetime(start_at,'+8 hours') 开始,\n      datetime(end_at,'+8 hours') 结束,i.quality 证据,\n      CASE WHEN i.quality='observed' THEN i.active END 操作估算秒,\n      CASE WHEN i.quality='observed' THEN i.viewing END 观看机会秒,\n      CASE WHEN i.quality='observed' THEN i.waiting END 等待秒,\n      CASE WHEN i.quality='observed' THEN i.idle END 疑似挂机秒,\n      CASE WHEN i.quality='observed' THEN i.background END 后台秒,\n      CASE WHEN i.quality='observed' THEN i.unknown END 前台未归类秒\n      FROM behavior_intervals i JOIN c USING(user_id) WHERE ${user_id:sqlstring}!=''\n      AND (${session_id:sqlstring}='' OR i.session_id=${session_id:sqlstring}) AND julianday(i.start_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(i.start_at) < julianday(${__to}/1000,'unixepoch')\n      ORDER BY start_at,event_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200",
+          "rawQueryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND (julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch') OR ${user_id:sqlstring}!='')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) SELECT i.user_id,i.session_id,datetime(start_at,'+8 hours') 开始,\n      datetime(end_at,'+8 hours') 结束,i.quality 证据,\n      CASE WHEN i.quality='observed' THEN i.active END 操作估算秒,\n      CASE WHEN i.quality='observed' THEN i.viewing END 观看机会秒,\n      CASE WHEN i.quality='observed' THEN i.waiting END 等待秒,\n      CASE WHEN i.quality='observed' THEN i.idle END 疑似挂机秒,\n      CASE WHEN i.quality='observed' THEN i.background END 后台秒,\n      CASE WHEN i.quality='observed' THEN i.unknown END 前台未归类秒\n      FROM behavior_intervals i JOIN c USING(user_id) WHERE ${user_id:sqlstring}!=''\n      AND (${session_id:sqlstring}='' OR i.session_id=${session_id:sqlstring}) AND julianday(i.start_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(i.start_at) < julianday(${__to}/1000,'unixepoch')\n      ORDER BY start_at,event_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家行为时间线",
+                    "url": "/d/gameplay-behavior-timeline?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "北京时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "开始"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结束"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次观察入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "最早更新时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "发生时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "入岛后秒"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "玩法"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 145
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "来源"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结果"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "对象"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 3,
+      "title": "画像证据与后续投入",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "画像窗口固定为首次可操作入岛后 24 小时，规则 portrait-v1。主动时长为 15 秒操作窗口估算；观看、等待、前台无操作宽限、挂机、后台分别记录。无观察证据不补零。时间/平台/版本/渠道/批次筛选选择首次入岛 cohort，后续回访允许跨平台；显示实际样本数。第 2–7 天=[24h,168h)，D7=[168h,192h)。未成熟为空，相关性不代表因果。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND (julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch') OR ${user_id:sqlstring}!='')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) , eligible_intervals AS (\n      SELECT i.* FROM behavior_intervals i JOIN c USING(user_id) JOIN analytics_event_facts f USING(event_id)\n      WHERE ('${test_data}'='include' OR ('${test_data}'='auto' AND c.client_platform='editor')\n        OR ('${test_data}'='only' AND (f.client_platform='editor' OR f.is_development_build=1 OR c.is_developer=1))\n        OR ('${test_data}' IN ('auto','exclude') AND f.client_platform!='editor' AND f.is_development_build=0 AND c.is_developer=0))),\n    slices AS (\n      SELECT c.user_id, i.quality, i.active, i.start_at, i.end_at,\n        MAX(0,MIN(julianday(i.end_at),julianday(c.first_at)+7,(SELECT cutoff FROM settings))\n              -MAX(julianday(i.start_at),julianday(c.first_at)+1)) /\n          NULLIF(julianday(i.end_at)-julianday(i.start_at),0) fraction,\n        MAX(0,MIN(julianday(i.end_at),julianday(c.first_at)+8,(SELECT cutoff FROM settings))\n              -MAX(julianday(i.start_at),julianday(c.first_at)+7)) /\n          NULLIF(julianday(i.end_at)-julianday(i.start_at),0) d7_fraction,\n        CAST(julianday(i.start_at)-julianday(c.first_at) AS INTEGER) relative_day\n      FROM c JOIN eligible_intervals i USING(user_id)),\n    future AS (SELECT user_id,\n      SUM(CASE WHEN quality='observed' THEN active*fraction ELSE 0 END)/60 minutes,\n      SUM(CASE WHEN fraction>0 AND quality!='observed' THEN 1 ELSE 0 END) gaps,\n      SUM(CASE WHEN d7_fraction>0 AND quality!='observed' THEN 1 ELSE 0 END) d7_gaps,\n      MAX(CASE WHEN quality='observed' AND active*d7_fraction>0 THEN 1 ELSE 0 END) d7_return\n      FROM slices GROUP BY user_id),\n    day_numbers(day) AS (VALUES (1),(2),(3),(4),(5),(6)),\n    active_days AS (SELECT c.user_id,COUNT(DISTINCT d.day) active_days FROM c CROSS JOIN day_numbers d\n      JOIN eligible_intervals i ON i.user_id=c.user_id AND i.quality='observed' AND i.active>0\n      AND julianday(i.start_at)<julianday(c.first_at)+d.day+1\n      AND julianday(i.end_at)>julianday(c.first_at)+d.day GROUP BY c.user_id),\n    category_visits AS (SELECT a.user_id,a.category,\n      MAX(julianday(a.occurred_at)>=julianday(c.first_at) AND julianday(a.occurred_at)<julianday(c.first_at)+1) early,\n      MAX(julianday(a.occurred_at)>=julianday(c.first_at)+1 AND julianday(a.occurred_at)<julianday(c.first_at)+7) later\n      FROM c JOIN behavior_actions a USING(user_id) JOIN analytics_event_facts f USING(event_id)\n      WHERE a.initiated=1 AND a.covered=1 AND ('${test_data}'='include' OR ('${test_data}'='auto' AND c.client_platform='editor')\n        OR ('${test_data}'='only' AND (f.client_platform='editor' OR f.is_development_build=1 OR c.is_developer=1))\n        OR ('${test_data}' IN ('auto','exclude') AND f.client_platform!='editor' AND f.is_development_build=0 AND c.is_developer=0))\n      GROUP BY a.user_id,a.category),\n    repeats AS (SELECT user_id,SUM(early AND later) repeated_categories FROM category_visits GROUP BY user_id),\n    missing AS (SELECT c.user_id,\n      SUM(julianday(q.occurred_at)>=julianday(c.first_at)+1 AND julianday(q.occurred_at)<julianday(c.first_at)+7) future_missing,\n      SUM(julianday(q.occurred_at)>=julianday(c.first_at)+7 AND julianday(q.occurred_at)<julianday(c.first_at)+8) d7_missing\n      FROM c JOIN behavior_quality_points q USING(user_id) GROUP BY c.user_id),\n    scored AS (SELECT c.*,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+7 AND COALESCE(f.gaps,0)+COALESCE(m.future_missing,0)=0\n        THEN COALESCE(f.minutes,0) END future_minutes,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+7 AND COALESCE(f.gaps,0)+COALESCE(m.future_missing,0)=0\n        THEN COALESCE(d.active_days,0) END future_days,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+8 AND COALESCE(f.d7_gaps,0)+COALESCE(m.d7_missing,0)=0\n        THEN COALESCE(f.d7_return,0) END d7_return,\n      (SELECT cutoff FROM settings)>=julianday(first_at)+1 frozen,\n      COALESCE(r.repeated_categories,0) repeated_categories\n      FROM c LEFT JOIN future f USING(user_id) LEFT JOIN repeats r USING(user_id) LEFT JOIN missing m USING(user_id) LEFT JOIN active_days d USING(user_id)) SELECT user_id,datetime(first_at,'+8 hours') 首次观察入岛,cohort_kind 样本来源,quality 证据,\n      CASE WHEN frozen THEN CASE preference WHEN 'ai' THEN 'AI 偏好' WHEN 'simulation' THEN '经营偏好' WHEN 'mixed' THEN '混合' WHEN 'other' THEN '其他偏好' ELSE '证据不足/浅尝' END ELSE '观察中' END 早期偏好,\n      CASE WHEN frozen THEN CASE participation_style WHEN 'active' THEN '主动为主' WHEN 'idle' THEN '挂机为主' WHEN 'intermittent' THEN '间歇参与' ELSE '证据不足' END ELSE '观察中' END 参与方式,\n      ROUND(active/60,2) 早期操作分钟,ROUND(ai/60,2) AI分钟,ROUND(cat/60,2) 猫互动分钟,\n      ROUND((fishing+farming+restaurant)/60,2) 经营分钟,ROUND(future_minutes,2) 后续操作分钟,\n      future_days 后续活跃天数,d7_return D7主动回访,rule_version\n      FROM scored ORDER BY first_at,user_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200",
+          "rawQueryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND (julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch') OR ${user_id:sqlstring}!='')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) , eligible_intervals AS (\n      SELECT i.* FROM behavior_intervals i JOIN c USING(user_id) JOIN analytics_event_facts f USING(event_id)\n      WHERE ('${test_data}'='include' OR ('${test_data}'='auto' AND c.client_platform='editor')\n        OR ('${test_data}'='only' AND (f.client_platform='editor' OR f.is_development_build=1 OR c.is_developer=1))\n        OR ('${test_data}' IN ('auto','exclude') AND f.client_platform!='editor' AND f.is_development_build=0 AND c.is_developer=0))),\n    slices AS (\n      SELECT c.user_id, i.quality, i.active, i.start_at, i.end_at,\n        MAX(0,MIN(julianday(i.end_at),julianday(c.first_at)+7,(SELECT cutoff FROM settings))\n              -MAX(julianday(i.start_at),julianday(c.first_at)+1)) /\n          NULLIF(julianday(i.end_at)-julianday(i.start_at),0) fraction,\n        MAX(0,MIN(julianday(i.end_at),julianday(c.first_at)+8,(SELECT cutoff FROM settings))\n              -MAX(julianday(i.start_at),julianday(c.first_at)+7)) /\n          NULLIF(julianday(i.end_at)-julianday(i.start_at),0) d7_fraction,\n        CAST(julianday(i.start_at)-julianday(c.first_at) AS INTEGER) relative_day\n      FROM c JOIN eligible_intervals i USING(user_id)),\n    future AS (SELECT user_id,\n      SUM(CASE WHEN quality='observed' THEN active*fraction ELSE 0 END)/60 minutes,\n      SUM(CASE WHEN fraction>0 AND quality!='observed' THEN 1 ELSE 0 END) gaps,\n      SUM(CASE WHEN d7_fraction>0 AND quality!='observed' THEN 1 ELSE 0 END) d7_gaps,\n      MAX(CASE WHEN quality='observed' AND active*d7_fraction>0 THEN 1 ELSE 0 END) d7_return\n      FROM slices GROUP BY user_id),\n    day_numbers(day) AS (VALUES (1),(2),(3),(4),(5),(6)),\n    active_days AS (SELECT c.user_id,COUNT(DISTINCT d.day) active_days FROM c CROSS JOIN day_numbers d\n      JOIN eligible_intervals i ON i.user_id=c.user_id AND i.quality='observed' AND i.active>0\n      AND julianday(i.start_at)<julianday(c.first_at)+d.day+1\n      AND julianday(i.end_at)>julianday(c.first_at)+d.day GROUP BY c.user_id),\n    category_visits AS (SELECT a.user_id,a.category,\n      MAX(julianday(a.occurred_at)>=julianday(c.first_at) AND julianday(a.occurred_at)<julianday(c.first_at)+1) early,\n      MAX(julianday(a.occurred_at)>=julianday(c.first_at)+1 AND julianday(a.occurred_at)<julianday(c.first_at)+7) later\n      FROM c JOIN behavior_actions a USING(user_id) JOIN analytics_event_facts f USING(event_id)\n      WHERE a.initiated=1 AND a.covered=1 AND ('${test_data}'='include' OR ('${test_data}'='auto' AND c.client_platform='editor')\n        OR ('${test_data}'='only' AND (f.client_platform='editor' OR f.is_development_build=1 OR c.is_developer=1))\n        OR ('${test_data}' IN ('auto','exclude') AND f.client_platform!='editor' AND f.is_development_build=0 AND c.is_developer=0))\n      GROUP BY a.user_id,a.category),\n    repeats AS (SELECT user_id,SUM(early AND later) repeated_categories FROM category_visits GROUP BY user_id),\n    missing AS (SELECT c.user_id,\n      SUM(julianday(q.occurred_at)>=julianday(c.first_at)+1 AND julianday(q.occurred_at)<julianday(c.first_at)+7) future_missing,\n      SUM(julianday(q.occurred_at)>=julianday(c.first_at)+7 AND julianday(q.occurred_at)<julianday(c.first_at)+8) d7_missing\n      FROM c JOIN behavior_quality_points q USING(user_id) GROUP BY c.user_id),\n    scored AS (SELECT c.*,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+7 AND COALESCE(f.gaps,0)+COALESCE(m.future_missing,0)=0\n        THEN COALESCE(f.minutes,0) END future_minutes,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+7 AND COALESCE(f.gaps,0)+COALESCE(m.future_missing,0)=0\n        THEN COALESCE(d.active_days,0) END future_days,\n      CASE WHEN (SELECT cutoff FROM settings)>=julianday(first_at)+8 AND COALESCE(f.d7_gaps,0)+COALESCE(m.d7_missing,0)=0\n        THEN COALESCE(f.d7_return,0) END d7_return,\n      (SELECT cutoff FROM settings)>=julianday(first_at)+1 frozen,\n      COALESCE(r.repeated_categories,0) repeated_categories\n      FROM c LEFT JOIN future f USING(user_id) LEFT JOIN repeats r USING(user_id) LEFT JOIN missing m USING(user_id) LEFT JOIN active_days d USING(user_id)) SELECT user_id,datetime(first_at,'+8 hours') 首次观察入岛,cohort_kind 样本来源,quality 证据,\n      CASE WHEN frozen THEN CASE preference WHEN 'ai' THEN 'AI 偏好' WHEN 'simulation' THEN '经营偏好' WHEN 'mixed' THEN '混合' WHEN 'other' THEN '其他偏好' ELSE '证据不足/浅尝' END ELSE '观察中' END 早期偏好,\n      CASE WHEN frozen THEN CASE participation_style WHEN 'active' THEN '主动为主' WHEN 'idle' THEN '挂机为主' WHEN 'intermittent' THEN '间歇参与' ELSE '证据不足' END ELSE '观察中' END 参与方式,\n      ROUND(active/60,2) 早期操作分钟,ROUND(ai/60,2) AI分钟,ROUND(cat/60,2) 猫互动分钟,\n      ROUND((fishing+farming+restaurant)/60,2) 经营分钟,ROUND(future_minutes,2) 后续操作分钟,\n      future_days 后续活跃天数,d7_return D7主动回访,rule_version\n      FROM scored ORDER BY first_at,user_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家行为时间线",
+                    "url": "/d/gameplay-behavior-timeline?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "北京时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "开始"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结束"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次观察入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "最早更新时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "发生时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "入岛后秒"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "玩法"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 145
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "来源"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结果"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "对象"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 4,
+      "title": "最近 7 天动态偏好 · 不用于同期因果比较",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "画像窗口固定为首次可操作入岛后 24 小时，规则 portrait-v1。主动时长为 15 秒操作窗口估算；观看、等待、前台无操作宽限、挂机、后台分别记录。无观察证据不补零。时间/平台/版本/渠道/批次筛选选择首次入岛 cohort，后续回访允许跨平台；显示实际样本数。第 2–7 天=[24h,168h)，D7=[168h,192h)。未成熟为空，相关性不代表因果。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) , clipped AS (\n      SELECT i.*,MAX(0,MIN(julianday(end_at),(SELECT cutoff FROM settings))-\n        MAX(julianday(start_at),(SELECT cutoff FROM settings)-7))/NULLIF(julianday(end_at)-julianday(start_at),0) fraction\n      FROM behavior_intervals i JOIN c USING(user_id)),\n      recent AS (SELECT user_id,SUM(quality!='observed') gaps,\n        SUM(active*fraction) active,SUM(ai*fraction) ai,SUM(cat*fraction) cat,\n        SUM((fishing+farming+restaurant)*fraction) sim FROM clipped WHERE fraction>0 GROUP BY user_id),\n      labelled AS (SELECT *,CASE WHEN gaps>0 OR active<300 THEN 'insufficient'\n        WHEN ai/active>=0.6 THEN 'ai' WHEN sim/active>=0.6 THEN 'simulation'\n        WHEN ai>0 AND sim>0 AND (ai+sim)/active>=0.6 THEN 'mixed' ELSE 'other' END preference\n        FROM recent WHERE NOT EXISTS(SELECT 1 FROM behavior_quality_points q WHERE q.user_id=recent.user_id\n          AND julianday(q.occurred_at)>=(SELECT cutoff FROM settings)-7))\n      SELECT c.user_id,CASE WHEN l.user_id IS NULL THEN '证据不足' ELSE CASE l.preference WHEN 'ai' THEN 'AI 偏好' WHEN 'simulation' THEN '经营偏好' WHEN 'mixed' THEN '混合' WHEN 'other' THEN '其他偏好' ELSE '证据不足/浅尝' END END 最近7天偏好,\n        ROUND(l.active/60,2) 操作估算分钟,ROUND(l.ai/60,2) AI分钟,ROUND(l.cat/60,2) 猫互动分钟,\n        ROUND(l.sim/60,2) 经营分钟 FROM c LEFT JOIN labelled l USING(user_id) ORDER BY c.user_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200",
+          "rawQueryText": "WITH settings AS (SELECT julianday('now') cutoff),\n    candidates AS (SELECT p.*,COALESCE(u.is_developer,0) is_developer FROM behavior_players p\n      LEFT JOIN user_sessions u USING(user_id)),\n    c AS (SELECT * FROM candidates WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(first_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(first_at) < julianday(${__to}/1000,'unixepoch')\n      AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})\n      AND (${behavior_cohort:sqlstring}='all' OR cohort_kind='new_observed')) , clipped AS (\n      SELECT i.*,MAX(0,MIN(julianday(end_at),(SELECT cutoff FROM settings))-\n        MAX(julianday(start_at),(SELECT cutoff FROM settings)-7))/NULLIF(julianday(end_at)-julianday(start_at),0) fraction\n      FROM behavior_intervals i JOIN c USING(user_id)),\n      recent AS (SELECT user_id,SUM(quality!='observed') gaps,\n        SUM(active*fraction) active,SUM(ai*fraction) ai,SUM(cat*fraction) cat,\n        SUM((fishing+farming+restaurant)*fraction) sim FROM clipped WHERE fraction>0 GROUP BY user_id),\n      labelled AS (SELECT *,CASE WHEN gaps>0 OR active<300 THEN 'insufficient'\n        WHEN ai/active>=0.6 THEN 'ai' WHEN sim/active>=0.6 THEN 'simulation'\n        WHEN ai>0 AND sim>0 AND (ai+sim)/active>=0.6 THEN 'mixed' ELSE 'other' END preference\n        FROM recent WHERE NOT EXISTS(SELECT 1 FROM behavior_quality_points q WHERE q.user_id=recent.user_id\n          AND julianday(q.occurred_at)>=(SELECT cutoff FROM settings)-7))\n      SELECT c.user_id,CASE WHEN l.user_id IS NULL THEN '证据不足' ELSE CASE l.preference WHEN 'ai' THEN 'AI 偏好' WHEN 'simulation' THEN '经营偏好' WHEN 'mixed' THEN '混合' WHEN 'other' THEN '其他偏好' ELSE '证据不足/浅尝' END END 最近7天偏好,\n        ROUND(l.active/60,2) 操作估算分钟,ROUND(l.ai/60,2) AI分钟,ROUND(l.cat/60,2) 猫互动分钟,\n        ROUND(l.sim/60,2) 经营分钟 FROM c LEFT JOIN labelled l USING(user_id) ORDER BY c.user_id LIMIT 200 OFFSET (CASE WHEN ${page:sqlstring} IN ('0','1','2','3','4','5','6','7','8','9') THEN CAST(${page:sqlstring} AS INTEGER) ELSE 0 END)*200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家行为时间线",
+                    "url": "/d/gameplay-behavior-timeline?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "北京时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "开始"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结束"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次观察入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "首次入岛"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "最早更新时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "发生时间"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "入岛后秒"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "玩法"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 145
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行为"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "来源"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "结果"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "对象"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 9
+      }
+    }
+  ]
+}
