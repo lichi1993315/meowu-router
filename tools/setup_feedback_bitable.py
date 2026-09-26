@@ -61,7 +61,7 @@ def main():
     table = values.get(prefix + "_TABLE_ID", "")
     if not table:
         fields = [{"field_name": name, "type": 1} for name in
-                  ("反馈编号", "问题描述", "复现办法", "截图时间", "游戏版本", "平台", "场景", "分辨率", "玩家标识", "会话标识", "近期错误摘要", "负责人", "处理备注")]
+                  ("反馈编号", "问题描述", "复现办法", "联系方式", "截图时间", "游戏版本", "平台", "场景", "分辨率", "玩家标识", "会话标识", "近期错误摘要", "负责人", "处理备注")]
         fields += [{"field_name": "截图", "type": 17},
                    {"field_name": "提交时间", "type": 5, "property": {"date_formatter": "yyyy/MM/dd HH:mm"}},
                    {"field_name": "处理状态", "type": 3, "property": {"options": [{"name": n} for n in ("待处理", "处理中", "已解决")]}},
@@ -70,8 +70,9 @@ def main():
         table = data["data"]["table_id"]
         save(prefix + "_TABLE_ID", table)
     fields = call(f"/bitable/v1/apps/{app}/tables/{table}/fields?page_size=100", None, "GET")["data"]["items"]
-    if not any(field["field_name"] == "复现办法" for field in fields):
-        call(f"/bitable/v1/apps/{app}/tables/{table}/fields", {"field_name": "复现办法", "type": 1})
+    for name in ("复现办法", "联系方式"):
+        if not any(field["field_name"] == name for field in fields):
+            call(f"/bitable/v1/apps/{app}/tables/{table}/fields", {"field_name": name, "type": 1})
     state_field = next(field for field in fields if field["field_name"] == "处理状态")
     views_url = f"/bitable/v1/apps/{app}/tables/{table}/views"
     views = call(views_url + "?page_size=100", None, "GET")["data"]["items"]

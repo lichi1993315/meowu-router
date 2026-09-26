@@ -60,6 +60,33 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(feedback.FeedbackRejected):
             feedback.validate(dict(self.payload, reproduction="x" * 2001), b"")
 
+    def test_contact_optional_bounded_and_legacy_fingerprint_unchanged(self):
+        self.assertNotIn("contact", feedback.validate(self.payload, b""))
+        self.assertEqual(feedback.validate(dict(self.payload, contact="  QQ: 123456  "), b"")["contact"], "QQ: 123456")
+        for value in (None, 123456, "x" * 101):
+            with self.assertRaises(feedback.FeedbackRejected):
+                feedback.validate(dict(self.payload, contact=value), b"")
+        self.accept()
+        self.assertEqual(self.accept(contact="   ")["status"], "accepted")
+        with self.assertRaises(feedback.FeedbackRejected) as error:
+            self.accept(contact="WeChat: feedback_test")
+        self.assertEqual(error.exception.status, 409)
+
+    async def test_contact_survives_storage_and_bitable_delivery(self):
+        self.accept(contact="WeChat: feedback_test")
+        with feedback.connect(self.path) as db:
+            row = dict(db.execute("SELECT * FROM feedback").fetchone())
+        self.assertEqual(json.loads(row["payload"])["contact"], "WeChat: feedback_test")
+        remote = feedback.FeishuFeedbackClient(httpx.AsyncClient())
+        remote.call = AsyncMock(return_value={"data": {"record": {"record_id": "contact-record"}}})
+        try:
+            await remote.create(row)
+            fields = remote.call.await_args.kwargs["json"]["fields"]
+            self.assertEqual(fields["联系方式"], "WeChat: feedback_test")
+            self.assertIn("联系方式：WeChat: feedback_test", feedback.notification_text(row, "contact-record"))
+        finally:
+            await remote.client.aclose()
+
     def test_atomic_receipt_and_duplicate(self):
         self.assertEqual(self.accept()["status"], "accepted")
         self.assertEqual(self.accept()["status"], "accepted")
@@ -117,6 +144,7 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_http_multipart_encryption_and_size_limit(self):
         app = FastAPI()
         app.include_router(router)
+        self.payload["contact"] = "QQ: 123456"
         key = Fernet.generate_key()
         encrypted = Fernet(key).encrypt(json.dumps(self.payload).encode()).decode()
         with patch.dict(os.environ, {"PAW_FERNET_KEY": key.decode(), "FEEDBACK_DB_PATH": str(self.path)}):
@@ -124,6 +152,9 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
                 response = await client.post("/feedback", headers={"X-User-ID": "owner"},
                     data={"metadata": encrypted}, files={"screenshot": ("a.jpg", self.image, "image/jpeg")})
                 self.assertEqual(response.status_code, 202, response.text)
+                with feedback.connect(self.path) as db:
+                    payload = json.loads(db.execute("SELECT payload FROM feedback").fetchone()[0])
+                    self.assertEqual(payload["contact"], "QQ: 123456")
                 response = await client.post("/feedback", headers={"X-User-ID": "owner"}, content=b"x" * (MAX_BODY + 1))
                 self.assertEqual(response.status_code, 413)
                 response = await client.post("/feedback", headers={"X-User-ID": "owner"}, data={"metadata": "not-encrypted"})

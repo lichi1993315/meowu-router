@@ -64,7 +64,7 @@ def validate(payload: dict, image: bytes) -> dict:
     if not isinstance(payload, dict):
         raise FeedbackRejected(400, "Invalid metadata")
     result = {}
-    limits = {"feedback_id": 32, "description": 2000, "reproduction": 2000, "captured_at": 64,
+    limits = {"feedback_id": 32, "description": 2000, "reproduction": 2000, "contact": 100, "captured_at": 64,
               "version": 160, "platform": 32, "scene": 160, "resolution": 32,
               "player_id": 128, "session_id": 128, "errors": 32768}
     for field, limit in limits.items():
@@ -81,8 +81,9 @@ def validate(payload: dict, image: bytes) -> dict:
     if image and (not image.startswith(b"\xff\xd8\xff") or not image.endswith(b"\xff\xd9")):
         raise FeedbackRejected(400, "Screenshot must be JPEG")
     # Empty optional field preserves fingerprints of reports accepted before this field existed.
-    if not result["reproduction"]:
-        result.pop("reproduction")
+    for field in ("reproduction", "contact"):
+        if not result[field]:
+            result.pop(field)
     return result
 
 
@@ -140,6 +141,7 @@ def notification_text(row: dict, record: str) -> str:
         "版本：" + payload["version"] + " ｜平台：" + payload["platform"],
         "玩家：" + (payload["player_id"] or row["owner"]),
         "场景：" + payload["scene"],
+        "联系方式：" + feishu_alerts._clean_text(payload.get("contact") or "未填写", max_chars=100),
         "", "问题描述：", feishu_alerts._clean_text(payload["description"], max_chars=1200),
         "", "复现办法：", feishu_alerts._clean_text(payload.get("reproduction") or "未填写", max_chars=600),
         "", "截图：" + ("已附在表格记录中" if row["file_token"] or row["image"] else "未附截图"),
@@ -244,6 +246,8 @@ class FeishuFeedbackClient:
                   "场景": payload["scene"], "分辨率": payload["resolution"],
                   "玩家标识": payload["player_id"] or row["owner"],
                   "会话标识": payload["session_id"], "近期错误摘要": payload["errors"], "处理状态": "待处理"}
+        if payload.get("contact"):
+            fields["联系方式"] = payload["contact"]
         if row["file_token"]:
             fields["截图"] = [{"file_token": row["file_token"]}]
         data = await self.call("POST", self.records, params={"client_token": str(uuid.UUID(hex=row["id"]))}, json={"fields": fields})
