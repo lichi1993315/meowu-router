@@ -1,5 +1,20 @@
 """Player-centric analytics. Current state is a snapshot, never a sum of events."""
 import copy
+import json
+from pathlib import Path
+
+
+# Shop booth item IDs are stable in historical events; the catalog is exported from
+# PawFishing's ShopBoothItemTable.Args and BuildingTable localized names.
+BUILDING_NAMES = json.loads((Path(__file__).with_name('shop_building_names.json')).read_text(encoding='utf-8'))
+
+
+def building_name_cte():
+    rows = []
+    for item_id, name in sorted(BUILDING_NAMES.items(), key=lambda entry: int(entry[0])):
+        escaped_name = name.replace("'", "''")
+        rows.append(f"({int(item_id)},'{escaped_name}')")
+    return f", building_names(item_id, name) AS MATERIALIZED (VALUES {','.join(rows)})"
 
 
 def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
@@ -73,7 +88,11 @@ def extend_dashboards(result, dashboard, panel, scope, user, limit, time_range):
         identity={"cat_adopted":"$.template_id","farming_plant":"$.seed_id","cooking_completed":"$.recipe_id","building_placed":"$.building_id"}.get(event,"$.item_id")
         condition="event_type IN ('cooking_complete','cooking_completed')" if event=='cooking_completed' else f"event_type='{event}'"
         extra=",SUM(COALESCE(json_extract(payload_json,'$.quantity'),1)) 件数" if event=='shop_purchase' else ''
-        sql=f"SELECT COALESCE(NULLIF({name},''),'未采集名称') 名称,COUNT(*) 次数,COUNT(DISTINCT user_id) 参与玩家数{extra} FROM events WHERE {condition} AND actor_is_player=1 AND {where} GROUP BY COALESCE(json_extract(payload_json,'{identity}'),{name}) ORDER BY 次数 DESC,名称 LIMIT 5"
+        is_shop = event in ('shop_purchase', 'shop_freeze_changed')
+        catalog = building_name_cte() if is_shop else ''
+        source = "events LEFT JOIN building_names bn ON bn.item_id=json_extract(payload_json,'$.item_id')" if is_shop else 'events'
+        display_name = f'COALESCE(bn.name,{name})' if is_shop else name
+        sql=f"{catalog} SELECT COALESCE(NULLIF({display_name},''),'未采集名称') 名称,COUNT(*) 次数,COUNT(DISTINCT user_id) 参与玩家数{extra} FROM {source} WHERE {condition} AND actor_is_player=1 AND {where} GROUP BY COALESCE(json_extract(payload_json,'{identity}'),{name}) ORDER BY 次数 DESC,名称 LIMIT 5"
         overview.append(q(120+i,title+' Top 5',sql));base.append(q(120+i,title+' Top 5',sql))
     behaviors = [
         (140,'玩家行为 Top 5',"SELECT event_type 行为,COUNT(*) 次数 FROM events WHERE actor_is_player=1 AND (behavior_stat=1 OR (behavior_stat IS NULL AND event_type IN ('farming_plant','farming_water','farming_till','farming_harvest','fishing_catch','cooking_completed','building_placed','shop_purchase','cat_conversation','player_sleep'))) GROUP BY 1 ORDER BY 次数 DESC,行为 LIMIT 5"),

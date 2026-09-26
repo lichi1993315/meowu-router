@@ -73,6 +73,16 @@ class PlayerAnalyticsTests(unittest.TestCase):
         for locked in (True,False,True):self.emit('a','shop_freeze_changed',{'item_name':'衣服','shop_type':'clothing','frozen':locked})
         self.assertEqual(self.query('gameplay-overview',124)[0][1],2)
 
+    def test_shop_building_names_use_item_id_for_purchases_and_freezes(self):
+        self.emit('a','shop_purchase',{'item_id':20000,'item_name':'建筑物','shop_type':'variety','quantity':1})
+        self.emit('b','shop_purchase',{'item_id':20001,'item_name':'建筑物','shop_type':'variety','quantity':1})
+        self.emit('a','shop_freeze_changed',{'item_id':20000,'item_name':'建筑物','shop_type':'variety','frozen':True})
+        self.emit('a','shop_purchase',{'item_id':99999,'item_name':'原有名称','shop_type':'variety','quantity':1})
+        names={row[0] for row in self.query('gameplay-overview',123)}
+        self.assertEqual(names,{'猫窝','露营椅 红','原有名称'})
+        self.assertEqual(self.query('gameplay-overview',125)[0][0],'猫窝')
+        self.assertEqual({row[0] for row in self.query('gameplay-overview',120)},names)
+
     def test_raw_envelope_survives_final_snapshot_and_duplicate_files(self):
         event=self.emit('a','stamina_spent',{'action':'fishing','amount':2},eid='canonical')
         sample={'user_id':'a','client_platform':'windows','gameplay_telemetry':{'session_meta':{'session_id':'s-a'},'days':{'1':{'events':[event]}}}}
