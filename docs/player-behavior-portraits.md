@@ -44,4 +44,6 @@ python generate_analytics_dashboards.py
 
 先提交并推送已验证代码，服务器快进同步；迁移真实 SQLite 并确认 behavior 表/索引，再重建 router-api 与 gameplay-importer，最后刷新 Grafana。Dockerfile 已包含 behavior_analytics.py，不能只上传 dashboard。历史事件只回填可证明的字段，无时间/无计数不补猜。
 
-目前交付为本地开发与验证；未部署生产、未打包 Windows/WebGL、未证明真实多人或目标平台性能。最终数量与性能证据在 PawFishing 设计文档的验证记录中更新。
+报表服务部署后，应分别记录服务器源码 SHA、迁移组件状态、真实加密入库、Grafana 查询和画像刷新结果。尚未打包 Windows/WebGL，也未证明真实多人或目标平台性能；这些验收不能由本地合成数据代替。
+
+2026-09-26：服务器快进到 `b415678`，停写备份的 `quick_check=ok`，迁移后 `events/playtime/importer/behavior` 均为 `ready`。本地合成 20000 点重放最大约 1.14 秒，写事务约 43–51 毫秒。线上加密合成上报被接收并形成 4 条唯一事实，历史画像队列处理完 1291 人后归零；合成账号的画像为 60 秒有效参与。Grafana 活动资源包含四个行为页面，四页共 13 条查询在生产数据库执行成功。这些证据不包含浏览器渲染或真实玩家目标端验收。
