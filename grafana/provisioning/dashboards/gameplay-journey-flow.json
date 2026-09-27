@@ -261,6 +261,13 @@
       "url": "/d/gameplay-behavior-quality",
       "includeVars": true,
       "keepTime": true
+    },
+    {
+      "title": "问卷、愿望单与大佬猫",
+      "type": "link",
+      "url": "/d/gameplay-campaigns",
+      "includeVars": true,
+      "keepTime": true
     }
   ],
   "panels": [

@@ -1,0 +1,1021 @@
+{
+  "uid": "gameplay-campaigns",
+  "title": "问卷、愿望单与大佬猫",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "tags": [
+    "PawFishing",
+    "analytics-v2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_SQLITE",
+        "type": "datasource",
+        "query": "frser-sqlite-datasource",
+        "current": {
+          "text": "SQLite",
+          "value": "SQLite"
+        },
+        "hide": 2
+      },
+      {
+        "name": "client_platform",
+        "label": "客户端平台",
+        "type": "custom",
+        "query": "WebGL : webgl,Windows Player : windows,Unity Editor : editor,其他客户端 : other,未知/历史未上报 : unknown,无客户端归属 : unattributed",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": [
+            "WebGL",
+            "Windows Player",
+            "未知/历史未上报"
+          ],
+          "value": [
+            "webgl",
+            "windows",
+            "unknown"
+          ]
+        }
+      },
+      {
+        "name": "distribution_channel",
+        "label": "发行渠道",
+        "type": "custom",
+        "query": "内部版 : internal,Steam : steam,TapTap : taptap,网页版 : web,未知／历史未上报 : unknown",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "release_version",
+        "label": "发布版本",
+        "type": "query",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "${DS_SQLITE}"
+        },
+        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "playtest_id",
+        "label": "Playtest 批次",
+        "type": "custom",
+        "query": "全部 : all,中秋playtest : 中秋playtest,历史／未标记 : legacy",
+        "current": {
+          "text": "全部",
+          "value": "all"
+        }
+      },
+      {
+        "name": "test_data",
+        "label": "测试数据",
+        "type": "custom",
+        "query": "按平台自动 : auto,排除 : exclude,包含 : include,仅测试 : only",
+        "current": {
+          "text": "按平台自动",
+          "value": "auto"
+        }
+      },
+      {
+        "name": "user_id",
+        "label": "玩家 ID（留空=全部）",
+        "type": "textbox",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "经营总览",
+      "type": "link",
+      "url": "/d/gameplay-overview",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "新手与留存",
+      "type": "link",
+      "url": "/d/gameplay-retention",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "猫与 AI 体验",
+      "type": "link",
+      "url": "/d/llm-conversations",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家旅程",
+      "type": "link",
+      "url": "/d/gameplay-player-detail",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "服务与成本",
+      "type": "link",
+      "url": "/d/llm-router-dashboard",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "数据质量",
+      "type": "link",
+      "url": "/d/gameplay-quality",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "玩家小剧场",
+      "type": "link",
+      "url": "/d/gameplay-theater",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
+      "title": "查看原版报表",
+      "type": "link",
+      "url": "/d/gameplay-overview-legacy",
+      "keepTime": true
+    },
+    {
+      "title": "问卷、愿望单与大佬猫",
+      "type": "link",
+      "url": "/d/gameplay-campaigns",
+      "includeVars": true,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 999,
+      "title": "统计口径与历史数据",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      }
+    },
+    {
+      "id": 1,
+      "title": "问卷按钮点击 · 已登录玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 匿名点击见下方覆盖表。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='survey_click' AND (''='' OR action='')",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='survey_click' AND (''='' OR action='')"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": 2,
+      "title": "加入愿望单按钮 · 前往 Steam · 已登录玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 匿名点击见下方覆盖表。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_cta' AND ('steam_open'='' OR action='steam_open')",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_cta' AND ('steam_open'='' OR action='steam_open')"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 3,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": 3,
+      "title": "点击领取大佬猫 · 已登录玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 匿名点击见下方覆盖表。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_cta' AND ('claim_click'='' OR action='claim_click')",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_cta' AND ('claim_click'='' OR action='claim_click')"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": 4,
+      "title": "大佬猫发奖成功 · 服务端 · 已登录玩家",
+      "type": "stat",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 匿名点击见下方覆盖表。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_reward_claimed' AND (''='' OR action='')",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 玩家数 FROM e WHERE event_type='wishlist_reward_claimed' AND (''='' OR action='')"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": 10,
+      "title": "步骤覆盖 · 次数、已登录玩家、匿名身份",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT s.label 行为,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM stages s LEFT JOIN e ON e.event_type=s.event_type AND (s.action='' OR e.action=s.action) GROUP BY s.sort,s.label ORDER BY s.sort",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT s.label 行为,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM stages s LEFT JOIN e ON e.event_type=s.event_type AND (s.action='' OR e.action=s.action) GROUP BY s.sort,s.label ORDER BY s.sort"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 11,
+      "title": "入口来源 · 主菜单、暂停菜单及其他入口",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 服务端结果没有入口字段时显示未上报，不推断归因。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT label 行为,entry 入口,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM labeled GROUP BY label,entry ORDER BY 事件次数 DESC",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT label 行为,entry 入口,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM labeled GROUP BY label,entry ORDER BY 事件次数 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 12,
+      "title": "每日行为 · 北京时间",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。 每日人数不可相加为期间去重人数。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT date(occurred_at,'+8 hours') 日期,label 行为,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM labeled GROUP BY 1,2 ORDER BY 1 DESC,2",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT date(occurred_at,'+8 hours') 日期,label 行为,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM labeled GROUP BY 1,2 ORDER BY 1 DESC,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 13,
+      "title": "领取失败原因",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COALESCE(NULLIF(json_extract(payload_json,'$.error'),''),'未上报') 原因,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM e WHERE event_type='wishlist_reward_failed' GROUP BY 1 ORDER BY 事件次数 DESC",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT COALESCE(NULLIF(json_extract(payload_json,'$.error'),''),'未上报') 原因,COUNT(DISTINCT event_id) 事件次数,\n    COUNT(DISTINCT CASE WHEN user_id NOT LIKE 'anon:%' AND user_id NOT IN ('','unknown','anonymous','anonymous_user') THEN user_id END) 已登录玩家数,\n    COUNT(DISTINCT CASE WHEN user_id LIKE 'anon:%' THEN user_id END) 匿名身份数,\n    COUNT(DISTINCT CASE WHEN user_id IN ('','unknown','anonymous','anonymous_user') THEN event_id END) 身份缺失事件数 FROM e WHERE event_type='wishlist_reward_failed' GROUP BY 1 ORDER BY 事件次数 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "id": 14,
+      "title": "最近事件 · 最多 200 条",
+      "type": "table",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "${DS_SQLITE}"
+      },
+      "description": "按事件发生时间筛选，次数按 event_id 去重；已登录玩家和匿名身份分别去重，二者不可相加为真实人数。前往 Steam 不证明加入愿望单，问卷点击不证明提交。服务端发奖成功与客户端回执分开，步骤覆盖不是严格漏斗。默认全部批次，避免未入岛的主菜单事件被批次筛选隐藏；旧版本未采集的行为无法补算。",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "table",
+          "queryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT occurred_at 时间,user_id,session_id,label 行为,entry 入口,client_platform 平台,release_version 版本,payload_json 原始证据 FROM labeled ORDER BY julianday(occurred_at) DESC,event_id DESC LIMIT 200",
+          "rawQueryText": "WITH stages(event_type,action,label,sort) AS (VALUES ('survey_click','','问卷按钮点击',0),('wishlist_cta','click','打开领猫入口',1),('wishlist_cta','steam_open','加入愿望单按钮 · 前往 Steam',2),('wishlist_cta','claim_click','点击领取大佬猫',3),('wishlist_reward_claimed','','大佬猫发奖成功 · 服务端',4),('wishlist_reward_failed','','大佬猫领取失败 · 服务端',5),('wishlist_cta','exposure','退出邀请曝光',6),('wishlist_cta','reward_exposure','领猫页面曝光',7),('wishlist_cta','reward_close','关闭领猫页面',8),('wishlist_cta','exit_close','关闭退出邀请',9),('wishlist_cta','dismiss','关闭邀请 · 旧埋点',10),('wishlist_cta','claimed','领取成功回执 · 客户端',11),('wishlist_reward_exposure','','领猫页面曝光 · 服务端旧埋点',12),('wishlist_reward_steam','','前往 Steam · 服务端旧埋点',13)),\n      source AS (SELECT * FROM analytics_events WHERE ('__all__' IN (${client_platform:sqlstring}) OR client_platform IN (${client_platform:sqlstring})) AND ('__all__' IN (${release_version:sqlstring}) OR COALESCE(NULLIF(release_version,''),'__empty__') IN (${release_version:sqlstring})) AND ('${test_data}'='include' OR ('${test_data}'='auto' AND (client_platform='editor' OR (is_development_build=0 AND is_developer=0))) OR ('${test_data}'='exclude' AND is_development_build=0 AND is_developer=0 AND client_platform!='editor') OR ('${test_data}'='only' AND (is_development_build=1 OR is_developer=1 OR client_platform='editor'))) AND ('${playtest_id}'='all' OR ('${playtest_id}'='legacy' AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_playtests)) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_playtests WHERE playtest_id='${playtest_id}')) AND ('__all__' IN (${distribution_channel:sqlstring}) OR (user_id,session_id) IN (SELECT user_id,session_id FROM analytics_session_channels WHERE distribution_channel IN (${distribution_channel:sqlstring})) OR ('unknown' IN (${distribution_channel:sqlstring}) AND (user_id,session_id) NOT IN (SELECT user_id,session_id FROM analytics_session_channels))) AND julianday(occurred_at) >= julianday(${__from}/1000,'unixepoch') AND julianday(occurred_at) < julianday(${__to}/1000,'unixepoch')\n        AND (event_type='survey_click' OR event_type='wishlist_cta' OR event_type LIKE 'wishlist_reward_%')\n        AND (${user_id:sqlstring}='' OR user_id=${user_id:sqlstring})),\n      e AS (SELECT source.*,COALESCE(NULLIF(json_extract(payload_json,'$.action'),''),\n        json_extract(payload_json,'$.view_action'),'') action,\n        COALESCE(NULLIF(json_extract(payload_json,'$.detail'),''),'未上报') entry FROM source),\n      labeled AS (SELECT e.*,COALESCE(s.label,e.event_type||' / '||e.action) label\n        FROM e LEFT JOIN stages s ON s.event_type=e.event_type AND (s.action=e.action OR s.action='')) SELECT occurred_at 时间,user_id,session_id,label 行为,entry 入口,client_platform 平台,release_version 版本,payload_json 原始证据 FROM labeled ORDER BY julianday(occurred_at) DESC,event_id DESC LIMIT 200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-user_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "session_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-session_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "llm_request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "查看玩家旅程",
+                    "url": "/d/gameplay-player-detail?${__url_time_range}&${client_platform:queryparam}&${release_version:queryparam}&${test_data:queryparam}&${playtest_id:queryparam}&${distribution_channel:queryparam}&var-user_id=${__data.fields.user_id}&var-llm_request_id=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 24,
+        "h": 9
+      }
+    }
+  ]
+}
