@@ -43,7 +43,7 @@ cheatem.io, us-west.agentlive.ai {
 	}
 
 	handle /FQMQzb* {
-		reverse_proxy host.docker.internal:52799
+		reverse_proxy xray:52799
 	}
 
 	handle /bundles* {

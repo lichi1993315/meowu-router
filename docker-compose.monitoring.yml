@@ -55,6 +55,18 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
+  # Xray - VMess WebSocket backend (only reachable inside edge-shared)
+  xray:
+    image: ghcr.io/xtls/xray-core:1.8.24
+    container_name: llm-xray
+    command: ["-config", "/etc/xray/config.json"]
+    volumes:
+      - ./.secrets/xray/config.json:/etc/xray/config.json:ro
+    networks:
+      - edge-shared
+    logging: *default-logging
+    restart: unless-stopped
+
   # Caddy - public HTTPS entrypoint
   caddy:
     image: caddy:2-alpine
@@ -76,6 +88,7 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - router-api
+      - xray
     networks:
       - edge-shared
     logging: *default-logging
