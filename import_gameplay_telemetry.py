@@ -1931,6 +1931,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 
     from journey_analytics import backfill_existing_journeys
     backfill_existing_journeys(conn)
+    from lumina_analytics import ensure_lumina_schema
+    ensure_lumina_schema(conn)
     mark_schema(conn, "importer")
 
 

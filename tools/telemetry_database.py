@@ -13,7 +13,7 @@ def inspect(path):
         result = {"journal_mode": conn.execute("PRAGMA journal_mode").fetchone()[0]}
         result["wal_bytes"] = Path(str(path) + "-wal").stat().st_size if Path(str(path) + "-wal").exists() else 0
         result["components"] = {}
-        for component in ("events", "playtime", "importer", "behavior"):
+        for component in ("events", "playtime", "importer", "behavior", "lumina"):
             try:
                 require_schema(conn, component)
                 result["components"][component] = "ready"

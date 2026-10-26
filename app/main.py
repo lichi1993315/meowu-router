@@ -1,12 +1,29 @@
+import os
+
 from fastapi import FastAPI, Request
 from starlette.responses import Response
 
-from app.api.routes import catbook, embeddings, gemini, photos, system, feedback
+from app.api.routes import catbook, embeddings, gemini, photos, system, feedback, lumina
 from app.core.lifespan import lifespan
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="LLM Router", lifespan=lifespan)
+
+    @app.middleware("http")
+    async def lumina_cors(request: Request, call_next):
+        # The web playtest posts from the game's own origin(s): LUMINA_ALLOWED_ORIGINS, comma-separated.
+        if request.url.path not in ("/v1/lumina/events", "/api/v1/lumina/events"):
+            return await call_next(request)
+        response = Response(status_code=204) if request.method == "OPTIONS" else await call_next(request)
+        origin = request.headers.get("origin", "")
+        allowed = {o.strip() for o in os.getenv("LUMINA_ALLOWED_ORIGINS", "").split(",") if o.strip()}
+        if origin and (origin in allowed or "*" in allowed):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+            response.headers["Vary"] = "Origin"
+        return response
 
     @app.middleware("http")
     async def feedback_cors(request: Request, call_next):
@@ -24,6 +41,9 @@ def create_app() -> FastAPI:
     app.include_router(embeddings.router, prefix="/api", tags=["embeddings"])
     app.include_router(catbook.router, prefix="/api/catbook", tags=["catbook"])
     app.include_router(photos.router, prefix="/api", tags=["photos"])
+
+    app.include_router(lumina.router, prefix="/api", tags=["lumina"])
+    app.include_router(lumina.router, tags=["lumina-legacy"])
 
     app.include_router(feedback.router, prefix="/api", tags=["feedback"])
     app.include_router(feedback.router, tags=["feedback"])
