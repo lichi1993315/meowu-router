@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
+from app.core.model_auth import require_model_access
 from app.services.gemini_proxy import handle_chat_completions
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_model_access)])
 
 
 @router.post("/chat/completions")

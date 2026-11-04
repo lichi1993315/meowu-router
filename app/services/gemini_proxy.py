@@ -159,6 +159,9 @@ def _check_blacklist(user_id: str, blacklist: set[str]) -> None:
 
 
 def _maybe_decrypt(request: Request, raw_body: bytes) -> bytes:
+    verified = getattr(request.state, "verified_model_body", None)
+    if verified is not None:
+        return verified
     is_encrypted = request.headers.get("x-encrypted", "").lower() == "true"
     if not is_encrypted:
         return raw_body

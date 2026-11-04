@@ -13,7 +13,7 @@ from app.core.config import ERROR_LOG_DIR, GAMEPLAY_TELEMETRY_DIR, OUTPUT_DIR
 from app.core.logging import log
 from playtime_store import record_play_session_event_to_db
 
-SENSITIVE_HEADERS = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
+SENSITIVE_HEADERS = {"x-router-key", "authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
 SENSITIVE_BODY_KEYS = {
     "api_key",
     "apikey",
