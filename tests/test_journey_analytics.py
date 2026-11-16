@@ -117,6 +117,27 @@ class JourneyTests(unittest.TestCase):
         row=next(r for r in self.query('gameplay-journey-flow',1,**{'observed_until:sqlstring':"'2026-09-03T00:00:00Z'"}) if r['node_id']=='task:3508')
         self.assertEqual(row['流失人数'],0);self.assertEqual(row['观察中'],1);self.assertIsNone(row['流失率'])
 
+    def test_first_cat_recovery_uses_only_later_evidence_in_same_archive(self):
+        for user in ('world', 'owned', 'unrelated'):
+            self.emit('journey_context', 0, run=user, user=user)
+            self.emit('journey_node_started', 2, run=user, user=user,
+                      node_id='cat_create', current_node='cat_create')
+            self.emit('journey_quit', 10, run=user, user=user, current_node='cat_create')
+        self.emit('journey_world_ready', 12, run='world', user='world')
+        self.emit('player_state_snapshot', 12, run='owned', user='owned', cats=[{}])
+        self.emit('player_state_snapshot', 1, run='unrelated', user='unrelated', cats=[{}])
+        self.emit('player_state_snapshot', 12, run='unrelated', user='unrelated', archive='b', cats=[{}])
+        self.emit('player_state_snapshot', 13, run='unrelated', user='unrelated', cats=[])
+        self.project()
+        rollup = next(r for r in self.query('gameplay-journey-flow', 1) if r['node_id'] == 'cat_create')
+        self.assertEqual((rollup['到达人数'], rollup['已完成人数'], rollup['证据补正人数']), (3, 2, 2))
+        self.assertIsNone(rollup['完成本步分钟P50'])
+        details = {r['user_id']: r for r in self.query('gameplay-journey-flow', 2) if r['节点'] == '创建初始猫'}
+        self.assertEqual(details['world']['补正来源'], 'world_ready')
+        self.assertEqual(details['owned']['补正来源'], 'owned_cat_snapshot')
+        self.assertIsNone(details['owned']['完成'])
+        self.assertIsNone(details['unrelated']['补正来源'])
+
     def test_late_delivery_rebuilds_missing_start(self):
         self.emit('journey_business',60,business_type='task_completed',business={'task_id':3508})
         self.project();self.assertIsNone(self.node('task:3508')['effective'])

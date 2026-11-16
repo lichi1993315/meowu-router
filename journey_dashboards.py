@@ -11,34 +11,62 @@ def common(scope, time_range):
         julianday('now') cutoff),
     candidates AS (SELECT j.*,COALESCE(u.is_developer,0) is_developer FROM journey_players j
       LEFT JOIN user_sessions u USING(user_id)),
-    cohort AS (SELECT * FROM candidates WHERE {scope} AND {time_range('first_at')}
+    cohort AS MATERIALIZED (SELECT * FROM candidates WHERE {scope} AND {time_range('first_at')}
       AND ('${{cohort_kind}}'='all' OR cohort_kind='new' OR (cohort_kind='unclassified' AND '${{cohort_kind}}'='new'))
       AND ('${{mode_group}}'='all' OR mode_group='${{mode_group}}')
       AND ('${{flow_version}}'='all' OR flow_version='${{flow_version}}')
       AND (${{user_id:sqlstring}}='' OR user_id=${{user_id:sqlstring}})),
-    activity AS (SELECT c.user_id,MAX(at) last_at FROM cohort c JOIN (
-      SELECT user_id,last_at at FROM journey_players
-      UNION ALL SELECT user_id,COALESCE(NULLIF(client_sent_at,''),received_at) FROM play_session_events
-       WHERE event_type IN ('login','heartbeat') AND COALESCE(app_state,'foreground')='foreground'
-    ) a ON a.user_id=c.user_id WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY c.user_id),
+    activity AS (SELECT user_id,MAX(at) last_at FROM (
+      SELECT user_id,last_at at FROM cohort
+      UNION ALL SELECT c.user_id,COALESCE(NULLIF(e.client_sent_at,''),e.received_at)
+       FROM cohort c CROSS JOIN play_session_events e ON e.user_id=c.user_id
+       WHERE e.event_type IN ('login','heartbeat') AND COALESCE(e.app_state,'foreground')='foreground'
+    ) a WHERE julianday(at)<=(SELECT cutoff FROM settings) GROUP BY user_id),
     first_archive AS (SELECT user_id,archive_id FROM (
-      SELECT user_id,archive_id,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY MIN(COALESCE(started_at,last_at)),archive_id) rn
-      FROM journey_nodes WHERE archive_id!='' GROUP BY user_id,archive_id) WHERE rn=1),
-    n AS (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)
+      SELECT c.user_id,n.archive_id,ROW_NUMBER() OVER(PARTITION BY c.user_id ORDER BY MIN(COALESCE(n.started_at,n.last_at)),n.archive_id) rn
+      FROM cohort c CROSS JOIN journey_nodes n ON n.user_id=c.user_id
+      WHERE n.archive_id!='' GROUP BY c.user_id,n.archive_id) WHERE rn=1),
+    n AS MATERIALIZED (SELECT n.* FROM journey_nodes n JOIN cohort c USING(user_id) LEFT JOIN first_archive a USING(user_id)
       WHERE (n.archive_id=a.archive_id OR n.node_id IN ('startup','loading')) AND n.flow_version=c.flow_version AND julianday(COALESCE(n.started_at,n.last_at))<=(SELECT cutoff FROM settings)),
+    cat_evidence AS MATERIALIZED (
+      SELECT n.user_id,n.archive_id,
+        (SELECT MIN(julianday(f.occurred_at)) FROM analytics_event_facts f
+          WHERE f.user_id=n.user_id AND f.archive_id=n.archive_id AND f.event_type='journey_world_ready'
+            AND f.is_development_build=n.is_test_build
+            AND julianday(f.occurred_at) BETWEEN julianday(n.started_at) AND (SELECT cutoff FROM settings)) world_at,
+        (SELECT MIN(julianday(f.occurred_at)) FROM analytics_event_facts f
+          WHERE f.user_id=n.user_id AND f.archive_id=n.archive_id AND f.event_type='player_state_snapshot'
+            AND f.is_development_build=n.is_test_build
+            AND julianday(f.occurred_at) BETWEEN julianday(n.started_at) AND (SELECT cutoff FROM settings)
+            AND json_array_length(f.payload_json,'$.cats')>0) owned_at
+      FROM (SELECT n.*,c.is_development_build is_test_build FROM n JOIN cohort c USING(user_id)
+        WHERE n.node_id='cat_create' AND n.status='in_progress'
+          AND n.completed_at IS NULL AND n.started_at IS NOT NULL AND n.archive_id<>'') n
+    ),
+    cat_recovered AS (
+      SELECT user_id,archive_id,
+        CASE WHEN owned_at IS NULL OR world_at<=owned_at THEN world_at ELSE owned_at END evidence_at,
+        CASE WHEN owned_at IS NULL OR world_at<=owned_at THEN 'world_ready' ELSE 'owned_cat_snapshot' END evidence_source
+      FROM cat_evidence WHERE world_at IS NOT NULL OR owned_at IS NOT NULL
+    ),
     departures AS (SELECT x.*,a.last_at,
       CASE WHEN (SELECT cutoff FROM settings)-julianday(a.last_at)>=(SELECT days FROM settings) THEN 1 ELSE 0 END churned
       FROM journey_exits x JOIN cohort c USING(user_id) JOIN activity a USING(user_id)
       WHERE julianday(x.occurred_at)<=(SELECT cutoff FROM settings)
         AND (x.reason IN ('journey_leave','journey_quit','journey_background') OR (SELECT cutoff FROM settings)-julianday(x.occurred_at)>180.0/86400)),
-    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) WHERE rn=1),
-    outcomes AS (SELECT n.*,a.last_at player_last_at,
+    final_exit AS (SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY occurred_at DESC,event_id DESC) rn FROM departures d) departures_ranked
+      WHERE rn=1 AND NOT (node_id='cat_create' AND EXISTS (
+        SELECT 1 FROM cat_recovered r WHERE r.user_id=departures_ranked.user_id AND r.archive_id=departures_ranked.archive_id
+      ))),
+    outcomes AS (SELECT n.*,a.last_at player_last_at,r.evidence_at,r.evidence_source,
       ((SELECT cutoff FROM settings)-julianday(n.started_at)>=7) matured_completion,
       ((SELECT cutoff FROM settings)-julianday(n.started_at)>=(SELECT days FROM settings)) matured_churn,
-      (n.completed_at IS NOT NULL AND julianday(n.completed_at)<=julianday(n.started_at)+7) completed_in_7d,
+      (COALESCE(julianday(n.completed_at),r.evidence_at)<=julianday(n.started_at)+7) completed_in_7d,
       CASE WHEN (x.node_id=n.node_id OR n.node_id='level:' || CAST(x.island_level+1 AS TEXT)) AND x.archive_id=n.archive_id AND x.churned=1
+        AND r.evidence_at IS NULL
         AND (n.completed_at IS NULL OR julianday(n.completed_at)>(SELECT cutoff FROM settings)) THEN 1 ELSE 0 END churned_here
-      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)),
+      FROM n JOIN activity a USING(user_id) LEFT JOIN final_exit x USING(user_id)
+      LEFT JOIN cat_recovered r ON n.node_id='cat_create' AND r.user_id=n.user_id AND r.archive_id=n.archive_id),
     duration_ranks AS (SELECT node_id,effective,foreground,waiting,cumulative_effective,world_effective,
       ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) er,
       ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY cumulative_effective) cr,
@@ -58,7 +86,7 @@ def common(scope, time_range):
       MIN(CASE WHEN ir>=samples*0.9 THEN world_effective END)/60 world_p90
       FROM duration_ranks GROUP BY node_id),
     unfinished_ranks AS (SELECT node_id,effective,ROW_NUMBER() OVER(PARTITION BY node_id ORDER BY effective) rn,
-      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND quality='observed'),
+      COUNT(*) OVER(PARTITION BY node_id) cnt FROM outcomes WHERE completed_at IS NULL AND evidence_at IS NULL AND quality='observed'),
     unfinished AS (SELECT node_id,MIN(CASE WHEN rn>=cnt*0.5 THEN effective END)/60 p50,
       MIN(CASE WHEN rn>=cnt*0.9 THEN effective END)/60 p90 FROM unfinished_ranks GROUP BY node_id)
     """
@@ -67,7 +95,8 @@ def common(scope, time_range):
 def flow_query(prefix):
     return prefix+"""SELECT cat.title 节点,cat.node_id,
       COUNT(DISTINCT o.user_id) 到达人数,
-      SUM(CASE WHEN o.completed_at IS NOT NULL THEN 1 ELSE 0 END) 已完成人数,
+      SUM(CASE WHEN o.completed_at IS NOT NULL OR o.evidence_at IS NOT NULL THEN 1 ELSE 0 END) 已完成人数,
+      SUM(CASE WHEN o.evidence_at IS NOT NULL THEN 1 ELSE 0 END) 证据补正人数,
       SUM(CASE WHEN o.matured_completion THEN 1 ELSE 0 END) 完成率分母,
       SUM(CASE WHEN o.matured_completion AND o.completed_in_7d THEN 1 ELSE 0 END) 七日完成人数,
       ROUND(100.0*SUM(CASE WHEN o.matured_completion AND o.completed_in_7d THEN 1 ELSE 0 END)
@@ -81,7 +110,7 @@ def flow_query(prefix):
       ROUND(100.0*SUM(CASE WHEN o.matured_churn THEN o.churned_here ELSE 0 END)
         /NULLIF(SUM(CASE WHEN o.matured_churn THEN 1 ELSE 0 END),0),1) 流失率,
       SUM(CASE WHEN NOT o.matured_churn THEN 1 ELSE 0 END) 观察中,
-      SUM(CASE WHEN o.completed_at IS NULL AND EXISTS(SELECT 1 FROM departures d WHERE d.user_id=o.user_id
+      SUM(CASE WHEN o.completed_at IS NULL AND o.evidence_at IS NULL AND EXISTS(SELECT 1 FROM departures d WHERE d.user_id=o.user_id
         AND d.archive_id=o.archive_id AND d.node_id=o.node_id AND julianday(d.occurred_at)<julianday(o.player_last_at)) THEN 1 ELSE 0 END) 已回访未完成,
       SUM(CASE WHEN o.quality!='observed' AND o.status!='skipped' THEN 1 ELSE 0 END) 数据不足,
       SUM(CASE WHEN o.status='skipped' THEN 1 ELSE 0 END) 主动跳过,
@@ -105,8 +134,10 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
       ROUND(SUM(c.foreground)/60,2) 前台分钟,ROUND(SUM(c.waiting)/60,2) 系统等待分钟,
       SUM(CASE WHEN x.churned=1 THEN 1 ELSE 0 END) 未回访玩家数
       FROM cohort c LEFT JOIN final_exit x USING(user_id) GROUP BY c.mode_group"""
-    detail=prefix+"""SELECT o.user_id,o.archive_id,o.title 节点,o.status 状态,o.quality 时间证据,
+    detail=prefix+"""SELECT o.user_id,o.archive_id,o.title 节点,
+      CASE WHEN o.evidence_at IS NOT NULL THEN '已完成（证据补正）' ELSE o.status END 状态,o.quality 时间证据,
       o.started_at 开始,o.completed_at 完成,o.claimed_at 领奖,
+      strftime('%Y-%m-%dT%H:%M:%fZ',o.evidence_at) 补正观测时间,o.evidence_source 补正来源,
       ROUND(o.effective/60,2) 有效分钟,ROUND(o.foreground/60,2) 前台分钟,
       ROUND(o.natural_seconds/3600,2) 自然小时,ROUND(o.waiting/60,2) 等待分钟,
       ROUND(o.single/60,2) 单人分钟,ROUND((o.multiplayer_alone+o.multiplayer_together)/60,2) 多人分钟,
@@ -191,14 +222,34 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
         ROUND((julianday(completed_at)-julianday(started_at))*24,2) 自然小时,
         '未采集有效时长' 时间证据 FROM pairs WHERE {time_range('started_at')}
         AND (${{user_id:sqlstring}}='' OR user_id=${{user_id:sqlstring}}) ORDER BY started_at DESC LIMIT 500"""
-    main="SELECT 节点,node_id,到达人数,七日完成率,完成本步分钟P50,完成本步分钟P90,流失人数,流失率分母,流失率,观察中,数据不足 FROM ("+flow_query(prefix)+")"
+    first_cat_trace=prefix+""", trace AS (
+      SELECT f.user_id,f.archive_id,f.occurred_at,f.event_id,f.payload_json
+      FROM analytics_event_facts f JOIN cohort c USING(user_id)
+      WHERE ${user_id:sqlstring}!='' AND f.user_id=${user_id:sqlstring}
+        AND f.event_type='first_cat_rpc' AND f.is_development_build=c.is_development_build
+        AND julianday(f.occurred_at)<=(SELECT cutoff FROM settings)
+    )
+    SELECT strftime('%Y-%m-%dT%H:%M:%fZ',occurred_at) 时间,archive_id,
+      json_extract(payload_json,'$.request_id') request_id,
+      json_extract(payload_json,'$.action') 操作,
+      json_extract(payload_json,'$.stage') 阶段,
+      json_extract(payload_json,'$.page') 页码,
+      json_extract(payload_json,'$.result') 结果,
+      json_extract(payload_json,'$.slot_count') 卡片数,
+      json_extract(payload_json,'$.speech_count') 有台词数,
+      json_extract(payload_json,'$.selectable_count') 可选数,
+      json_extract(payload_json,'$.fallback_count') 兜底台词数
+    FROM trace ORDER BY julianday(occurred_at) DESC,event_id DESC LIMIT 2000"""
+    main="SELECT 节点,node_id,到达人数,已完成人数,证据补正人数,七日完成率,完成本步分钟P50,完成本步分钟P90,流失人数,流失率分母,流失率,观察中,数据不足 FROM ("+flow_query(prefix)+")"
     specs=[('gameplay-journey-flow','流程耗时与流失',[
         panel(1,'每个主线节点 · 耗时与流失',main,description=DESCRIPTION),
         panel(2,'节点玩家名单 · 点击 user_id 查看明细',detail,description=DESCRIPTION),
         panel(3,'玩家时间线 · 先选择玩家',timeline,description=DESCRIPTION),
         panel(4,'创建角色与猫 · 页面停留及回看累计',pages,description=DESCRIPTION+' 页面时间包含重复访问，不等同于答题完成耗时。'),
         panel(5,'历史任务 · 仅可证明的自然耗时',legacy,description='按任务开始时间筛选历史记录；严格关联玩家、存档、任务实例和任务 ID。包含离线，不纳入新版有效耗时与流失率。'),
-        panel(6,'完整指标 · 完成率分母、累计耗时、未完成停留',flow_query(prefix),description=DESCRIPTION)]),
+        panel(6,'完整指标 · 完成率分母、累计耗时、未完成停留',flow_query(prefix),description=DESCRIPTION),
+        panel(8,'首猫 RPC 与候选卡 · 先选择玩家',first_cat_trace,
+              description='按 request_id 对照客户端发起、Host 收到与回包、客户端收到。候选卡统计来自渲染后的控件状态。')]),
       ('gameplay-journey-loss','流失时间分布',[
         panel(1,'流失节点 × 累计游玩时间',heat,description=DESCRIPTION),
         panel(2,'流失时间分桶 · 人数与分母',distribution,description=DESCRIPTION),
@@ -219,7 +270,7 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
           {'name':'node_id','label':'节点 ID','type':'textbox','current':{'text':'','value':''}},
         ]
         note=next(p for p in board['panels'] if p['id']==999)
-        note['options']['content']=DESCRIPTION+'\n\n时间筛选是首次旅程批次。存量玩家、断档、并发客户端和历史未采集字段单列。七日完成率只纳入已观察满七日的玩家；流失率按所选 1/3/7 日成熟节点为分母。当前节点仅用于定位，不能证明流失原因。'
+        note['options']['content']=DESCRIPTION+'\n\n时间筛选是首次旅程批次。存量玩家、断档、并发客户端和历史未采集字段单列。七日完成率只纳入已观察满七日的玩家；流失率按所选 1/3/7 日成熟节点为分母。首猫完成上报缺失时，同一存档的进岛或拥有猫快照可补正人数；补正观测不计入完成耗时。当前节点仅用于定位，不能证明流失原因。'
         drill_filters='&'+ '&'.join('${'+name+':queryparam}' for name in tuple(v['name'] for v in board['templating']['list'] if v['name'] not in ('user_id','node_id','cohort_kind')))
         for p in panels:
             p['fieldConfig']['defaults']['decimals']=2
@@ -236,7 +287,7 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
             p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':'node_id'},'properties':[{'id':'links','value':[{'title':'查看此节点玩家','url':'/d/gameplay-journey-flow?${__url_time_range}&var-node_id=${__value.raw}&var-cohort_kind=${cohort_kind:percentencode}'+drill_filters}]}]})
         result[uid+'.json']=board
     quality=panel(7,'投影健康 · 不受玩家批次筛选',"SELECT status 状态,COUNT(*) 玩家数,MAX(point_count) 最大事件数,MIN(updated_at) 最早刷新 FROM journey_projection_status GROUP BY status UNION ALL SELECT '等待刷新',COUNT(*),NULL,NULL FROM journey_dirty",description='全局数据质量；history_limit 表示超过每玩家十万检查点的保护阈值，已从正式统计撤出，不能当作零耗时。')
-    quality['gridPos']={'x':0,'y':100,'w':24,'h':8}
+    quality['gridPos']={'x':0,'y':112,'w':24,'h':8}
     result['gameplay-journey-flow.json']['panels'].append(quality)
     # A native colored matrix table stays usable with the installed SQLite plugin.
     heatpanel=result['gameplay-journey-loss.json']['panels'][1]
