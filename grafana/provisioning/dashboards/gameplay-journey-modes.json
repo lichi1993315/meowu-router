@@ -67,7 +67,7 @@
           "type": "frser-sqlite-datasource",
           "uid": "${DS_SQLITE}"
         },
-        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM analytics_sessions ORDER BY 1 DESC",
+        "query": "SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,\n          COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM (\n            SELECT release_version FROM analytics_sessions\n            UNION SELECT DISTINCT release_version FROM journey_players\n          ) ORDER BY 1 DESC",
         "refresh": 1,
         "multi": true,
         "includeAll": true,

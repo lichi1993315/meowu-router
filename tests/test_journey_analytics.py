@@ -129,6 +129,12 @@ class JourneyTests(unittest.TestCase):
         self.emit('player_state_snapshot', 12, run='unrelated', user='unrelated', archive='b', cats=[{}])
         self.emit('player_state_snapshot', 13, run='unrelated', user='unrelated', cats=[])
         self.project()
+        self.db.execute("DELETE FROM journey_nodes WHERE user_id='world' AND node_id='cat_create'")
+        raw = self.query('gameplay-journey-flow', 9)[0]
+        self.assertEqual((raw['开始建猫'], raw['进岛证据补正'], raw['拥有猫证据补正'], raw['完成未确认']),
+                         (3, 1, 1, 1))
+        self.db.execute("UPDATE journey_dirty SET pending=1 WHERE user_id='world'")
+        self.project()
         rollup = next(r for r in self.query('gameplay-journey-flow', 1) if r['node_id'] == 'cat_create')
         self.assertEqual((rollup['到达人数'], rollup['已完成人数'], rollup['证据补正人数']), (3, 2, 2))
         self.assertIsNone(rollup['完成本步分钟P50'])

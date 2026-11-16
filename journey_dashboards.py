@@ -123,6 +123,55 @@ def flow_query(prefix):
       GROUP BY cat.node_id ORDER BY cat.sort_order"""
 
 
+def first_cat_query(scope, time_range):
+    return f"""WITH starts_raw AS (
+      SELECT COALESCE(o.user_id,f.user_id) user_id, f.archive_id, f.occurred_at,
+        COALESCE(NULLIF(json_extract(f.payload_json,'$.server_session_id'),''),f.session_id) session_id,
+        f.client_platform,f.release_version,f.is_development_build,
+        COALESCE(u.is_developer,0) is_developer,
+        COALESCE(NULLIF(json_extract(f.payload_json,'$.mode'),''),'unknown') mode_group
+      FROM analytics_event_facts f
+      LEFT JOIN journey_run_owners o ON o.run_id=f.session_id
+      LEFT JOIN user_sessions u ON u.user_id=COALESCE(o.user_id,f.user_id)
+      WHERE f.event_type='journey_node_started'
+        AND f.occurred_at>=date(${{__from}}/1000,'unixepoch','-1 day')
+        AND f.occurred_at<date(${{__to}}/1000,'unixepoch','+2 days')
+        AND json_extract(f.payload_json,'$.node_id')='cat_create'
+        AND {time_range('f.occurred_at')}
+    ),
+    ranked AS (
+      SELECT *,ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY julianday(occurred_at),archive_id,session_id) rn
+      FROM starts_raw WHERE {scope}
+        AND user_id NOT IN ('','0','unknown','anonymous','anonymous_user') AND user_id NOT LIKE 'anon:%'
+        AND ('${{mode_group}}'='all' OR mode_group='${{mode_group}}')
+        AND (${{user_id:sqlstring}}='' OR user_id=${{user_id:sqlstring}})
+    ),
+    starts AS MATERIALIZED (SELECT * FROM ranked WHERE rn=1),
+    evidence AS MATERIALIZED (
+      SELECT s.user_id,
+        MAX(CASE WHEN f.event_type='journey_node_ended' AND (
+             f.archive_id=s.archive_id OR json_extract(f.payload_json,'$.node_archive_id')=s.archive_id
+           ) AND json_extract(f.payload_json,'$.node_id')='cat_create'
+             AND json_extract(f.payload_json,'$.status')='completed' THEN 1 ELSE 0 END) direct,
+        MAX(CASE WHEN f.event_type='journey_world_ready' AND f.archive_id=s.archive_id THEN 1 ELSE 0 END) world,
+        MAX(CASE WHEN f.event_type='player_state_snapshot' AND f.archive_id=s.archive_id
+             AND json_array_length(f.payload_json,'$.cats')>0 THEN 1 ELSE 0 END) owned
+      FROM starts s
+      CROSS JOIN analytics_event_facts f ON f.user_id=s.user_id
+        AND f.event_type IN ('journey_node_ended','journey_world_ready','player_state_snapshot')
+        AND f.is_development_build=s.is_development_build
+        AND julianday(f.occurred_at) BETWEEN julianday(s.occurred_at) AND julianday('now')
+      WHERE s.archive_id<>'' GROUP BY s.user_id
+    )
+    SELECT COUNT(*) 开始建猫,
+      COUNT(CASE WHEN direct=1 THEN 1 END) 完成事件,
+      COUNT(CASE WHEN COALESCE(direct,0)=0 AND world=1 THEN 1 END) 进岛证据补正,
+      COUNT(CASE WHEN COALESCE(direct,0)=0 AND COALESCE(world,0)=0 AND owned=1 THEN 1 END) 拥有猫证据补正,
+      COUNT(CASE WHEN direct=1 OR world=1 OR owned=1 THEN 1 END) 已确认完成,
+      COUNT(*)-COUNT(CASE WHEN direct=1 OR world=1 OR owned=1 THEN 1 END) 完成未确认
+    FROM starts s LEFT JOIN evidence e USING(user_id)"""
+
+
 def extend_dashboards(result,dashboard,panel,scope,time_range):
     prefix=common(scope,time_range)
     modes=prefix+"""SELECT c.mode_group 玩家类型,COUNT(*) 玩家数,
@@ -222,12 +271,11 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
         ROUND((julianday(completed_at)-julianday(started_at))*24,2) 自然小时,
         '未采集有效时长' 时间证据 FROM pairs WHERE {time_range('started_at')}
         AND (${{user_id:sqlstring}}='' OR user_id=${{user_id:sqlstring}}) ORDER BY started_at DESC LIMIT 500"""
-    first_cat_trace=prefix+""", trace AS (
+    first_cat_trace=f"""WITH trace AS (
       SELECT f.user_id,f.archive_id,f.occurred_at,f.event_id,f.payload_json
-      FROM analytics_event_facts f JOIN cohort c USING(user_id)
-      WHERE ${user_id:sqlstring}!='' AND f.user_id=${user_id:sqlstring}
-        AND f.event_type='first_cat_rpc' AND f.is_development_build=c.is_development_build
-        AND julianday(f.occurred_at)<=(SELECT cutoff FROM settings)
+      FROM analytics_event_facts f
+      WHERE ${{user_id:sqlstring}}!='' AND f.user_id=${{user_id:sqlstring}}
+        AND f.event_type='first_cat_rpc' AND {time_range('f.occurred_at')}
     )
     SELECT strftime('%Y-%m-%dT%H:%M:%fZ',occurred_at) 时间,archive_id,
       json_extract(payload_json,'$.request_id') request_id,
@@ -242,6 +290,8 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
     FROM trace ORDER BY julianday(occurred_at) DESC,event_id DESC LIMIT 2000"""
     main="SELECT 节点,node_id,到达人数,已完成人数,证据补正人数,七日完成率,完成本步分钟P50,完成本步分钟P90,流失人数,流失率分母,流失率,观察中,数据不足 FROM ("+flow_query(prefix)+")"
     specs=[('gameplay-journey-flow','流程耗时与流失',[
+        panel(9,'创建初始猫 · 同存档完成核对',first_cat_query(scope,time_range),
+              description='按所选时间范围的建猫开始事件选人，完成证据观察到当前时间。直接读取已入库事件，含还未进入旅程投影的玩家。'),
         panel(1,'每个主线节点 · 耗时与流失',main,description=DESCRIPTION),
         panel(2,'节点玩家名单 · 点击 user_id 查看明细',detail,description=DESCRIPTION),
         panel(3,'玩家时间线 · 先选择玩家',timeline,description=DESCRIPTION),
@@ -261,6 +311,12 @@ def extend_dashboards(result,dashboard,panel,scope,time_range):
         panel(4,'岛屿自身升级记录 · 含真实提交者',island_history,description=DESCRIPTION+' 旧岛没有创建时间时留空；每次升级按确认 ID 去重。')])]
     for uid,title,panels in specs:
         board=dashboard(uid,title,panels)
+        release_picker=next(v for v in board['templating']['list'] if v['name']=='release_version')
+        release_picker['query']="""SELECT DISTINCT COALESCE(NULLIF(release_version,''),'__empty__') AS __text,
+          COALESCE(NULLIF(release_version,''),'__empty__') AS __value FROM (
+            SELECT release_version FROM analytics_sessions
+            UNION SELECT DISTINCT release_version FROM journey_players
+          ) ORDER BY 1 DESC"""
         board['templating']['list']=[v for v in board['templating']['list'] if v['name'] not in ('session_id','llm_request_id','page')]
         board['templating']['list'] += [
           {'name':'churn_days','label':'未回访天数','type':'custom','query':'1,3,7','current':{'text':'7','value':'7'}},
