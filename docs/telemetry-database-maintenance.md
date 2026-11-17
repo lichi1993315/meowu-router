@@ -8,6 +8,13 @@
 - 检查命令默认只读：`python -m tools.telemetry_database --db /app/data/conversations.db`。检查不创建数据库、不主动 checkpoint。
 - 用 `python -m tools.benchmark_telemetry_contention --directory <新目录> --seconds 1800 --target-gib 5.1` 运行合成历史数据的加密请求、长读快照、后台导入混合负载。输出包含数据规模、请求数、错误和延迟；不能代替线上验收。
 
+## 例外：在线新增空表（不停机）
+
+只新增**全新的空表及其索引**（`CREATE TABLE/INDEX IF NOT EXISTS`），不修改、不回填、不重建任何已有表/视图、不切 journal 模式时，可以不停机在线执行：
+一次性容器里用 `timeout=10` 的连接 `BEGIN IMMEDIATE` → 建表 → `COMMIT`，记录持锁毫秒数，随后回读表结构、核对 `/health`、上报 200 与日志中无 `database is locked`。
+WAL 模式下读不受影响，写最多等这几毫秒。本机合成并发测试持锁 9 ms、写入最大 18 ms；2026-11-17 线上建 `module_*` 三张表实测持锁 8.1 ms，上报无报错。
+新增代码在表建好前必须能跳过写入、不影响实时入库（见 `module_analytics.project_module_event`）。其他任何结构变更仍按下面的维护流程。
+
 ## 已安排维护时
 
 1. 按部署规范提交并推送，服务器检查干净后快进到同一提交。保存旧镜像 ID、Git SHA、服务配置及数据库相关文件清单。

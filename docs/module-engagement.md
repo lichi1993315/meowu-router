@@ -40,11 +40,12 @@ python3 -m pytest tests/test_module_analytics.py
 python3 generate_analytics_dashboards.py
 ```
 
-新表只在维护窗口由 `python -m tools.telemetry_database --db /app/data/conversations.db --apply` 创建
-（经 `ensure_schema → ensure_facts → ensure_module_schema`）；实时上报不建表。维护前实时入库遇到缺表会**跳过模块投影**，
+新表由维护工具（`tools.telemetry_database --apply`，经 `ensure_schema → ensure_facts → ensure_module_schema`）或在线空表例外创建；实时上报不建表。维护前实时入库遇到缺表会**跳过模块投影**，
 原始事实照常入库、上报不受影响，看板在建表前显示缺表。维护流程见 `docs/telemetry-database-maintenance.md`，
 完成后用 `sqlite3 ./data/conversations.db "PRAGMA table_info(module_events);"` 核对。
 需要配套发布 PawFishing 分支 `claude/module-telemetry` 的客户端和服务器，否则报表没有数据；
 建表前已经入库的新版事件不会自动补投影，需要时按原始事实重放 `project_module_event`。
 
-2026-11-17 已部署代码（router-api、gameplay-importer、metrics-exporter），**尚未执行维护建表**。
+2026-11-17 已部署代码（router-api、gameplay-importer、metrics-exporter），并按维护文档的「在线新增空表」例外不停机建表：
+持锁 8.1 ms，三张表 28/36/17 列、7 个索引；13 个面板在线上只读库执行成功（模块投影表暂为空，菜单与小剧场面板读原始事实已有数据，最慢 4.5 s）。
+同日清理服务器空间：删除 2026-09-23、2026-09-25 两份旧整库备份，systemd 日志缩到 500 MB，空余从 9.9 GB 到 23 GB。
