@@ -173,6 +173,8 @@ def build():
     extend_journeys(result, dashboard, panel, FILTER, time_range)
     from behavior_dashboards import extend_dashboards as extend_behavior
     extend_behavior(result, dashboard, panel, FILTER, time_range)
+    from module_dashboards import extend_dashboards as extend_modules
+    extend_modules(result, dashboard, panel, FILTER, time_range)
     from campaign_dashboards import extend_dashboards as extend_campaigns
     extend_campaigns(result, dashboard, panel, FILTER, time_range)
     return result

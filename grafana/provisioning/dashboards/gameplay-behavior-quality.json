@@ -231,6 +231,13 @@
       "keepTime": true
     },
     {
+      "title": "玩法模块体验",
+      "type": "link",
+      "url": "/d/gameplay-module-engagement",
+      "includeVars": true,
+      "keepTime": true
+    },
+    {
       "title": "问卷、愿望单与大佬猫",
       "type": "link",
       "url": "/d/gameplay-campaigns",
