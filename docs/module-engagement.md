@@ -40,6 +40,11 @@ python3 -m pytest tests/test_module_analytics.py
 python3 generate_analytics_dashboards.py
 ```
 
-新表由 `ensure_facts` 建立（`CREATE TABLE IF NOT EXISTS`），router-api / gameplay-importer 重建启动后才会真实落库；
-发布后用 `sqlite3 ./data/conversations.db "PRAGMA table_info(module_events);"` 核对，再重启 Grafana。
-需要配套发布 PawFishing 分支 `claude/module-telemetry` 的客户端和服务器，否则报表没有数据。
+新表只在维护窗口由 `python -m tools.telemetry_database --db /app/data/conversations.db --apply` 创建
+（经 `ensure_schema → ensure_facts → ensure_module_schema`）；实时上报不建表。维护前实时入库遇到缺表会**跳过模块投影**，
+原始事实照常入库、上报不受影响，看板在建表前显示缺表。维护流程见 `docs/telemetry-database-maintenance.md`，
+完成后用 `sqlite3 ./data/conversations.db "PRAGMA table_info(module_events);"` 核对。
+需要配套发布 PawFishing 分支 `claude/module-telemetry` 的客户端和服务器，否则报表没有数据；
+建表前已经入库的新版事件不会自动补投影，需要时按原始事实重放 `project_module_event`。
+
+2026-11-17 已部署代码（router-api、gameplay-importer、metrics-exporter），**尚未执行维护建表**。

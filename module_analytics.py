@@ -4,6 +4,7 @@ Intake writes at most one slim row per event: O(1), no history replay. Dashboard
 tables; raw payloads stay in analytics_event_facts as the audit trail. Rows exist only for clients
 that stamp module_id (Unity modules-v1); older data is shown as "not collected", never as zero.
 """
+import sqlite3
 from datetime import datetime, timedelta
 
 # Must match GamePlay/Shared/Player/TelemetryModules.All (order irrelevant here).
@@ -83,7 +84,20 @@ def _local_day(occurred):
 
 
 def project_module_event(conn, identity, user, session, event, metadata, release):
-    """Project one canonical event. Called from upsert_fact; idempotent by event_id."""
+    """Project one canonical event. Called from upsert_fact; idempotent by event_id.
+
+    Live intake never runs schema migrations (docs/telemetry-database-maintenance.md). Until the
+    maintenance tool has created the module_* tables, skip the projection instead of failing intake;
+    raw facts are kept, so a later replay can rebuild the projection.
+    """
+    try:
+        _project(conn, identity, user, session, event, metadata, release)
+    except sqlite3.OperationalError as error:
+        if 'no such table: module_' not in str(error):
+            raise
+
+
+def _project(conn, identity, user, session, event, metadata, release):
     kind = event.get('event_type') or ''
     payload = event.get('payload') or {}
     if not isinstance(payload, dict):

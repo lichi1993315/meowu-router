@@ -159,6 +159,12 @@ class ModuleAnalyticsTests(unittest.TestCase):
                    'payload': {'fish_id': 1}}, 'old', 's')
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM module_events WHERE user_id='old'").fetchone()[0], 0)
 
+    def test_intake_survives_before_maintenance_creates_module_tables(self):
+        for table in ('module_events', 'module_time_points', 'module_exit_points'):
+            self.db.execute('DROP TABLE ' + table)
+        self.populate()
+        self.assertGreater(self.db.execute('SELECT COUNT(*) FROM analytics_event_facts').fetchone()[0], 10)
+
     def test_module_catalog_matches_time_columns(self):
         self.assertEqual(TIME_COLUMNS[:-1], MODULES)
         self.assertEqual(len(set(MODULES)), len(MODULES))
