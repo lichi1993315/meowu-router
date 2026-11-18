@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.core.database import initialize_database
+from app.core.database import initialize_database, hold_wal_files
 
 
 class DatabaseConcurrencyTests(unittest.TestCase):
@@ -32,3 +32,23 @@ class DatabaseConcurrencyTests(unittest.TestCase):
     def test_unconfigured_and_memory_databases_are_unchanged(self):
         initialize_database("")
         initialize_database(":memory:")
+
+    def test_idle_connection_preserves_sidecars_without_pinning_wal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "conversations.db")
+            initialize_database(path)
+            with hold_wal_files(path):
+                for value in (1, 2):
+                    with sqlite3.connect(path) as writer:
+                        writer.execute("CREATE TABLE IF NOT EXISTS samples(value INTEGER)")
+                        writer.execute("INSERT INTO samples VALUES (?)", (value,))
+                        writer.commit()
+                        self.assertEqual(writer.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone(), (0, 0, 0))
+                    writer.close()
+                    for suffix in ("-wal", "-shm"):
+                        self.assertTrue(Path(path + suffix).exists())
+                    # A fresh reader must see writes committed after the idle
+                    # connection was opened, including across checkpoints.
+                    with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as reader:
+                        self.assertEqual(reader.execute("SELECT COUNT(*) FROM samples").fetchone()[0], value)
+                    reader.close()

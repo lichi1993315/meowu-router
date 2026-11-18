@@ -8,7 +8,7 @@ import httpx
 from app.core.config import DB_PATH
 from sqlite_runtime import connection, require_schema
 from fastapi import FastAPI
-from app.core.database import initialize_database
+from app.core.database import initialize_database, hold_wal_files
 
 from app.services.blacklist import sync_blacklist_loop
 from app.services.diagnostic_reports import delivery_loop
@@ -37,26 +37,27 @@ async def checkpoint_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(initialize_database, DB_PATH)
-    with connection(DB_PATH) as conn:
-        for component in ("events", "playtime", "importer", "behavior"):
-            require_schema(conn, component)
-    app.state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(120.0, connect=10.0),
-        limits=httpx.Limits(max_connections=200, max_keepalive_connections=100),
-    )
-    app.state.blacklist = set()
+    with hold_wal_files(DB_PATH):
+        with connection(DB_PATH) as conn:
+            for component in ("events", "playtime", "importer", "behavior"):
+                require_schema(conn, component)
+        app.state.http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(120.0, connect=10.0),
+            limits=httpx.Limits(max_connections=200, max_keepalive_connections=100),
+        )
+        app.state.blacklist = set()
 
-    sync_task = asyncio.create_task(sync_blacklist_loop(app.state))
+        sync_task = asyncio.create_task(sync_blacklist_loop(app.state))
 
-    diagnostic_task = asyncio.create_task(delivery_loop())
-    feedback_task = asyncio.create_task(feedback_delivery_loop())
-    checkpoint_task = asyncio.create_task(checkpoint_loop())
-    try:
-        yield
-    finally:
-        sync_task.cancel()
-        diagnostic_task.cancel()
-        feedback_task.cancel()
-        checkpoint_task.cancel()
-        await asyncio.gather(sync_task, diagnostic_task, feedback_task, checkpoint_task, return_exceptions=True)
-        await app.state.http_client.aclose()
+        diagnostic_task = asyncio.create_task(delivery_loop())
+        feedback_task = asyncio.create_task(feedback_delivery_loop())
+        checkpoint_task = asyncio.create_task(checkpoint_loop())
+        try:
+            yield
+        finally:
+            sync_task.cancel()
+            diagnostic_task.cancel()
+            feedback_task.cancel()
+            checkpoint_task.cancel()
+            await asyncio.gather(sync_task, diagnostic_task, feedback_task, checkpoint_task, return_exceptions=True)
+            await app.state.http_client.aclose()

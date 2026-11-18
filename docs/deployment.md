@@ -24,6 +24,7 @@
 Router 启动前会确认共享 SQLite 为 WAL 模式，使 Grafana 的长查询不阻塞心跳和事件提交。
 首次从 DELETE 切换需要短暂取得数据库锁；切换失败会阻止启动，不能带着错误模式接收请求。
 验收时回读 `PRAGMA journal_mode` 应为 `wal`，并验证只读 Grafana 数据源仍能查询。
+Router 生命周期内保留一个已完成初始化、没有活动事务的 SQLite 连接，防止最后一个短连接关闭时删除 `-wal` / `-shm`。Grafana 的只读挂载依赖这两个文件已存在；仅启用 WAL 后立即关闭连接，可能导致所有面板报 `unable to open database file (14)`。该空闲连接不持有读快照，允许正常写入和 checkpoint；修改此逻辑后须重建 `router-api`，再通过 Grafana 数据源实际查询验收。
 在线备份使用 SQLite backup API；运行中不能只复制 `.db` 而忽略尚未 checkpoint 的 WAL。
 
 ## 每日用户日报
