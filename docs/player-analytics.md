@@ -20,6 +20,8 @@
 
 `analytics_event_facts` 是按事件 ID 增量维护的规范事件表，`gameplay_events` / `gameplay_live_events` 保留原始证据。最终会话快照、重传和不同文件的同一事件只计一次；旧事件没有 ID 时使用玩家、会话、游戏日和事件序号组合键。metadata 和 payload 分开保存。迁移标记 `event_facts_v1` 确保旧数据只回填一次。
 
+实时原始事件可在写入时无损压缩。先部署支持 TEXT 和 PFZ1 BLOB 的读取代码，再在 Router API 的环境中设 `PAW_COMPRESS_LIVE_EVENT_JSON=1`。原文查询或导出使用 `analytics_facts.decode_live_event_json`，报表和事实表继续使用既有字段。启用前检查自定义原文查询和回退镜像的解码兼容性。关掉开关后新行恢复写入 TEXT，已压缩行仍需兼容读取器；历史行无需重写。
+
 先备份数据库，停止旧 importer，部署包含新 projection 的 router-api；运行新 importer 的 schema 迁移后核查真实表和视图，再启用新 dashboard。Grafana 配置刷新期间必须避免新查询早于迁移可见。回滚时保留原始表与备份，不删除已新增的原始埋点。
 
 新增 Unity 采集需要客户端和服务器包含同一网络程序集版本；历史缺字段显示“未采集”。本次不修改 CatAgent LLM 请求和 prompt。

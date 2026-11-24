@@ -1,10 +1,29 @@
 """Incremental canonical event projection; raw tables remain the audit trail."""
 import json
+import zlib
 from version_utils import release_version_from_client_version
 
 COLUMNS = ('event_id','user_id','session_id','player_session_id','client_platform','client_version','release_version',
            'is_development_build','occurred_at','received_at','event_type','actor_id','actor_is_player','game_day',
            'sequence','payload_json','metadata_json','energy_cost','archive_id','schema_version','behavior_stat')
+
+_LIVE_EVENT_ZLIB_V1 = b"PFZ1"
+
+
+def encode_live_event_json(event_json: str) -> str | bytes:
+    """Keep the original UTF-8 JSON and store it compressed only when smaller."""
+    original = event_json.encode("utf-8")
+    compressed = _LIVE_EVENT_ZLIB_V1 + zlib.compress(original, level=1)
+    return compressed if len(compressed) < len(original) else event_json
+
+
+def decode_live_event_json(stored: str | bytes) -> str:
+    """Read both historical JSON text and the versioned compressed envelope."""
+    if isinstance(stored, str):
+        return stored
+    if stored.startswith(_LIVE_EVENT_ZLIB_V1):
+        stored = zlib.decompress(stored[len(_LIVE_EVENT_ZLIB_V1):])
+    return stored.decode("utf-8")
 
 
 def ensure_facts(conn):
@@ -90,7 +109,7 @@ def migrate_facts(conn):
             else:
                 rows=conn.execute('SELECT user_id,session_id,event_json,received_at,player_session_id,client_platform,client_version,is_development_build FROM gameplay_live_events WHERE rowid>? AND rowid<=?',(after,end)).fetchall()
                 for row in rows:
-                    upsert_fact(conn,json.loads(row[2]),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],release_version_from_client_version(row[6]))
+                    upsert_fact(conn,json.loads(decode_live_event_json(row[2])),row[0],row[1],{'client_platform':row[5],'is_development_build':row[7]},row[3],row[4],row[6],release_version_from_client_version(row[6]))
             conn.commit();after=end
     conn.execute("INSERT INTO analytics_migrations VALUES ('event_facts_v1')")
     normalize_live_release(conn)

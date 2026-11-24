@@ -1,9 +1,10 @@
 """Idempotent, bounded ingestion for gameplay batches. ACK only follows commit."""
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from telemetry_platform import client_metadata, ensure_channel_schema, record_session_channel
-from analytics_facts import ensure_facts, upsert_fact
+from analytics_facts import encode_live_event_json, ensure_facts, upsert_fact
 from version_utils import release_version_from_client_version
 from telemetry_time import parse_timestamp
 from sqlite_runtime import connection, transaction, mark_schema, require_schema
@@ -36,6 +37,7 @@ def accept_batch(db_path, payload, headers):
         raise ValueError("user and session required")
     metadata = client_metadata(payload, headers)
     received = datetime.now(timezone.utc).isoformat()
+    compress_raw = os.getenv("PAW_COMPRESS_LIVE_EVENT_JSON") == "1"
     rows = []
     for event in events:
         if not isinstance(event, dict):
@@ -46,10 +48,11 @@ def accept_batch(db_path, payload, headers):
         stamp = parse_timestamp(occurred)
         if stamp.tzinfo is None:
             raise ValueError("timestamp timezone required")
+        event_json = json.dumps(event, ensure_ascii=False)
         rows.append((eid, user, session, payload.get("player_session_id"), metadata["client_platform"],
                      payload.get("client_version"), metadata["is_development_build"],
                      stamp.astimezone(timezone.utc).isoformat(), received, kind,
-                     json.dumps(event, ensure_ascii=False)))
+                     encode_live_event_json(event_json) if compress_raw else event_json))
     with connection(db_path) as conn, transaction(conn, "events.batch", request_id=headers.get("x-outbox-id")):
         require_schema(conn, "events")
         require_schema(conn, "behavior")
